@@ -198,6 +198,14 @@
 }
 
 @media print {
+  /* Always hide UI chrome */
   .no-print { display: none !important; }
   body { background: white; }
+
+  /* Default (A4 invoice / quotation) */
+  .receipt-print-area { display: none !important; }
+
+  /* Thermal receipt mode — activated by body.receipt-mode class */
+  body.receipt-mode .receipt-print-area { display: block !important; }
+  body.receipt-mode .invoice-print-area  { display: none  !important; }
 }

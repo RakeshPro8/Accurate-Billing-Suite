@@ -14,7 +14,8 @@ import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { ArrowLeft, Printer, Download, ChevronDown, Check, Edit, FileText, RefreshCw } from "lucide-react";
+import { ReceiptPrint } from "@/components/ReceiptPrint";
+import { ArrowLeft, Printer, Download, ChevronDown, Check, Edit, FileText, RefreshCw, Receipt } from "lucide-react";
 
 export default function QuotationDetail() {
   const params = useParams<{ id: string }>();
@@ -22,7 +23,7 @@ export default function QuotationDetail() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const printRef = useRef<HTMLDivElement>(null);
+  const quoteRef = useRef<HTMLDivElement>(null);
 
   const { data: quote, isLoading } = useGetQuotation(id, { query: { queryKey: getGetQuotationQueryKey(id) } });
   const { data: settings } = useGetSettings();
@@ -68,13 +69,30 @@ export default function QuotationDetail() {
     });
   }
 
+  function handlePrintQuote() {
+    window.print();
+  }
+
+  function handlePrintReceipt() {
+    const style = document.createElement("style");
+    style.id = "__receipt-page-size";
+    style.textContent = "@page { size: 80mm auto; margin: 3mm 3mm 6mm; }";
+    document.head.appendChild(style);
+    document.body.classList.add("receipt-mode");
+    setTimeout(() => {
+      window.print();
+      document.body.classList.remove("receipt-mode");
+      document.getElementById("__receipt-page-size")?.remove();
+    }, 100);
+  }
+
   async function handlePDF() {
-    if (!printRef.current) return;
-    toast({ title: "Generating PDF..." });
+    if (!quoteRef.current) return;
+    toast({ title: "Generating PDF…" });
     try {
       const { default: html2canvas } = await import("html2canvas");
       const { jsPDF } = await import("jspdf");
-      const canvas = await html2canvas(printRef.current, { scale: 2, useCORS: true });
+      const canvas = await html2canvas(quoteRef.current, { scale: 2, useCORS: true });
       const imgData = canvas.toDataURL("image/png");
       const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
       const pdfWidth = pdf.internal.pageSize.getWidth();
@@ -100,9 +118,42 @@ export default function QuotationDetail() {
   if (!quote) return <div className="text-center py-16 text-muted-foreground">Quotation not found.</div>;
 
   const items = quote.items ?? [];
+  const business = {
+    businessName: settings?.businessName,
+    businessAddress: settings?.businessAddress ?? undefined,
+    businessPhone: settings?.businessPhone ?? undefined,
+    businessEmail: settings?.businessEmail ?? undefined,
+    logoUrl: settings?.logoUrl ?? undefined,
+    thankYouMessage: settings?.thankYouMessage ?? undefined,
+    invoiceFooter: settings?.invoiceFooter ?? undefined,
+  };
+
+  const receiptData = {
+    quoteNumber: quote.quoteNumber,
+    createdAt: quote.createdAt,
+    customerName: quote.customerName ?? undefined,
+    customerEmail: quote.customerEmail ?? undefined,
+    status: quote.status,
+    items: items.map((i: any) => ({
+      name: i.name, description: i.description ?? undefined,
+      quantity: i.quantity, unitPrice: i.unitPrice, discount: i.discount ?? 0, total: i.total,
+    })),
+    subtotal: quote.subtotal,
+    taxRate: quote.taxRate ?? 0,
+    tax: quote.tax ?? 0,
+    discount: quote.discount ?? 0,
+    total: quote.total,
+    notes: quote.notes ?? undefined,
+  };
 
   return (
     <div className="space-y-4">
+      {/* Thermal receipt — hidden on screen, shown in receipt-mode print */}
+      <div className="receipt-print-area" style={{ display: "none" }}>
+        <ReceiptPrint data={receiptData} business={business} mode="receipt" />
+      </div>
+
+      {/* Toolbar */}
       <div className="flex items-center justify-between gap-3 flex-wrap no-print">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate("/quotations")}>
@@ -115,7 +166,10 @@ export default function QuotationDetail() {
           <span className={`text-xs px-2 py-0.5 rounded-full capitalize font-medium ml-2 ${getStatusColor(quote.status)}`}>{quote.status}</span>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <Button size="sm" variant="outline" onClick={() => window.print()} className="gap-1.5"><Printer className="h-3.5 w-3.5" /> Print</Button>
+          <Button size="sm" variant="outline" onClick={handlePrintQuote} className="gap-1.5"><Printer className="h-3.5 w-3.5" /> Print</Button>
+          <Button size="sm" variant="outline" onClick={handlePrintReceipt} className="gap-1.5 border-teal-400 text-teal-700 hover:bg-teal-50">
+            <Receipt className="h-3.5 w-3.5" /> Print Receipt (TSP100)
+          </Button>
           <Button size="sm" variant="outline" onClick={handlePDF} className="gap-1.5"><Download className="h-3.5 w-3.5" /> PDF</Button>
           <Button size="sm" variant="outline" onClick={handleCSV} className="gap-1.5"><FileText className="h-3.5 w-3.5" /> CSV</Button>
           <Button size="sm" variant="outline" onClick={() => navigate(`/quotations/${id}/edit`)} className="gap-1.5"><Edit className="h-3.5 w-3.5" /> Edit</Button>
@@ -138,80 +192,88 @@ export default function QuotationDetail() {
         </div>
       </div>
 
-      {/* Printable Quotation */}
-      <div ref={printRef} className="bg-white rounded-xl border shadow-sm overflow-hidden">
-        <div className="bg-[#1e3a5f] text-white p-8">
-          <div className="flex items-start justify-between">
-            <div>
-              <div className="text-2xl font-bold mb-0.5">{settings?.businessName ?? "Your Business"}</div>
-              {settings?.businessAddress && <div className="text-sm text-blue-200">{settings.businessAddress}</div>}
-              {settings?.businessPhone && <div className="text-sm text-blue-200">{settings.businessPhone}</div>}
-              {settings?.businessEmail && <div className="text-sm text-blue-200">{settings.businessEmail}</div>}
-            </div>
-            <div className="text-right">
-              <div className="text-3xl font-bold text-blue-300">QUOTATION</div>
-              <div className="text-lg font-mono mt-1">{quote.quoteNumber}</div>
-              <div className="text-sm text-blue-200 mt-1">Date: {formatDate(quote.createdAt)}</div>
-              {quote.expiresAt && <div className="text-sm text-blue-200">Valid Until: {formatDate(quote.expiresAt)}</div>}
-            </div>
-          </div>
-        </div>
-
-        <div className="p-8">
-          <div className="mb-8">
-            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Prepared For</div>
-            <div className="font-semibold text-lg">{quote.customerName || "Customer"}</div>
-            {quote.customerEmail && <div className="text-sm text-muted-foreground">{quote.customerEmail}</div>}
-          </div>
-
-          <table className="w-full text-sm mb-6">
-            <thead>
-              <tr className="border-b-2 border-[#1e3a5f]">
-                <th className="text-left py-2 font-semibold text-muted-foreground">Description</th>
-                <th className="text-right py-2 font-semibold text-muted-foreground">Qty</th>
-                <th className="text-right py-2 font-semibold text-muted-foreground">Unit Price</th>
-                <th className="text-right py-2 font-semibold text-muted-foreground">Disc</th>
-                <th className="text-right py-2 font-semibold text-muted-foreground">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {items.map((item: any, i: number) => (
-                <tr key={i} className="border-b last:border-0">
-                  <td className="py-2.5">
-                    <div className="font-medium">{item.name}</div>
-                    {item.description && <div className="text-xs text-muted-foreground">{item.description}</div>}
-                  </td>
-                  <td className="py-2.5 text-right">{item.quantity}</td>
-                  <td className="py-2.5 text-right">{formatCurrency(item.unitPrice)}</td>
-                  <td className="py-2.5 text-right">{item.discount > 0 ? `-${formatCurrency(item.discount)}` : "—"}</td>
-                  <td className="py-2.5 text-right font-semibold">{formatCurrency(item.total)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          <div className="flex justify-end">
-            <div className="w-64 space-y-1.5 text-sm">
-              <div className="flex justify-between text-muted-foreground"><span>Subtotal</span><span>{formatCurrency(quote.subtotal)}</span></div>
-              {quote.discount > 0 && (
-                <div className="flex justify-between text-muted-foreground"><span>Discount</span><span>-{formatCurrency(quote.discount)}</span></div>
-              )}
-              {quote.taxRate > 0 && (
-                <div className="flex justify-between text-muted-foreground"><span>Tax ({quote.taxRate}%)</span><span>{formatCurrency(quote.tax)}</span></div>
-              )}
-              <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2 text-[#1e3a5f]">
-                <span>TOTAL</span>
-                <span>{formatCurrency(quote.total)}</span>
+      {/* A4 Quotation — hidden in receipt-mode print via CSS */}
+      <div ref={quoteRef} className="invoice-print-area">
+        <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
+          <div className="bg-[#1e3a5f] text-white p-8">
+            <div className="flex items-start justify-between">
+              <div>
+                {settings?.logoUrl && (
+                  <img
+                    src={settings.logoUrl}
+                    alt="logo"
+                    className="mb-3 max-h-16 max-w-[140px] object-contain brightness-0 invert"
+                  />
+                )}
+                <div className="text-2xl font-bold mb-0.5">{settings?.businessName ?? "Your Business"}</div>
+                {settings?.businessAddress && <div className="text-sm text-blue-200">{settings.businessAddress}</div>}
+                {settings?.businessPhone && <div className="text-sm text-blue-200">{settings.businessPhone}</div>}
+                {settings?.businessEmail && <div className="text-sm text-blue-200">{settings.businessEmail}</div>}
+              </div>
+              <div className="text-right">
+                <div className="text-3xl font-bold text-blue-300">QUOTATION</div>
+                <div className="text-lg font-mono mt-1">{quote.quoteNumber}</div>
+                <div className="text-sm text-blue-200 mt-1">Date: {formatDate(quote.createdAt)}</div>
+                {quote.expiresAt && <div className="text-sm text-blue-200">Valid Until: {formatDate(quote.expiresAt)}</div>}
               </div>
             </div>
           </div>
 
-          {(quote.notes || settings?.thankYouMessage) && (
-            <div className="mt-8 pt-6 border-t text-sm text-muted-foreground">
-              {quote.notes && <p className="mb-2"><span className="font-medium">Notes:</span> {quote.notes}</p>}
-              {settings?.thankYouMessage && <p className="font-medium text-[#1e3a5f]">{settings.thankYouMessage}</p>}
+          <div className="p-8">
+            <div className="mb-8">
+              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Prepared For</div>
+              <div className="font-semibold text-lg">{quote.customerName || "Customer"}</div>
+              {quote.customerEmail && <div className="text-sm text-muted-foreground">{quote.customerEmail}</div>}
             </div>
-          )}
+
+            <table className="w-full text-sm mb-6">
+              <thead>
+                <tr className="border-b-2 border-[#1e3a5f]">
+                  <th className="text-left py-2 font-semibold text-muted-foreground">Description</th>
+                  <th className="text-right py-2 font-semibold text-muted-foreground">Qty</th>
+                  <th className="text-right py-2 font-semibold text-muted-foreground">Unit Price</th>
+                  <th className="text-right py-2 font-semibold text-muted-foreground">Disc</th>
+                  <th className="text-right py-2 font-semibold text-muted-foreground">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item: any, i: number) => (
+                  <tr key={i} className="border-b last:border-0">
+                    <td className="py-2.5">
+                      <div className="font-medium">{item.name}</div>
+                      {item.description && <div className="text-xs text-muted-foreground">{item.description}</div>}
+                    </td>
+                    <td className="py-2.5 text-right">{item.quantity}</td>
+                    <td className="py-2.5 text-right">{formatCurrency(item.unitPrice)}</td>
+                    <td className="py-2.5 text-right">{item.discount > 0 ? `-${formatCurrency(item.discount)}` : "—"}</td>
+                    <td className="py-2.5 text-right font-semibold">{formatCurrency(item.total)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            <div className="flex justify-end">
+              <div className="w-64 space-y-1.5 text-sm">
+                <div className="flex justify-between text-muted-foreground"><span>Subtotal</span><span>{formatCurrency(quote.subtotal)}</span></div>
+                {(quote.discount ?? 0) > 0 && (
+                  <div className="flex justify-between text-muted-foreground"><span>Discount</span><span>-{formatCurrency(quote.discount ?? 0)}</span></div>
+                )}
+                {(quote.taxRate ?? 0) > 0 && (
+                  <div className="flex justify-between text-muted-foreground"><span>Tax ({quote.taxRate}%)</span><span>{formatCurrency(quote.tax ?? 0)}</span></div>
+                )}
+                <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2 text-[#1e3a5f]">
+                  <span>TOTAL</span><span>{formatCurrency(quote.total)}</span>
+                </div>
+              </div>
+            </div>
+
+            {(quote.notes || settings?.thankYouMessage) && (
+              <div className="mt-8 pt-6 border-t text-sm text-muted-foreground">
+                {quote.notes && <p className="mb-2"><span className="font-medium">Notes:</span> {quote.notes}</p>}
+                {settings?.thankYouMessage && <p className="font-medium text-[#1e3a5f]">{settings.thankYouMessage}</p>}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
