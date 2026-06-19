@@ -11,6 +11,8 @@ export const settingsTable = pgTable("settings", {
   logoUrl: text("logo_url"),
   currency: text("currency").notNull().default("USD"),
   taxRate: numeric("tax_rate", { precision: 5, scale: 2 }).notNull().default("0"),
+  gstRate: numeric("gst_rate", { precision: 5, scale: 3 }).notNull().default("0"),
+  qstRate: numeric("qst_rate", { precision: 6, scale: 4 }).notNull().default("0"),
   invoicePrefix: text("invoice_prefix").notNull().default("INV-"),
   quotePrefix: text("quote_prefix").notNull().default("QUO-"),
   invoiceFooter: text("invoice_footer"),

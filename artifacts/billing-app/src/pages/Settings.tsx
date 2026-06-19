@@ -180,6 +180,17 @@ export default function Settings() {
                 <Input {...register("taxRate", { valueAsNumber: true })} type="number" step="0.01" placeholder="0" />
               </div>
               <div className="space-y-1.5">
+                <Label>GST Rate (%) <span className="text-muted-foreground text-xs">e.g. 5 for Canada federal</span></Label>
+                <Input {...register("gstRate", { valueAsNumber: true })} type="number" step="0.001" placeholder="0" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>QST Rate (%) <span className="text-muted-foreground text-xs">e.g. 9.975 for Quebec</span></Label>
+                <Input {...register("qstRate", { valueAsNumber: true })} type="number" step="0.0001" placeholder="0" />
+              </div>
+              <p className="text-xs text-muted-foreground col-span-2">
+                GST &amp; QST rates are shown as a separate line breakdown on printed thermal receipts. Leave at 0 if not applicable.
+              </p>
+              <div className="space-y-1.5">
                 <Label>Invoice Prefix</Label>
                 <Input {...register("invoicePrefix")} placeholder="INV-" />
               </div>

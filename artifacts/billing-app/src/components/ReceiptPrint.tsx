@@ -1,16 +1,8 @@
 /**
  * Thermal receipt layout — optimised for Star TSP100 FuturePRNT (80 mm roll).
- *
- * HOW TO USE WITH TSP100:
- *  1. Install Star FuturePRNT driver on Windows — printer appears as "Star TSP100".
- *  2. Click "Print Receipt" on any invoice → browser print dialog opens.
- *  3. Select "Star TSP100 Cutter" as the printer.
- *  4. Paper size: choose "Receipt 80mm" (or 3.15in × auto / custom size 80×200mm).
- *  5. Margins: None.  Orientation: Portrait.  Print!
- *
- * The page CSS forces 80 mm width and hides all non-receipt elements.
  */
 
+import { QRCodeSVG } from "qrcode.react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 interface ReceiptItem {
@@ -47,67 +39,75 @@ interface BusinessInfo {
   logoUrl?: string;
   thankYouMessage?: string;
   invoiceFooter?: string;
+  gstRate?: number;
+  qstRate?: number;
+  currency?: string;
 }
 
 interface ReceiptPrintProps {
   data: ReceiptData;
   business: BusinessInfo;
-  /** "invoice" = full A4 invoice,  "receipt" = 80mm thermal */
   mode: "invoice" | "receipt";
+  /** URL to encode in the QR code — defaults to just the document number */
+  qrValue?: string;
 }
 
-export function ReceiptPrint({ data, business, mode }: ReceiptPrintProps) {
+export function ReceiptPrint({ data, business, qrValue }: ReceiptPrintProps) {
   const docNum = data.invoiceNumber ?? data.quoteNumber ?? "";
-  const isReceipt = mode === "receipt";
+  const gstRate = business.gstRate ?? 0;
+  const qstRate = business.qstRate ?? 0;
+  const taxableBase = data.subtotal - data.discount;
+
+  // Tax breakdown
+  const showGstQst = gstRate > 0 || qstRate > 0;
+  const gstAmount  = gstRate > 0 ? taxableBase * (gstRate / 100) : 0;
+  const qstAmount  = qstRate > 0 ? taxableBase * (qstRate / 100) : 0;
+  const genericTax = data.tax; // fallback if no GST/QST configured
+
+  const qrContent = qrValue ?? docNum;
 
   return (
     <div
-      id="receipt-root"
       style={{
-        width: isReceipt ? "72mm" : "100%",
+        width: "72mm",
         fontFamily: "'Courier New', Courier, monospace",
-        fontSize: isReceipt ? "11px" : "13px",
+        fontSize: "11px",
         color: "#000",
         background: "#fff",
-        padding: isReceipt ? "4mm 2mm" : "0",
+        padding: "4mm 2mm",
+        margin: "0 auto",
       }}
     >
-      {/* ---- LOGO ---- */}
+      {/* LOGO */}
       {business.logoUrl && (
-        <div style={{ textAlign: "center", marginBottom: isReceipt ? "4mm" : "6mm" }}>
+        <div style={{ textAlign: "center", marginBottom: "3mm" }}>
           <img
             src={business.logoUrl}
             alt="logo"
-            style={{
-              maxHeight: isReceipt ? "18mm" : "28mm",
-              maxWidth: isReceipt ? "60mm" : "120mm",
-              objectFit: "contain",
-            }}
+            style={{ maxHeight: "18mm", maxWidth: "62mm", objectFit: "contain" }}
           />
         </div>
       )}
 
-      {/* ---- STORE HEADER ---- */}
-      <div style={{ textAlign: "center", marginBottom: isReceipt ? "3mm" : "5mm" }}>
-        <div style={{ fontWeight: "bold", fontSize: isReceipt ? "13px" : "16px" }}>
+      {/* STORE HEADER */}
+      <div style={{ textAlign: "center", marginBottom: "3mm" }}>
+        <div style={{ fontWeight: "bold", fontSize: "13px" }}>
           {business.businessName ?? "Your Store"}
         </div>
         {business.businessAddress && (
-          <div style={{ fontSize: isReceipt ? "9px" : "11px", marginTop: "1mm" }}>
-            {business.businessAddress}
-          </div>
+          <div style={{ fontSize: "9px", marginTop: "0.5mm" }}>{business.businessAddress}</div>
         )}
         {business.businessPhone && (
-          <div style={{ fontSize: isReceipt ? "9px" : "11px" }}>Tel: {business.businessPhone}</div>
+          <div style={{ fontSize: "9px" }}>Tel: {business.businessPhone}</div>
         )}
         {business.businessEmail && (
-          <div style={{ fontSize: isReceipt ? "9px" : "11px" }}>{business.businessEmail}</div>
+          <div style={{ fontSize: "9px" }}>{business.businessEmail}</div>
         )}
       </div>
 
       <Divider />
 
-      {/* ---- DOCUMENT INFO ---- */}
+      {/* DOCUMENT INFO */}
       <div style={{ marginBottom: "2mm" }}>
         <Row label={data.invoiceNumber ? "INVOICE" : "QUOTATION"} value={docNum} bold />
         <Row label="Date" value={formatDate(data.createdAt)} />
@@ -117,10 +117,10 @@ export function ReceiptPrint({ data, business, mode }: ReceiptPrintProps) {
 
       <Divider />
 
-      {/* ---- ITEMS ---- */}
+      {/* ITEMS */}
       <div style={{ marginBottom: "2mm" }}>
         {data.items.map((item, i) => (
-          <div key={i} style={{ marginBottom: "1.5mm" }}>
+          <div key={i} style={{ marginBottom: "2mm" }}>
             <div style={{ fontWeight: "bold" }}>{item.name}</div>
             {item.description && (
               <div style={{ fontSize: "9px", color: "#555" }}>{item.description}</div>
@@ -128,7 +128,9 @@ export function ReceiptPrint({ data, business, mode }: ReceiptPrintProps) {
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <span style={{ fontSize: "10px" }}>
                 {item.quantity} × {formatCurrency(item.unitPrice)}
-                {(item.discount ?? 0) > 0 && ` − ${formatCurrency(item.discount ?? 0)}`}
+                {(item.discount ?? 0) > 0 && (
+                  <span style={{ color: "#555" }}> − {formatCurrency(item.discount ?? 0)}</span>
+                )}
               </span>
               <span style={{ fontWeight: "bold" }}>{formatCurrency(item.total)}</span>
             </div>
@@ -138,21 +140,63 @@ export function ReceiptPrint({ data, business, mode }: ReceiptPrintProps) {
 
       <Divider />
 
-      {/* ---- TOTALS ---- */}
+      {/* TOTALS */}
       <div style={{ marginBottom: "2mm" }}>
         <Row label="Subtotal" value={formatCurrency(data.subtotal)} />
-        {data.discount > 0 && <Row label="Discount" value={`−${formatCurrency(data.discount)}`} />}
-        {data.taxRate > 0 && <Row label={`Tax (${data.taxRate}%)`} value={formatCurrency(data.tax)} />}
+        {data.discount > 0 && (
+          <Row label="Discount" value={`−${formatCurrency(data.discount)}`} />
+        )}
+
+        {/* Tax breakdown: prefer GST/QST if configured */}
+        {showGstQst ? (
+          <>
+            {gstRate > 0 && (
+              <Row
+                label={`GST (${gstRate}%)`}
+                value={formatCurrency(gstAmount)}
+              />
+            )}
+            {qstRate > 0 && (
+              <Row
+                label={`QST (${qstRate}%)`}
+                value={formatCurrency(qstAmount)}
+              />
+            )}
+          </>
+        ) : (
+          data.taxRate > 0 && (
+            <Row label={`Tax (${data.taxRate}%)`} value={formatCurrency(genericTax)} />
+          )
+        )}
       </div>
 
       <Divider thick />
 
       <Row label="TOTAL" value={formatCurrency(data.total)} bold large />
 
+      {showGstQst && (
+        <div style={{ fontSize: "9px", color: "#555", textAlign: "right", marginTop: "1mm" }}>
+          incl. GST {formatCurrency(gstAmount)} + QST {formatCurrency(qstAmount)}
+        </div>
+      )}
+
       <Divider />
 
-      {/* ---- FOOTER ---- */}
-      <div style={{ textAlign: "center", marginTop: "3mm", fontSize: "10px" }}>
+      {/* QR CODE */}
+      <div style={{ textAlign: "center", margin: "3mm 0 2mm" }}>
+        <QRCodeSVG
+          value={qrContent}
+          size={80}
+          level="M"
+          includeMargin={false}
+        />
+        <div style={{ fontSize: "8px", color: "#777", marginTop: "1mm" }}>{docNum}</div>
+      </div>
+
+      <Divider />
+
+      {/* FOOTER */}
+      <div style={{ textAlign: "center", marginTop: "2mm", fontSize: "10px" }}>
         {business.thankYouMessage && (
           <div style={{ fontWeight: "bold", marginBottom: "1mm" }}>{business.thankYouMessage}</div>
         )}
@@ -160,8 +204,8 @@ export function ReceiptPrint({ data, business, mode }: ReceiptPrintProps) {
         {business.invoiceFooter && (
           <div style={{ fontSize: "9px", color: "#555" }}>{business.invoiceFooter}</div>
         )}
-        <div style={{ marginTop: "2mm", fontSize: "9px", color: "#777" }}>
-          {docNum} · {formatDate(data.createdAt)}
+        <div style={{ marginTop: "2mm", fontSize: "8px", color: "#999" }}>
+          {formatDate(data.createdAt)}
         </div>
       </div>
     </div>

@@ -9,6 +9,8 @@ function parseSettings(s: typeof settingsTable.$inferSelect) {
   return {
     ...s,
     taxRate: parseFloat(String(s.taxRate)),
+    gstRate: parseFloat(String(s.gstRate ?? "0")),
+    qstRate: parseFloat(String(s.qstRate ?? "0")),
     smtpPort: s.smtpPort ?? null,
   };
 }
@@ -38,6 +40,8 @@ router.patch("/", async (req, res) => {
     const strFields = ["businessName","businessAddress","businessPhone","businessEmail","logoUrl","currency","invoicePrefix","quotePrefix","invoiceFooter","thankYouMessage","smtpHost","smtpUser","smtpPass"] as const;
     strFields.forEach(f => { if (body[f] !== undefined) updates[f] = body[f]; });
     if (body.taxRate !== undefined) updates.taxRate = String(body.taxRate);
+    if (body.gstRate !== undefined) updates.gstRate = String(body.gstRate);
+    if (body.qstRate !== undefined) updates.qstRate = String(body.qstRate);
     if (body.smtpPort !== undefined) updates.smtpPort = Number(body.smtpPort);
 
     let [settings] = await db.select().from(settingsTable).limit(1);

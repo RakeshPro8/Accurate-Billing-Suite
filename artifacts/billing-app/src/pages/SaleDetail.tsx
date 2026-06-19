@@ -98,6 +98,9 @@ export default function SaleDetail() {
     logoUrl: settings?.logoUrl ?? undefined,
     thankYouMessage: settings?.thankYouMessage ?? undefined,
     invoiceFooter: settings?.invoiceFooter ?? undefined,
+    gstRate: settings?.gstRate ?? 0,
+    qstRate: settings?.qstRate ?? 0,
+    currency: settings?.currency ?? "USD",
   };
 
   const receiptData = {
