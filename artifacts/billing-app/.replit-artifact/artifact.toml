@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "BillPro - Store Billing & Reports"
+version = "1.0.0"
+id = "artifacts/billing-app"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23436
+
+[services.development]
+run = "pnpm --filter @workspace/billing-app run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/billing-app", "run", "build" ]
+publicDir = "artifacts/billing-app/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23436"
+BASE_PATH = "/"
