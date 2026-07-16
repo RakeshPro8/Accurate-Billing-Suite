@@ -7,6 +7,7 @@ import salesRouter from "./sales";
 import quotationsRouter from "./quotations";
 import reportsRouter from "./reports";
 import settingsRouter from "./settings";
+import employeesRouter from "./employees";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use("/sales", salesRouter);
 router.use("/quotations", quotationsRouter);
 router.use("/reports", reportsRouter);
 router.use("/settings", settingsRouter);
+router.use("/employees", employeesRouter);
 
 export default router;

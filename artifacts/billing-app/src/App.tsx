@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { EmployeeProvider } from "@/context/EmployeeContext";
 import NotFound from "@/pages/not-found";
 
 import Dashboard from "@/pages/Dashboard";
@@ -18,6 +19,7 @@ import CustomerDetail from "@/pages/CustomerDetail";
 import Products from "@/pages/Products";
 import Reports from "@/pages/Reports";
 import Settings from "@/pages/Settings";
+import Employees from "@/pages/Employees";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -50,6 +52,7 @@ function Router() {
         <Route path="/customers/:id" component={CustomerDetail} />
 
         <Route path="/products" component={Products} />
+        <Route path="/employees" component={Employees} />
         <Route path="/reports" component={Reports} />
         <Route path="/settings" component={Settings} />
 
@@ -63,9 +66,11 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
-        </WouterRouter>
+        <EmployeeProvider>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <Router />
+          </WouterRouter>
+        </EmployeeProvider>
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>

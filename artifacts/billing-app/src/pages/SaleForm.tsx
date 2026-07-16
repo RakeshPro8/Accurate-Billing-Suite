@@ -10,8 +10,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Plus, Trash2, Search } from "lucide-react";
+import { useEmployee, ROLE_COLORS, ROLE_LABELS } from "@/context/EmployeeContext";
+import { ArrowLeft, Plus, Trash2, Search, ShieldCheck, Star, AlertTriangle } from "lucide-react";
 
 interface LineItemForm {
   type: "product" | "service" | "custom";
@@ -33,6 +35,7 @@ export default function SaleForm({ isQuote = false }: { isQuote?: boolean }) {
   const [, navigate] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { activeEmployee } = useEmployee();
 
   const { data: sale, isLoading } = useGetSale(id!, { query: { enabled: isEdit, queryKey: getGetSaleQueryKey(id!) } });
   const { data: products } = useGetProducts();
@@ -44,6 +47,7 @@ export default function SaleForm({ isQuote = false }: { isQuote?: boolean }) {
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerId, setCustomerId] = useState<number | undefined>();
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [notes, setNotes] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [taxRate, setTaxRate] = useState(0);
@@ -105,17 +109,40 @@ export default function SaleForm({ isQuote = false }: { isQuote?: boolean }) {
   const tax = afterDiscount * (taxRate / 100);
   const total = afterDiscount + tax;
 
+  const discountPct = subtotal > 0 ? (discount / subtotal) * 100 : 0;
+  const maxAllowedDiscount = activeEmployee ? activeEmployee.maxDiscountPct : 100;
+  const discountExceedsLimit = activeEmployee && discount > 0 && discountPct > maxAllowedDiscount;
+
+  function applyLoyaltyDiscount() {
+    if (!selectedCustomer || !selectedCustomer.isLoyaltyMember) return;
+    const loyaltyPct = parseFloat(selectedCustomer.loyaltyDiscountPct) || 0;
+    if (loyaltyPct > 0 && subtotal > 0) {
+      const loyaltyDiscount = (subtotal * loyaltyPct) / 100;
+      setDiscount(Math.round(loyaltyDiscount * 100) / 100);
+    }
+  }
+
   function selectCustomer(cid: string) {
     const c = customers?.find(c => c.id === Number(cid));
-    if (c) { setCustomerId(c.id); setCustomerName(c.name); setCustomerEmail(c.email ?? ""); }
+    if (c) {
+      setCustomerId(c.id);
+      setCustomerName(c.name);
+      setCustomerEmail(c.email ?? "");
+      setSelectedCustomer(c);
+    }
   }
 
   function handleSubmit(status: "draft" | "invoice" | "paid") {
     if (!items.length || items.every(i => !i.name)) {
       toast({ title: "Add at least one item", variant: "destructive" }); return;
     }
+    if (discountExceedsLimit) {
+      toast({ title: `Discount exceeds your limit (${maxAllowedDiscount}%)`, description: "Reduce the discount or ask a manager.", variant: "destructive" });
+      return;
+    }
     const payload: any = {
       customerId, customerName: customerName || undefined, customerEmail: customerEmail || undefined,
+      employeeId: activeEmployee?.id || undefined,
       status, taxRate, discount, notes: notes || undefined,
       paymentMethod: paymentMethod || undefined, dueDate: dueDate || undefined,
       items: items.filter(i => i.name).map(i => ({
@@ -129,7 +156,7 @@ export default function SaleForm({ isQuote = false }: { isQuote?: boolean }) {
       toast({ title: isEdit ? "Invoice updated" : "Invoice created", description: s.invoiceNumber });
       navigate(`/sales/${s.id}`);
     };
-    const onError = () => toast({ title: "Error saving", variant: "destructive" });
+    const onError = (e: any) => toast({ title: e?.message ?? "Error saving", variant: "destructive" });
     if (isEdit) updateSale.mutate({ id: id!, data: payload }, { onSuccess, onError });
     else createSale.mutate({ data: payload }, { onSuccess, onError });
   }
@@ -143,9 +170,21 @@ export default function SaleForm({ isQuote = false }: { isQuote?: boolean }) {
     <div className="space-y-5 max-w-3xl">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" onClick={() => navigate("/sales")} className="h-8 w-8"><ArrowLeft className="h-4 w-4" /></Button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-xl font-bold">{isEdit ? "Edit Invoice" : "New Invoice"}</h1>
         </div>
+        {activeEmployee ? (
+          <div className="flex items-center gap-1.5 text-xs px-2 py-1 rounded border border-primary/30 bg-primary/5">
+            <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+            <span className="font-medium">{activeEmployee.name}</span>
+            <span className={`${ROLE_COLORS[activeEmployee.role]}`}>· {ROLE_LABELS[activeEmployee.role]}</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground px-2 py-1 rounded border border-border">
+            <ShieldCheck className="h-3.5 w-3.5" />
+            No employee signed in
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -158,10 +197,28 @@ export default function SaleForm({ isQuote = false }: { isQuote?: boolean }) {
               <Select value={customerId ? String(customerId) : ""} onValueChange={selectCustomer}>
                 <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Walk-in / New Customer" /></SelectTrigger>
                 <SelectContent>
-                  {customers?.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
+                  {customers?.map(c => (
+                    <SelectItem key={c.id} value={String(c.id)}>
+                      <span className="flex items-center gap-1.5">
+                        {(c as any).isLoyaltyMember && <Star className="h-3 w-3 text-amber-400 fill-amber-400" />}
+                        {c.name}
+                      </span>
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
+            {selectedCustomer?.isLoyaltyMember && (
+              <div className="flex items-center justify-between rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2">
+                <div className="flex items-center gap-1.5">
+                  <Star className="h-3.5 w-3.5 text-amber-400 fill-amber-400" />
+                  <span className="text-xs font-medium text-amber-400">Loyalty Member — {parseFloat(selectedCustomer.loyaltyDiscountPct)}% discount</span>
+                </div>
+                <Button size="sm" variant="ghost" className="h-6 text-xs text-amber-400 hover:text-amber-300" onClick={applyLoyaltyDiscount}>
+                  Apply
+                </Button>
+              </div>
+            )}
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1">
                 <Label className="text-xs">Name</Label>
@@ -185,8 +242,24 @@ export default function SaleForm({ isQuote = false }: { isQuote?: boolean }) {
                 <Input className="h-8 text-sm" type="number" step="0.01" value={taxRate} onChange={e => setTaxRate(parseFloat(e.target.value) || 0)} />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Discount ($)</Label>
-                <Input className="h-8 text-sm" type="number" step="0.01" value={discount} onChange={e => setDiscount(parseFloat(e.target.value) || 0)} />
+                <Label className="text-xs flex items-center gap-1">
+                  Discount ($)
+                  {activeEmployee && <span className="text-muted-foreground">(max {maxAllowedDiscount}%)</span>}
+                </Label>
+                <Input
+                  className={`h-8 text-sm ${discountExceedsLimit ? "border-destructive" : ""}`}
+                  type="number" step="0.01"
+                  value={discount}
+                  onChange={e => setDiscount(parseFloat(e.target.value) || 0)}
+                />
+                {discountExceedsLimit && (
+                  <p className="text-xs text-destructive flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3" /> Exceeds your {maxAllowedDiscount}% limit
+                  </p>
+                )}
+                {activeEmployee && discount > 0 && !discountExceedsLimit && subtotal > 0 && (
+                  <p className="text-xs text-muted-foreground">{discountPct.toFixed(1)}% of subtotal</p>
+                )}
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Payment Method</Label>
@@ -226,7 +299,7 @@ export default function SaleForm({ isQuote = false }: { isQuote?: boolean }) {
               <button key={`s-${s.id}`} type="button" onClick={() => addItem({ type: "service", id: s.id, name: s.name, price: s.price, description: s.description ?? "" })}
                 className="text-left p-2 rounded border border-dashed hover:border-primary hover:bg-primary/5 transition-colors text-xs">
                 <div className="font-medium truncate">{s.name}</div>
-                <div className="text-teal-600 font-semibold">{formatCurrency(s.price)}</div>
+                <div className="text-primary font-semibold">{formatCurrency(s.price)}</div>
               </button>
             ))}
           </div>
@@ -264,7 +337,6 @@ export default function SaleForm({ isQuote = false }: { isQuote?: boolean }) {
             </div>
           ))}
 
-          {/* Totals */}
           <div className="mt-4 border-t pt-3 space-y-1 text-sm ml-auto max-w-xs">
             <div className="flex justify-between text-muted-foreground"><span>Subtotal</span><span>{formatCurrency(subtotal)}</span></div>
             {discount > 0 && <div className="flex justify-between text-muted-foreground"><span>Discount</span><span>-{formatCurrency(discount)}</span></div>}
@@ -274,18 +346,16 @@ export default function SaleForm({ isQuote = false }: { isQuote?: boolean }) {
         </CardContent>
       </Card>
 
-      {/* Notes */}
       <div className="space-y-1.5">
         <Label className="text-sm">Notes (optional)</Label>
         <Textarea rows={2} placeholder="Any notes for this invoice..." value={notes} onChange={e => setNotes(e.target.value)} />
       </div>
 
-      {/* Actions */}
       <div className="flex flex-wrap gap-2">
-        <Button onClick={() => handleSubmit("invoice")} disabled={createSale.isPending || updateSale.isPending}>
+        <Button onClick={() => handleSubmit("invoice")} disabled={createSale.isPending || updateSale.isPending || !!discountExceedsLimit}>
           {createSale.isPending || updateSale.isPending ? "Saving..." : isEdit ? "Update Invoice" : "Create Invoice"}
         </Button>
-        <Button variant="outline" onClick={() => handleSubmit("paid")} disabled={createSale.isPending || updateSale.isPending}>Mark as Paid</Button>
+        <Button variant="outline" onClick={() => handleSubmit("paid")} disabled={createSale.isPending || updateSale.isPending || !!discountExceedsLimit}>Mark as Paid</Button>
         <Button variant="ghost" onClick={() => handleSubmit("draft")} disabled={createSale.isPending || updateSale.isPending}>Save as Draft</Button>
         <Button variant="ghost" onClick={() => navigate("/sales")}>Cancel</Button>
       </div>

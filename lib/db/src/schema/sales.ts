@@ -8,6 +8,8 @@ export const salesTable = pgTable("sales", {
   customerId: integer("customer_id"),
   customerName: text("customer_name"),
   customerEmail: text("customer_email"),
+  employeeId: integer("employee_id"),
+  employeeName: text("employee_name"),
   status: text("status").notNull().default("draft"),
   subtotal: numeric("subtotal", { precision: 10, scale: 2 }).notNull().default("0"),
   taxRate: numeric("tax_rate", { precision: 5, scale: 2 }).notNull().default("0"),

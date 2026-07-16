@@ -93,61 +93,82 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* LIGHT MODE — Deep teal-blue with warm accents */
+/* DARK TERMINAL — PyQt-inspired dark palette */
 :root {
-  --button-outline: rgba(0,0,0,.10);
-  --badge-outline: rgba(0,0,0,.05);
-  --opaque-button-border-intensity: -8;
-  --elevate-1: rgba(0,0,0,.03);
-  --elevate-2: rgba(0,0,0,.08);
+  --button-outline: rgba(0,229,200,.12);
+  --badge-outline: rgba(0,229,200,.08);
+  --opaque-button-border-intensity: 6;
+  --elevate-1: rgba(0,229,200,.04);
+  --elevate-2: rgba(0,229,200,.08);
 
-  --background: 210 20% 97%;
-  --foreground: 213 30% 12%;
-  --border: 210 15% 88%;
-  --card: 0 0% 100%;
-  --card-foreground: 213 30% 12%;
-  --card-border: 210 15% 90%;
-  --sidebar: 216 28% 17%;
-  --sidebar-foreground: 210 20% 90%;
-  --sidebar-border: 216 25% 22%;
-  --sidebar-primary: 186 72% 45%;
-  --sidebar-primary-foreground: 216 28% 10%;
-  --sidebar-accent: 216 25% 24%;
-  --sidebar-accent-foreground: 210 20% 90%;
-  --sidebar-ring: 186 72% 45%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 213 30% 12%;
-  --popover-border: 210 15% 88%;
-  --primary: 186 72% 38%;
-  --primary-foreground: 0 0% 100%;
-  --secondary: 210 18% 93%;
-  --secondary-foreground: 213 25% 20%;
-  --muted: 210 15% 94%;
-  --muted-foreground: 213 15% 45%;
-  --accent: 186 60% 92%;
-  --accent-foreground: 186 60% 25%;
-  --destructive: 0 72% 51%;
+  /* Deep dark backgrounds */
+  --background: 240 35% 5%;
+  --foreground: 214 25% 88%;
+  --border: 240 25% 14%;
+
+  /* Cards — slightly lighter than bg */
+  --card: 240 30% 8%;
+  --card-foreground: 214 25% 88%;
+  --card-border: 240 25% 14%;
+
+  /* Sidebar — deepest dark */
+  --sidebar: 240 40% 4%;
+  --sidebar-foreground: 214 25% 80%;
+  --sidebar-border: 240 25% 12%;
+  --sidebar-primary: 173 100% 45%;
+  --sidebar-primary-foreground: 240 40% 4%;
+  --sidebar-accent: 240 30% 12%;
+  --sidebar-accent-foreground: 214 25% 88%;
+  --sidebar-ring: 173 100% 45%;
+
+  /* Popover */
+  --popover: 240 30% 9%;
+  --popover-foreground: 214 25% 88%;
+  --popover-border: 240 25% 16%;
+
+  /* Neon teal primary */
+  --primary: 173 100% 45%;
+  --primary-foreground: 240 40% 4%;
+
+  /* Secondary / interactive surfaces */
+  --secondary: 240 25% 13%;
+  --secondary-foreground: 214 25% 78%;
+
+  /* Muted */
+  --muted: 240 25% 11%;
+  --muted-foreground: 214 15% 48%;
+
+  /* Accent */
+  --accent: 173 60% 12%;
+  --accent-foreground: 173 100% 65%;
+
+  /* Danger */
+  --destructive: 0 72% 55%;
   --destructive-foreground: 0 0% 100%;
-  --input: 210 15% 85%;
-  --ring: 186 72% 38%;
-  --chart-1: 186 72% 38%;
-  --chart-2: 216 60% 52%;
-  --chart-3: 142 60% 40%;
-  --chart-4: 35 85% 52%;
-  --chart-5: 280 55% 52%;
 
-  --app-font-sans: 'Inter', system-ui, sans-serif;
+  /* Input */
+  --input: 240 25% 12%;
+  --ring: 173 100% 45%;
+
+  /* Charts — neon palette */
+  --chart-1: 173 100% 45%;
+  --chart-2: 210 100% 60%;
+  --chart-3: 280 80% 65%;
+  --chart-4: 40 100% 60%;
+  --chart-5: 0 80% 62%;
+
+  --app-font-sans: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
   --app-font-serif: Georgia, serif;
-  --app-font-mono: 'JetBrains Mono', monospace;
-  --radius: 0.5rem;
-  --shadow-sm: 0 1px 2px 0 rgba(0,0,0,.05);
-  --shadow: 0 1px 3px 0 rgba(0,0,0,.1), 0 1px 2px -1px rgba(0,0,0,.1);
-  --shadow-md: 0 4px 6px -1px rgba(0,0,0,.1), 0 2px 4px -2px rgba(0,0,0,.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,.1), 0 4px 6px -4px rgba(0,0,0,.1);
-  --tracking-normal: 0em;
+  --app-font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --radius: 0.375rem;
+  --shadow-sm: 0 1px 3px 0 rgba(0,0,0,.5);
+  --shadow: 0 2px 6px 0 rgba(0,0,0,.6);
+  --shadow-md: 0 4px 12px 0 rgba(0,0,0,.6);
+  --shadow-lg: 0 8px 24px 0 rgba(0,0,0,.7);
+  --tracking-normal: 0.01em;
   --spacing: 0.25rem;
 
-  --primary-border: hsl(from hsl(var(--primary)) h s calc(l + var(--opaque-button-border-intensity)));
+  --primary-border: hsl(173 100% 38%);
   --secondary-border: hsl(var(--secondary));
   --muted-border: hsl(var(--muted));
   --accent-border: hsl(var(--accent));

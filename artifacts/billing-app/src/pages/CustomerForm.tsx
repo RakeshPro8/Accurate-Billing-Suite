@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { useLocation, useParams } from "wouter";
 import {
@@ -13,7 +13,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, User } from "lucide-react";
+import { ArrowLeft, User, Star } from "lucide-react";
 
 interface FormData {
   name: string; email: string; phone: string; address: string; notes: string;
@@ -27,6 +27,9 @@ export default function CustomerForm() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  const [isLoyaltyMember, setIsLoyaltyMember] = useState(false);
+  const [loyaltyDiscountPct, setLoyaltyDiscountPct] = useState(5);
+
   const { data: customer, isLoading } = useGetCustomer(id!, {
     query: { enabled: isEdit, queryKey: getGetCustomerQueryKey(id!) }
   });
@@ -36,22 +39,28 @@ export default function CustomerForm() {
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>();
 
   useEffect(() => {
-    if (customer) reset({
-      name: customer.name,
-      email: customer.email ?? "",
-      phone: customer.phone ?? "",
-      address: customer.address ?? "",
-      notes: customer.notes ?? "",
-    });
+    if (customer) {
+      reset({
+        name: customer.name,
+        email: customer.email ?? "",
+        phone: customer.phone ?? "",
+        address: customer.address ?? "",
+        notes: customer.notes ?? "",
+      });
+      setIsLoyaltyMember((customer as any).isLoyaltyMember ?? false);
+      setLoyaltyDiscountPct(parseFloat((customer as any).loyaltyDiscountPct ?? "5") || 5);
+    }
   }, [customer, reset]);
 
   function onSubmit(data: FormData) {
-    const payload = {
+    const payload: any = {
       name: data.name,
       email: data.email || undefined,
       phone: data.phone || undefined,
       address: data.address || undefined,
       notes: data.notes || undefined,
+      isLoyaltyMember,
+      loyaltyDiscountPct: String(isLoyaltyMember ? loyaltyDiscountPct : 0),
     };
     if (isEdit) {
       updateCustomer.mutate({ id: id!, data: payload }, {
@@ -117,6 +126,40 @@ export default function CustomerForm() {
               <Label>Notes</Label>
               <Textarea {...register("notes")} placeholder="Any notes about this customer..." rows={2} />
             </div>
+
+            <div className="rounded-lg border border-amber-500/30 bg-amber-500/5 p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-2 cursor-pointer" htmlFor="loyalty-toggle">
+                  <Star className="h-4 w-4 text-amber-400" />
+                  <span className="font-semibold">Loyalty Member</span>
+                </Label>
+                <input
+                  type="checkbox"
+                  id="loyalty-toggle"
+                  checked={isLoyaltyMember}
+                  onChange={e => setIsLoyaltyMember(e.target.checked)}
+                  className="w-4 h-4 rounded accent-amber-500 cursor-pointer"
+                />
+              </div>
+              {isLoyaltyMember && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">Automatic Loyalty Discount (%)</Label>
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number" min="0" max="100" step="0.5"
+                      value={loyaltyDiscountPct}
+                      onChange={e => setLoyaltyDiscountPct(parseFloat(e.target.value) || 0)}
+                      className="w-28 h-8 text-sm"
+                    />
+                    <span className="text-xs text-muted-foreground">applied automatically when creating invoices</span>
+                  </div>
+                </div>
+              )}
+              {!isLoyaltyMember && (
+                <p className="text-xs text-muted-foreground">Enable to give this customer an automatic discount on every invoice.</p>
+              )}
+            </div>
+
             <div className="flex gap-3 pt-2">
               <Button type="submit" disabled={createCustomer.isPending || updateCustomer.isPending}>
                 {createCustomer.isPending || updateCustomer.isPending ? "Saving..." : isEdit ? "Save Changes" : "Create Customer"}
