@@ -148,8 +148,9 @@ export default function RepairDetail() {
 
   return (
     <div className="space-y-4">
-      {/* Toolbar */}
-      <div className="flex items-center justify-between gap-3 flex-wrap no-print">
+      <div className="no-print">
+        {/* Toolbar */}
+        <div className="flex items-center justify-between gap-3 flex-wrap">
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate("/repairs")}>
             <ArrowLeft className="h-4 w-4" />
@@ -386,15 +387,16 @@ export default function RepairDetail() {
           )}
         </div>
       </div>
+    </div>
 
       {/* Print invoice area */}
       <div ref={invoiceRef} className="invoice-print-area hidden print:block">
-        <div className="bg-white text-black rounded-xl border shadow-sm overflow-hidden p-8">
+        <div className="bg-white text-black rounded-xl border border-black/20 shadow-sm overflow-hidden p-8">
           <div className="flex justify-between items-start mb-8">
             <div>
               <div className="flex items-center gap-3 mb-2">
                 {settings?.logoUrl && (
-                  <div className="bg-white rounded border p-2">
+                  <div className="bg-white rounded border border-black/20 p-2">
                     <img src={settings.logoUrl} alt="Mobilinq" className="max-h-14 max-w-[140px] object-contain" />
                   </div>
                 )}
@@ -411,34 +413,34 @@ export default function RepairDetail() {
           </div>
           <div className="grid grid-cols-2 gap-8 mb-8">
             <div>
-              <p className="text-xs text-muted-foreground uppercase">Customer</p>
-              <p className="font-medium">{r.customerName || "Walk-in"}</p>
-              <p className="text-sm text-muted-foreground">{r.customerPhone}</p>
-              <p className="text-sm text-muted-foreground">{r.customerEmail}</p>
+              <p className="text-xs text-black/60 uppercase">Customer</p>
+              <p className="font-medium text-black">{r.customerName || "Walk-in"}</p>
+              <p className="text-sm text-black/70">{r.customerPhone}</p>
+              <p className="text-sm text-black/70">{r.customerEmail}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground uppercase">Device</p>
-              <p className="font-medium">{r.deviceType} {r.deviceBrand} {r.deviceModel}</p>
-              <p className="text-sm text-muted-foreground">SN: {r.serialNumber || "—"}</p>
-              <p className="text-sm text-muted-foreground">IMEI: {r.imei || "—"}</p>
+              <p className="text-xs text-black/60 uppercase">Device</p>
+              <p className="font-medium text-black">{r.deviceType} {r.deviceBrand} {r.deviceModel}</p>
+              <p className="text-sm text-black/70">SN: {r.serialNumber || "—"}</p>
+              <p className="text-sm text-black/70">IMEI: {r.imei || "—"}</p>
             </div>
           </div>
           <div className="mb-8">
-            <p className="text-xs text-muted-foreground uppercase">Problem</p>
-            <p className="text-sm mt-1">{r.problemDescription}</p>
+            <p className="text-xs text-black/60 uppercase">Problem</p>
+            <p className="text-sm mt-1 text-black/90">{r.problemDescription}</p>
           </div>
           {parts.length > 0 && (
             <table className="w-full text-sm mb-8">
-              <thead className="border-b">
-                <tr><th className="text-left py-2">Part</th><th className="text-right py-2">Qty</th><th className="text-right py-2">Price</th><th className="text-right py-2">Total</th></tr>
+              <thead className="border-b border-black/20">
+                <tr><th className="text-left py-2 text-black/70">Part</th><th className="text-right py-2 text-black/70">Qty</th><th className="text-right py-2 text-black/70">Price</th><th className="text-right py-2 text-black/70">Total</th></tr>
               </thead>
               <tbody>
                 {parts.map(p => (
-                  <tr key={p.id} className="border-b">
-                    <td className="py-2">{p.name}</td>
-                    <td className="text-right py-2">{p.quantity}</td>
-                    <td className="text-right py-2">{formatCurrency(p.unitPrice)}</td>
-                    <td className="text-right py-2 font-medium">{formatCurrency(p.total)}</td>
+                  <tr key={p.id} className="border-b border-black/10">
+                    <td className="py-2 text-black">{p.name}</td>
+                    <td className="text-right py-2 text-black">{p.quantity}</td>
+                    <td className="text-right py-2 text-black">{formatCurrency(p.unitPrice)}</td>
+                    <td className="text-right py-2 font-medium text-black">{formatCurrency(p.total)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -446,8 +448,8 @@ export default function RepairDetail() {
           )}
           <div className="flex justify-end">
             <div className="w-56 space-y-1 text-sm">
-              <div className="flex justify-between"><span className="text-muted-foreground">Deposit</span><span>{formatCurrency(r.deposit)}</span></div>
-              <div className="flex justify-between font-bold border-t pt-2"><span>Balance Due</span><span>{formatCurrency(r.balance)}</span></div>
+              <div className="flex justify-between"><span className="text-black/70">Deposit</span><span className="text-black">{formatCurrency(r.deposit)}</span></div>
+              <div className="flex justify-between font-bold border-t border-black/20 pt-2 text-black"><span>Balance Due</span><span>{formatCurrency(r.balance)}</span></div>
             </div>
           </div>
         </div>

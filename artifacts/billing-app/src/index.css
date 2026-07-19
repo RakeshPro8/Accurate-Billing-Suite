@@ -223,6 +223,21 @@
   .no-print { display: none !important; }
   body { background: white; }
 
+  /* Print-only area takes over the whole page */
+  .invoice-print-area,
+  body.receipt-mode .receipt-print-area {
+    display: block !important;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 99999;
+    background: white;
+    overflow: auto;
+    padding: 0.5rem;
+  }
+
   /* Default (A4 invoice / quotation) */
   .receipt-print-area { display: none !important; }
 

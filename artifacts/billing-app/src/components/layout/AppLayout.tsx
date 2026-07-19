@@ -88,7 +88,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background flex w-full">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-60 flex-col border-r bg-card">
+      <aside className="hidden md:flex w-60 flex-col border-r bg-card no-print">
         <div className="p-4 border-b h-14 flex items-center">
           <h1 className="text-lg font-bold text-primary flex items-center gap-2 font-mono tracking-tight">
             <img src="/logo.jpg" alt="Mobilinq" className="h-8 w-auto rounded bg-white object-contain p-0.5" />
@@ -105,7 +105,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0">
-        <header className="h-14 border-b bg-card flex items-center px-4 md:px-6 justify-between shrink-0">
+        <header className="h-14 border-b bg-card flex items-center px-4 md:px-6 justify-between shrink-0 no-print">
           <div className="flex items-center md:hidden">
             <Sheet>
               <SheetTrigger asChild>
@@ -114,7 +114,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                   <span className="sr-only">Toggle menu</span>
                 </Button>
               </SheetTrigger>
-              <SheetContent side="left" className="w-60 p-0 bg-card">
+              <SheetContent side="left" className="w-60 p-0 bg-card no-print">
                 <div className="p-4 border-b h-14 flex items-center">
                   <h1 className="text-lg font-bold text-primary flex items-center gap-2 font-mono">
                     <img src="/logo.jpg" alt="Mobilinq" className="h-8 w-auto rounded bg-white object-contain p-0.5" />
