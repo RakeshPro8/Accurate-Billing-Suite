@@ -15,4 +15,8 @@ export interface ProductUpdate {
   cost?: number;
   stock?: number;
   unit?: string;
+  trackSerials?: boolean;
+  warrantyDays?: number;
+  isRefurbished?: boolean;
+  isBundle?: boolean;
 }

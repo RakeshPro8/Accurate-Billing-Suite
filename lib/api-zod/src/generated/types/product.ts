@@ -18,5 +18,10 @@ export interface Product {
   cost?: number | null;
   stock: number;
   unit?: string;
+  trackSerials?: boolean;
+  /** @nullable */
+  warrantyDays?: number | null;
+  isRefurbished?: boolean;
+  isBundle?: boolean;
   createdAt: string;
 }

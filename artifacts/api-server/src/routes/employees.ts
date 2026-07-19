@@ -17,9 +17,9 @@ function parseEmployee(e: typeof employeesTable.$inferSelect) {
 router.get("/", async (_req, res) => {
   try {
     const employees = await db.select().from(employeesTable).orderBy(employeesTable.name);
-    res.json(employees.map(parseEmployee));
+    return res.json(employees.map(parseEmployee));
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    return res.status(500).json({ error: String(e) });
   }
 });
 
@@ -41,9 +41,9 @@ router.post("/", async (req, res) => {
       maxDiscountPct: String(maxDiscountPct ?? 0),
       active: active !== false,
     }).returning();
-    res.status(201).json(parseEmployee(emp));
+    return res.status(201).json(parseEmployee(emp));
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    return res.status(500).json({ error: String(e) });
   }
 });
 
@@ -67,9 +67,9 @@ router.patch("/:id", async (req, res) => {
     if (active !== undefined) updates.active = active;
     const [emp] = await db.update(employeesTable).set(updates).where(eq(employeesTable.id, id)).returning();
     if (!emp) return res.status(404).json({ error: "Employee not found." });
-    res.json(parseEmployee(emp));
+    return res.json(parseEmployee(emp));
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    return res.status(500).json({ error: String(e) });
   }
 });
 
@@ -77,9 +77,9 @@ router.delete("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
     await db.delete(employeesTable).where(eq(employeesTable.id, id));
-    res.status(204).send();
+    return res.status(204).send();
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    return res.status(500).json({ error: String(e) });
   }
 });
 
@@ -91,12 +91,12 @@ router.post("/verify-pin", async (req, res) => {
     if (!emp) return res.status(404).json({ error: "Employee not found." });
     if (!emp.active) return res.status(403).json({ error: "Employee account is inactive." });
     if (emp.pin !== String(pin)) return res.status(401).json({ error: "Incorrect PIN." });
-    res.json({
+    return res.json({
       verified: true,
       employee: parseEmployee(emp),
     });
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    return res.status(500).json({ error: String(e) });
   }
 });
 

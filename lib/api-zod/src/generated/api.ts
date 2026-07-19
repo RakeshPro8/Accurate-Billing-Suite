@@ -34,6 +34,10 @@ export const GetProductsResponseItem = zod.object({
   "cost": zod.number().nullish(),
   "stock": zod.number(),
   "unit": zod.string().optional(),
+  "trackSerials": zod.boolean().optional(),
+  "warrantyDays": zod.number().nullish(),
+  "isRefurbished": zod.boolean().optional(),
+  "isBundle": zod.boolean().optional(),
   "createdAt": zod.string()
 })
 export const GetProductsResponse = zod.array(GetProductsResponseItem)
@@ -50,7 +54,11 @@ export const CreateProductBody = zod.object({
   "price": zod.number(),
   "cost": zod.number().optional(),
   "stock": zod.number(),
-  "unit": zod.string().optional()
+  "unit": zod.string().optional(),
+  "trackSerials": zod.boolean().optional(),
+  "warrantyDays": zod.number().optional(),
+  "isRefurbished": zod.boolean().optional(),
+  "isBundle": zod.boolean().optional()
 })
 
 
@@ -71,6 +79,10 @@ export const GetProductResponse = zod.object({
   "cost": zod.number().nullish(),
   "stock": zod.number(),
   "unit": zod.string().optional(),
+  "trackSerials": zod.boolean().optional(),
+  "warrantyDays": zod.number().nullish(),
+  "isRefurbished": zod.boolean().optional(),
+  "isBundle": zod.boolean().optional(),
   "createdAt": zod.string()
 })
 
@@ -90,7 +102,11 @@ export const UpdateProductBody = zod.object({
   "price": zod.number().optional(),
   "cost": zod.number().optional(),
   "stock": zod.number().optional(),
-  "unit": zod.string().optional()
+  "unit": zod.string().optional(),
+  "trackSerials": zod.boolean().optional(),
+  "warrantyDays": zod.number().optional(),
+  "isRefurbished": zod.boolean().optional(),
+  "isBundle": zod.boolean().optional()
 })
 
 export const UpdateProductResponse = zod.object({
@@ -103,6 +119,10 @@ export const UpdateProductResponse = zod.object({
   "cost": zod.number().nullish(),
   "stock": zod.number(),
   "unit": zod.string().optional(),
+  "trackSerials": zod.boolean().optional(),
+  "warrantyDays": zod.number().nullish(),
+  "isRefurbished": zod.boolean().optional(),
+  "isBundle": zod.boolean().optional(),
   "createdAt": zod.string()
 })
 
@@ -482,6 +502,7 @@ export const GetQuotationsResponseItem = zod.object({
   "total": zod.number(),
   "notes": zod.string().nullish(),
   "validUntil": zod.string().nullish(),
+  "expiresAt": zod.string().nullish(),
   "items": zod.array(zod.object({
   "id": zod.number(),
   "type": zod.string(),
@@ -510,6 +531,7 @@ export const CreateQuotationBody = zod.object({
   "discount": zod.number().optional(),
   "notes": zod.string().optional(),
   "validUntil": zod.string().optional(),
+  "expiresAt": zod.string().optional(),
   "items": zod.array(zod.object({
   "type": zod.string(),
   "productId": zod.number().optional(),
@@ -544,6 +566,7 @@ export const GetQuotationResponse = zod.object({
   "total": zod.number(),
   "notes": zod.string().nullish(),
   "validUntil": zod.string().nullish(),
+  "expiresAt": zod.string().nullish(),
   "items": zod.array(zod.object({
   "id": zod.number(),
   "type": zod.string(),
@@ -576,6 +599,7 @@ export const UpdateQuotationBody = zod.object({
   "discount": zod.number().optional(),
   "notes": zod.string().optional(),
   "validUntil": zod.string().optional(),
+  "expiresAt": zod.string().optional(),
   "items": zod.array(zod.object({
   "type": zod.string(),
   "productId": zod.number().optional(),
@@ -602,6 +626,7 @@ export const UpdateQuotationResponse = zod.object({
   "total": zod.number(),
   "notes": zod.string().nullish(),
   "validUntil": zod.string().nullish(),
+  "expiresAt": zod.string().nullish(),
   "items": zod.array(zod.object({
   "id": zod.number(),
   "type": zod.string(),
@@ -769,6 +794,8 @@ export const GetSettingsResponse = zod.object({
   "logoUrl": zod.string().nullish(),
   "currency": zod.string(),
   "taxRate": zod.number(),
+  "gstRate": zod.number().nullish(),
+  "qstRate": zod.number().nullish(),
   "invoicePrefix": zod.string().optional(),
   "quotePrefix": zod.string().optional(),
   "invoiceFooter": zod.string().nullish(),
@@ -789,6 +816,8 @@ export const UpdateSettingsBody = zod.object({
   "businessEmail": zod.string().optional(),
   "currency": zod.string().optional(),
   "taxRate": zod.number().optional(),
+  "gstRate": zod.number().optional(),
+  "qstRate": zod.number().optional(),
   "invoicePrefix": zod.string().optional(),
   "quotePrefix": zod.string().optional(),
   "invoiceFooter": zod.string().optional(),
@@ -808,6 +837,8 @@ export const UpdateSettingsResponse = zod.object({
   "logoUrl": zod.string().nullish(),
   "currency": zod.string(),
   "taxRate": zod.number(),
+  "gstRate": zod.number().nullish(),
+  "qstRate": zod.number().nullish(),
   "invoicePrefix": zod.string().optional(),
   "quotePrefix": zod.string().optional(),
   "invoiceFooter": zod.string().nullish(),
@@ -815,6 +846,349 @@ export const UpdateSettingsResponse = zod.object({
   "smtpHost": zod.string().nullish(),
   "smtpPort": zod.number().nullish(),
   "smtpUser": zod.string().nullish()
+})
+
+
+/**
+ * @summary List all repair tickets
+ */
+export const GetRepairsQueryParams = zod.object({
+  "status": zod.coerce.string().optional(),
+  "customerId": zod.coerce.number().optional(),
+  "technicianId": zod.coerce.number().optional(),
+  "dateFrom": zod.coerce.string().optional(),
+  "dateTo": zod.coerce.string().optional()
+})
+
+export const GetRepairsResponseItem = zod.object({
+  "id": zod.number(),
+  "ticketNumber": zod.string(),
+  "customerId": zod.number().nullish(),
+  "customerName": zod.string().nullish(),
+  "customerPhone": zod.string().nullish(),
+  "customerEmail": zod.string().nullish(),
+  "deviceType": zod.string(),
+  "deviceBrand": zod.string().nullish(),
+  "deviceModel": zod.string().nullish(),
+  "serialNumber": zod.string().nullish(),
+  "imei": zod.string().nullish(),
+  "devicePassword": zod.string().nullish(),
+  "problemDescription": zod.string().nullish(),
+  "diagnosticNotes": zod.string().nullish(),
+  "status": zod.string(),
+  "priority": zod.string(),
+  "technicianId": zod.number().nullish(),
+  "technicianName": zod.string().nullish(),
+  "estimatedCost": zod.number().nullish(),
+  "deposit": zod.number(),
+  "total": zod.number(),
+  "balance": zod.number(),
+  "notifiedAt": zod.string().nullish(),
+  "pickedUpAt": zod.string().nullish(),
+  "completedAt": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string().optional(),
+  "photos": zod.array(zod.object({
+  "id": zod.number(),
+  "repairId": zod.number(),
+  "caption": zod.string().nullish(),
+  "dataUrl": zod.string(),
+  "createdAt": zod.string()
+})).optional(),
+  "parts": zod.array(zod.object({
+  "id": zod.number(),
+  "repairId": zod.number(),
+  "productId": zod.number(),
+  "name": zod.string(),
+  "serialNumber": zod.string().nullish(),
+  "quantity": zod.number(),
+  "unitPrice": zod.number(),
+  "cost": zod.number().nullish(),
+  "total": zod.number(),
+  "createdAt": zod.string()
+})).optional()
+})
+export const GetRepairsResponse = zod.array(GetRepairsResponseItem)
+
+
+/**
+ * @summary Create a repair ticket
+ */
+export const CreateRepairBody = zod.object({
+  "customerId": zod.number().optional(),
+  "customerName": zod.string().optional(),
+  "customerPhone": zod.string().optional(),
+  "customerEmail": zod.string().optional(),
+  "deviceType": zod.string(),
+  "deviceBrand": zod.string().optional(),
+  "deviceModel": zod.string().optional(),
+  "serialNumber": zod.string().optional(),
+  "imei": zod.string().optional(),
+  "devicePassword": zod.string().optional(),
+  "problemDescription": zod.string(),
+  "diagnosticNotes": zod.string().optional(),
+  "status": zod.string().optional(),
+  "priority": zod.string().optional(),
+  "technicianId": zod.number().optional(),
+  "estimatedCost": zod.number().optional(),
+  "deposit": zod.number().optional(),
+  "total": zod.number().optional()
+})
+
+
+/**
+ * @summary Get a repair ticket with photos and parts
+ */
+export const GetRepairParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetRepairResponse = zod.object({
+  "id": zod.number(),
+  "ticketNumber": zod.string(),
+  "customerId": zod.number().nullish(),
+  "customerName": zod.string().nullish(),
+  "customerPhone": zod.string().nullish(),
+  "customerEmail": zod.string().nullish(),
+  "deviceType": zod.string(),
+  "deviceBrand": zod.string().nullish(),
+  "deviceModel": zod.string().nullish(),
+  "serialNumber": zod.string().nullish(),
+  "imei": zod.string().nullish(),
+  "devicePassword": zod.string().nullish(),
+  "problemDescription": zod.string().nullish(),
+  "diagnosticNotes": zod.string().nullish(),
+  "status": zod.string(),
+  "priority": zod.string(),
+  "technicianId": zod.number().nullish(),
+  "technicianName": zod.string().nullish(),
+  "estimatedCost": zod.number().nullish(),
+  "deposit": zod.number(),
+  "total": zod.number(),
+  "balance": zod.number(),
+  "notifiedAt": zod.string().nullish(),
+  "pickedUpAt": zod.string().nullish(),
+  "completedAt": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string().optional(),
+  "photos": zod.array(zod.object({
+  "id": zod.number(),
+  "repairId": zod.number(),
+  "caption": zod.string().nullish(),
+  "dataUrl": zod.string(),
+  "createdAt": zod.string()
+})).optional(),
+  "parts": zod.array(zod.object({
+  "id": zod.number(),
+  "repairId": zod.number(),
+  "productId": zod.number(),
+  "name": zod.string(),
+  "serialNumber": zod.string().nullish(),
+  "quantity": zod.number(),
+  "unitPrice": zod.number(),
+  "cost": zod.number().nullish(),
+  "total": zod.number(),
+  "createdAt": zod.string()
+})).optional()
+})
+
+
+/**
+ * @summary Update a repair ticket
+ */
+export const UpdateRepairParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateRepairBody = zod.object({
+  "customerId": zod.number().optional(),
+  "customerName": zod.string().optional(),
+  "customerPhone": zod.string().optional(),
+  "customerEmail": zod.string().optional(),
+  "deviceType": zod.string().optional(),
+  "deviceBrand": zod.string().optional(),
+  "deviceModel": zod.string().optional(),
+  "serialNumber": zod.string().optional(),
+  "imei": zod.string().optional(),
+  "devicePassword": zod.string().optional(),
+  "problemDescription": zod.string().optional(),
+  "diagnosticNotes": zod.string().optional(),
+  "status": zod.string().optional(),
+  "priority": zod.string().optional(),
+  "technicianId": zod.number().optional(),
+  "estimatedCost": zod.number().optional(),
+  "deposit": zod.number().optional(),
+  "total": zod.number().optional(),
+  "pickedUpAt": zod.string().optional(),
+  "completedAt": zod.string().optional()
+})
+
+export const UpdateRepairResponse = zod.object({
+  "id": zod.number(),
+  "ticketNumber": zod.string(),
+  "customerId": zod.number().nullish(),
+  "customerName": zod.string().nullish(),
+  "customerPhone": zod.string().nullish(),
+  "customerEmail": zod.string().nullish(),
+  "deviceType": zod.string(),
+  "deviceBrand": zod.string().nullish(),
+  "deviceModel": zod.string().nullish(),
+  "serialNumber": zod.string().nullish(),
+  "imei": zod.string().nullish(),
+  "devicePassword": zod.string().nullish(),
+  "problemDescription": zod.string().nullish(),
+  "diagnosticNotes": zod.string().nullish(),
+  "status": zod.string(),
+  "priority": zod.string(),
+  "technicianId": zod.number().nullish(),
+  "technicianName": zod.string().nullish(),
+  "estimatedCost": zod.number().nullish(),
+  "deposit": zod.number(),
+  "total": zod.number(),
+  "balance": zod.number(),
+  "notifiedAt": zod.string().nullish(),
+  "pickedUpAt": zod.string().nullish(),
+  "completedAt": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string().optional(),
+  "photos": zod.array(zod.object({
+  "id": zod.number(),
+  "repairId": zod.number(),
+  "caption": zod.string().nullish(),
+  "dataUrl": zod.string(),
+  "createdAt": zod.string()
+})).optional(),
+  "parts": zod.array(zod.object({
+  "id": zod.number(),
+  "repairId": zod.number(),
+  "productId": zod.number(),
+  "name": zod.string(),
+  "serialNumber": zod.string().nullish(),
+  "quantity": zod.number(),
+  "unitPrice": zod.number(),
+  "cost": zod.number().nullish(),
+  "total": zod.number(),
+  "createdAt": zod.string()
+})).optional()
+})
+
+
+/**
+ * @summary Delete a repair ticket
+ */
+export const DeleteRepairParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Advance repair status and log history
+ */
+export const UpdateRepairStatusParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateRepairStatusBody = zod.object({
+  "status": zod.string(),
+  "notes": zod.string().optional(),
+  "notify": zod.boolean().optional()
+})
+
+export const UpdateRepairStatusResponse = zod.object({
+  "id": zod.number(),
+  "ticketNumber": zod.string(),
+  "customerId": zod.number().nullish(),
+  "customerName": zod.string().nullish(),
+  "customerPhone": zod.string().nullish(),
+  "customerEmail": zod.string().nullish(),
+  "deviceType": zod.string(),
+  "deviceBrand": zod.string().nullish(),
+  "deviceModel": zod.string().nullish(),
+  "serialNumber": zod.string().nullish(),
+  "imei": zod.string().nullish(),
+  "devicePassword": zod.string().nullish(),
+  "problemDescription": zod.string().nullish(),
+  "diagnosticNotes": zod.string().nullish(),
+  "status": zod.string(),
+  "priority": zod.string(),
+  "technicianId": zod.number().nullish(),
+  "technicianName": zod.string().nullish(),
+  "estimatedCost": zod.number().nullish(),
+  "deposit": zod.number(),
+  "total": zod.number(),
+  "balance": zod.number(),
+  "notifiedAt": zod.string().nullish(),
+  "pickedUpAt": zod.string().nullish(),
+  "completedAt": zod.string().nullish(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string().optional(),
+  "photos": zod.array(zod.object({
+  "id": zod.number(),
+  "repairId": zod.number(),
+  "caption": zod.string().nullish(),
+  "dataUrl": zod.string(),
+  "createdAt": zod.string()
+})).optional(),
+  "parts": zod.array(zod.object({
+  "id": zod.number(),
+  "repairId": zod.number(),
+  "productId": zod.number(),
+  "name": zod.string(),
+  "serialNumber": zod.string().nullish(),
+  "quantity": zod.number(),
+  "unitPrice": zod.number(),
+  "cost": zod.number().nullish(),
+  "total": zod.number(),
+  "createdAt": zod.string()
+})).optional()
+})
+
+
+/**
+ * @summary Add an intake photo to a repair
+ */
+export const AddRepairPhotoParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AddRepairPhotoBody = zod.object({
+  "caption": zod.string().optional(),
+  "dataUrl": zod.string()
+})
+
+
+/**
+ * @summary Remove a repair photo
+ */
+export const DeleteRepairPhotoParams = zod.object({
+  "id": zod.coerce.number(),
+  "photoId": zod.coerce.number()
+})
+
+
+/**
+ * @summary Add a part used and deduct stock
+ */
+export const AddRepairPartParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AddRepairPartBody = zod.object({
+  "productId": zod.number(),
+  "name": zod.string(),
+  "serialNumber": zod.string().optional(),
+  "quantity": zod.number(),
+  "unitPrice": zod.number(),
+  "cost": zod.number().optional()
+})
+
+
+/**
+ * @summary Remove a part and restore stock
+ */
+export const RemoveRepairPartParams = zod.object({
+  "id": zod.coerce.number(),
+  "partId": zod.coerce.number()
 })
 
 

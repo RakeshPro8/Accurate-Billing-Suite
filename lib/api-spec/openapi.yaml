@@ -23,6 +23,8 @@ tags:
     description: Business reports
   - name: settings
     description: App settings
+  - name: repairs
+    description: Repair tickets and work orders
 
 paths:
   /healthz:
@@ -656,6 +658,230 @@ paths:
               schema:
                 $ref: "#/components/schemas/Settings"
 
+  # ─── Repairs ───────────────────────────────────────────
+  /repairs:
+    get:
+      operationId: getRepairs
+      tags: [repairs]
+      summary: List all repair tickets
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+        - name: customerId
+          in: query
+          schema:
+            type: integer
+        - name: technicianId
+          in: query
+          schema:
+            type: integer
+        - name: dateFrom
+          in: query
+          schema:
+            type: string
+        - name: dateTo
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of repair tickets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Repair"
+    post:
+      operationId: createRepair
+      tags: [repairs]
+      summary: Create a repair ticket
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RepairInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Repair"
+
+  /repairs/{id}:
+    get:
+      operationId: getRepair
+      tags: [repairs]
+      summary: Get a repair ticket with photos and parts
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Repair ticket
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Repair"
+    patch:
+      operationId: updateRepair
+      tags: [repairs]
+      summary: Update a repair ticket
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RepairUpdate"
+      responses:
+        "200":
+          description: Updated repair
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Repair"
+    delete:
+      operationId: deleteRepair
+      tags: [repairs]
+      summary: Delete a repair ticket
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /repairs/{id}/status:
+    post:
+      operationId: updateRepairStatus
+      tags: [repairs]
+      summary: Advance repair status and log history
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RepairStatusChange"
+      responses:
+        "200":
+          description: Updated repair status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Repair"
+
+  /repairs/{id}/photos:
+    post:
+      operationId: addRepairPhoto
+      tags: [repairs]
+      summary: Add an intake photo to a repair
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RepairPhotoInput"
+      responses:
+        "201":
+          description: Photo added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RepairPhoto"
+
+  /repairs/{id}/photos/{photoId}:
+    delete:
+      operationId: deleteRepairPhoto
+      tags: [repairs]
+      summary: Remove a repair photo
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: photoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /repairs/{id}/parts:
+    post:
+      operationId: addRepairPart
+      tags: [repairs]
+      summary: Add a part used and deduct stock
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RepairPartInput"
+      responses:
+        "201":
+          description: Part added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RepairPart"
+
+  /repairs/{id}/parts/{partId}:
+    delete:
+      operationId: removeRepairPart
+      tags: [repairs]
+      summary: Remove a part and restore stock
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: partId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Removed
+
 components:
   schemas:
     HealthStatus:
@@ -670,41 +896,53 @@ components:
       type: object
       required: [id, name, sku, category, price, stock, createdAt]
       properties:
-        id:           { type: integer }
-        name:         { type: string }
-        sku:          { type: string }
-        category:     { type: string }
-        description:  { type: ["string", "null"] }
-        price:        { type: number }
-        cost:         { type: ["number", "null"] }
-        stock:        { type: integer }
-        unit:         { type: string }
-        createdAt:    { type: string }
+        id:             { type: integer }
+        name:           { type: string }
+        sku:            { type: string }
+        category:       { type: string }
+        description:    { type: ["string", "null"] }
+        price:          { type: number }
+        cost:           { type: ["number", "null"] }
+        stock:          { type: integer }
+        unit:           { type: string }
+        trackSerials:   { type: boolean }
+        warrantyDays:   { type: ["integer", "null"] }
+        isRefurbished:  { type: boolean }
+        isBundle:       { type: boolean }
+        createdAt:      { type: string }
 
     ProductInput:
       type: object
       required: [name, sku, category, price, stock]
       properties:
-        name:         { type: string }
-        sku:          { type: string }
-        category:     { type: string }
-        description:  { type: string }
-        price:        { type: number }
-        cost:         { type: number }
-        stock:        { type: integer }
-        unit:         { type: string }
+        name:           { type: string }
+        sku:            { type: string }
+        category:       { type: string }
+        description:    { type: string }
+        price:          { type: number }
+        cost:           { type: number }
+        stock:          { type: integer }
+        unit:           { type: string }
+        trackSerials:   { type: boolean }
+        warrantyDays:   { type: integer }
+        isRefurbished:  { type: boolean }
+        isBundle:       { type: boolean }
 
     ProductUpdate:
       type: object
       properties:
-        name:         { type: string }
-        sku:          { type: string }
-        category:     { type: string }
-        description:  { type: string }
-        price:        { type: number }
-        cost:         { type: number }
-        stock:        { type: integer }
-        unit:         { type: string }
+        name:           { type: string }
+        sku:            { type: string }
+        category:       { type: string }
+        description:    { type: string }
+        price:          { type: number }
+        cost:           { type: number }
+        stock:          { type: integer }
+        unit:           { type: string }
+        trackSerials:   { type: boolean }
+        warrantyDays:   { type: integer }
+        isRefurbished:  { type: boolean }
+        isBundle:       { type: boolean }
 
     # ── Service ──
     Service:
@@ -881,6 +1119,7 @@ components:
         total:          { type: number }
         notes:          { type: ["string", "null"] }
         validUntil:     { type: ["string", "null"] }
+        expiresAt:      { type: ["string", "null"] }
         items:
           type: array
           items:
@@ -898,6 +1137,7 @@ components:
         discount:       { type: number }
         notes:          { type: string }
         validUntil:     { type: string }
+        expiresAt:      { type: string }
         items:
           type: array
           items:
@@ -914,6 +1154,7 @@ components:
         discount:       { type: number }
         notes:          { type: string }
         validUntil:     { type: string }
+        expiresAt:      { type: string }
         items:
           type: array
           items:
@@ -1035,6 +1276,8 @@ components:
         logoUrl:          { type: ["string", "null"] }
         currency:         { type: string }
         taxRate:          { type: number }
+        gstRate:          { type: ["number", "null"] }
+        qstRate:          { type: ["number", "null"] }
         invoicePrefix:    { type: string }
         quotePrefix:      { type: string }
         invoiceFooter:    { type: ["string", "null"] }
@@ -1052,6 +1295,8 @@ components:
         businessEmail:    { type: string }
         currency:         { type: string }
         taxRate:          { type: number }
+        gstRate:          { type: number }
+        qstRate:          { type: number }
         invoicePrefix:    { type: string }
         quotePrefix:      { type: string }
         invoiceFooter:    { type: string }
@@ -1060,3 +1305,142 @@ components:
         smtpPort:         { type: integer }
         smtpUser:         { type: string }
         smtpPass:         { type: string }
+
+    # ── Repair ──
+    Repair:
+      type: object
+      required: [id, ticketNumber, deviceType, status, priority, deposit, total, balance, createdAt]
+      properties:
+        id:                 { type: integer }
+        ticketNumber:       { type: string }
+        customerId:         { type: ["integer", "null"] }
+        customerName:       { type: ["string", "null"] }
+        customerPhone:      { type: ["string", "null"] }
+        customerEmail:      { type: ["string", "null"] }
+        deviceType:         { type: string }
+        deviceBrand:        { type: ["string", "null"] }
+        deviceModel:        { type: ["string", "null"] }
+        serialNumber:       { type: ["string", "null"] }
+        imei:               { type: ["string", "null"] }
+        devicePassword:     { type: ["string", "null"] }
+        problemDescription: { type: ["string", "null"] }
+        diagnosticNotes:    { type: ["string", "null"] }
+        status:             { type: string }
+        priority:           { type: string }
+        technicianId:       { type: ["integer", "null"] }
+        technicianName:     { type: ["string", "null"] }
+        estimatedCost:      { type: ["number", "null"] }
+        deposit:            { type: number }
+        total:              { type: number }
+        balance:            { type: number }
+        notifiedAt:         { type: ["string", "null"] }
+        pickedUpAt:         { type: ["string", "null"] }
+        completedAt:        { type: ["string", "null"] }
+        createdAt:          { type: string }
+        updatedAt:          { type: string }
+        photos:
+          type: array
+          items:
+            $ref: "#/components/schemas/RepairPhoto"
+        parts:
+          type: array
+          items:
+            $ref: "#/components/schemas/RepairPart"
+
+    RepairInput:
+      type: object
+      required: [deviceType, problemDescription]
+      properties:
+        customerId:         { type: integer }
+        customerName:       { type: string }
+        customerPhone:      { type: string }
+        customerEmail:      { type: string }
+        deviceType:         { type: string }
+        deviceBrand:        { type: string }
+        deviceModel:        { type: string }
+        serialNumber:       { type: string }
+        imei:               { type: string }
+        devicePassword:     { type: string }
+        problemDescription: { type: string }
+        diagnosticNotes:    { type: string }
+        status:             { type: string }
+        priority:           { type: string }
+        technicianId:       { type: integer }
+        estimatedCost:      { type: number }
+        deposit:            { type: number }
+        total:              { type: number }
+
+    RepairUpdate:
+      type: object
+      properties:
+        customerId:         { type: integer }
+        customerName:       { type: string }
+        customerPhone:      { type: string }
+        customerEmail:      { type: string }
+        deviceType:         { type: string }
+        deviceBrand:        { type: string }
+        deviceModel:        { type: string }
+        serialNumber:       { type: string }
+        imei:               { type: string }
+        devicePassword:     { type: string }
+        problemDescription: { type: string }
+        diagnosticNotes:    { type: string }
+        status:             { type: string }
+        priority:           { type: string }
+        technicianId:       { type: integer }
+        estimatedCost:      { type: number }
+        deposit:            { type: number }
+        total:              { type: number }
+        pickedUpAt:         { type: string }
+        completedAt:        { type: string }
+
+    RepairStatusChange:
+      type: object
+      required: [status]
+      properties:
+        status:     { type: string }
+        notes:      { type: string }
+        notify:     { type: boolean }
+
+    RepairPhoto:
+      type: object
+      required: [id, repairId, dataUrl, createdAt]
+      properties:
+        id:         { type: integer }
+        repairId:   { type: integer }
+        caption:    { type: ["string", "null"] }
+        dataUrl:    { type: string }
+        createdAt:  { type: string }
+
+    RepairPhotoInput:
+      type: object
+      required: [dataUrl]
+      properties:
+        caption:    { type: string }
+        dataUrl:    { type: string }
+
+    RepairPart:
+      type: object
+      required: [id, repairId, productId, name, quantity, unitPrice, total, createdAt]
+      properties:
+        id:           { type: integer }
+        repairId:     { type: integer }
+        productId:    { type: integer }
+        name:         { type: string }
+        serialNumber: { type: ["string", "null"] }
+        quantity:     { type: number }
+        unitPrice:    { type: number }
+        cost:         { type: ["number", "null"] }
+        total:        { type: number }
+        createdAt:    { type: string }
+
+    RepairPartInput:
+      type: object
+      required: [productId, name, quantity, unitPrice]
+      properties:
+        productId:    { type: integer }
+        name:         { type: string }
+        serialNumber: { type: string }
+        quantity:     { type: number }
+        unitPrice:    { type: number }
+        cost:         { type: number }

@@ -261,7 +261,7 @@ export default function Reports() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <SummaryCard title="Revenue" value={formatCurrency(weekly.totalRevenue)} icon={DollarSign} />
                 <SummaryCard title="Sales" value={String(weekly.totalSales)} icon={ShoppingCart} />
-                <SummaryCard title="Avg Sale" value={formatCurrency(weekly.avgSaleValue)} icon={TrendingUp} />
+                <SummaryCard title="Avg Sale" value={formatCurrency(weekly.avgSaleValue ?? 0)} icon={TrendingUp} />
                 <SummaryCard title="New Customers" value={String(weekly.newCustomers)} icon={Users} />
               </div>
               <Card>
@@ -306,7 +306,7 @@ export default function Reports() {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                 <SummaryCard title="Revenue" value={formatCurrency(monthly.totalRevenue)} icon={DollarSign} />
                 <SummaryCard title="Total Sales" value={String(monthly.totalSales)} icon={ShoppingCart} />
-                <SummaryCard title="Avg Sale" value={formatCurrency(monthly.avgSaleValue)} icon={TrendingUp} />
+                <SummaryCard title="Avg Sale" value={formatCurrency(monthly.avgSaleValue ?? 0)} icon={TrendingUp} />
                 <SummaryCard title="New Customers" value={String(monthly.newCustomers)} icon={Users} />
               </div>
               {monthly.salesList?.length > 0 && (

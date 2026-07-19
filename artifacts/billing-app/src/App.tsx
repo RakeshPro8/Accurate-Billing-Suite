@@ -20,6 +20,9 @@ import Products from "@/pages/Products";
 import Reports from "@/pages/Reports";
 import Settings from "@/pages/Settings";
 import Employees from "@/pages/Employees";
+import RepairsList from "@/pages/RepairsList";
+import RepairForm from "@/pages/RepairForm";
+import RepairDetail from "@/pages/RepairDetail";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -37,22 +40,26 @@ function Router() {
         <Route path="/" component={Dashboard} />
 
         <Route path="/sales" component={SalesList} />
-        <Route path="/sales/new" component={SaleForm} />
+        <Route path="/sales/new">{() => <SaleForm />}</Route>
         <Route path="/sales/:id/edit">{(params) => <SaleForm key={params.id} />}</Route>
         <Route path="/sales/:id" component={SaleDetail} />
 
         <Route path="/quotations" component={QuotationsList} />
-        <Route path="/quotations/new" component={QuotationForm} />
+        <Route path="/quotations/new">{() => <QuotationForm />}</Route>
         <Route path="/quotations/:id/edit">{(params) => <QuotationForm key={params.id} />}</Route>
         <Route path="/quotations/:id" component={QuotationDetail} />
 
         <Route path="/customers" component={Customers} />
-        <Route path="/customers/new" component={CustomerForm} />
+        <Route path="/customers/new">{() => <CustomerForm />}</Route>
         <Route path="/customers/:id/edit">{(params) => <CustomerForm key={params.id} />}</Route>
         <Route path="/customers/:id" component={CustomerDetail} />
 
         <Route path="/products" component={Products} />
         <Route path="/employees" component={Employees} />
+        <Route path="/repairs" component={RepairsList} />
+        <Route path="/repairs/new" component={RepairForm} />
+        <Route path="/repairs/:id/edit">{(params) => <RepairForm key={params.id} />}</Route>
+        <Route path="/repairs/:id" component={RepairDetail} />
         <Route path="/reports" component={Reports} />
         <Route path="/settings" component={Settings} />
 

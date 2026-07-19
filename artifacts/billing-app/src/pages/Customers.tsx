@@ -95,8 +95,8 @@ export default function Customers() {
                 </div>
                 <div className="flex items-center gap-4 shrink-0">
                   <div className="hidden sm:block text-right">
-                    <p className="text-sm font-semibold">{formatCurrency(customer.totalSpent)}</p>
-                    <p className="text-xs text-muted-foreground">{customer.totalOrders} orders</p>
+                    <p className="text-sm font-semibold">{formatCurrency(customer.totalSpent ?? 0)}</p>
+                    <p className="text-xs text-muted-foreground">{customer.totalOrders ?? 0} orders</p>
                   </div>
                   <div className="flex items-center gap-1">
                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => navigate(`/customers/${customer.id}`)}>

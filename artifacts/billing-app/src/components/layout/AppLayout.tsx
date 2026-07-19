@@ -2,7 +2,7 @@ import { useState, ReactNode } from "react";
 import { Link, useLocation } from "wouter";
 import {
   LayoutDashboard, Receipt, FileText, Users, PackageSearch,
-  BarChart3, Settings, Menu, ShieldCheck, UserCircle2, LogIn
+  BarChart3, Settings, Menu, ShieldCheck, UserCircle2, LogIn, Wrench
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -15,6 +15,7 @@ const navItems = [
   { href: "/quotations", label: "Quotations", icon: FileText },
   { href: "/customers", label: "Customers", icon: Users },
   { href: "/products", label: "Products & Services", icon: PackageSearch },
+  { href: "/repairs", label: "Repairs", icon: Wrench },
   { href: "/employees", label: "Employees", icon: ShieldCheck },
   { href: "/reports", label: "Reports", icon: BarChart3 },
   { href: "/settings", label: "Settings", icon: Settings },

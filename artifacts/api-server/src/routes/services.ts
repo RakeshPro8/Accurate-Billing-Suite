@@ -8,13 +8,13 @@ const router = Router();
 router.get("/", async (_req, res) => {
   try {
     const services = await db.select().from(servicesTable).orderBy(servicesTable.name);
-    res.json(services.map(s => ({
+    return res.json(services.map(s => ({
       ...s,
       price: parseFloat(s.price),
       createdAt: s.createdAt.toISOString(),
     })));
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    return res.status(500).json({ error: String(e) });
   }
 });
 
@@ -28,9 +28,9 @@ router.post("/", async (req, res) => {
       price: String(body.price),
       duration: body.duration || null,
     }).returning();
-    res.status(201).json({ ...service, price: parseFloat(service.price), createdAt: service.createdAt.toISOString() });
+    return res.status(201).json({ ...service, price: parseFloat(service.price), createdAt: service.createdAt.toISOString() });
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    return res.status(500).json({ error: String(e) });
   }
 });
 
@@ -45,18 +45,18 @@ router.patch("/:id", async (req, res) => {
     if (body.duration !== undefined) updates.duration = body.duration;
     const [service] = await db.update(servicesTable).set(updates).where(eq(servicesTable.id, Number(req.params.id))).returning();
     if (!service) return res.status(404).json({ error: "Not found" });
-    res.json({ ...service, price: parseFloat(service.price), createdAt: service.createdAt.toISOString() });
+    return res.json({ ...service, price: parseFloat(service.price), createdAt: service.createdAt.toISOString() });
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    return res.status(500).json({ error: String(e) });
   }
 });
 
 router.delete("/:id", async (req, res) => {
   try {
     await db.delete(servicesTable).where(eq(servicesTable.id, Number(req.params.id)));
-    res.status(204).send();
+    return res.status(204).send();
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    return res.status(500).json({ error: String(e) });
   }
 });
 

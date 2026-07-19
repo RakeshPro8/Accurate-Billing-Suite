@@ -21,6 +21,11 @@ export interface Product {
   cost?: number | null;
   stock: number;
   unit?: string;
+  trackSerials?: boolean;
+  /** @nullable */
+  warrantyDays?: number | null;
+  isRefurbished?: boolean;
+  isBundle?: boolean;
   createdAt: string;
 }
 
@@ -33,6 +38,10 @@ export interface ProductInput {
   cost?: number;
   stock: number;
   unit?: string;
+  trackSerials?: boolean;
+  warrantyDays?: number;
+  isRefurbished?: boolean;
+  isBundle?: boolean;
 }
 
 export interface ProductUpdate {
@@ -44,6 +53,10 @@ export interface ProductUpdate {
   cost?: number;
   stock?: number;
   unit?: string;
+  trackSerials?: boolean;
+  warrantyDays?: number;
+  isRefurbished?: boolean;
+  isBundle?: boolean;
 }
 
 export interface Service {
@@ -206,6 +219,8 @@ export interface Quotation {
   notes?: string | null;
   /** @nullable */
   validUntil?: string | null;
+  /** @nullable */
+  expiresAt?: string | null;
   items?: LineItem[];
   createdAt: string;
 }
@@ -218,6 +233,7 @@ export interface QuotationInput {
   discount?: number;
   notes?: string;
   validUntil?: string;
+  expiresAt?: string;
   items: LineItemInput[];
 }
 
@@ -230,6 +246,7 @@ export interface QuotationUpdate {
   discount?: number;
   notes?: string;
   validUntil?: string;
+  expiresAt?: string;
   items?: LineItemInput[];
 }
 
@@ -314,6 +331,10 @@ export interface Settings {
   logoUrl?: string | null;
   currency: string;
   taxRate: number;
+  /** @nullable */
+  gstRate?: number | null;
+  /** @nullable */
+  qstRate?: number | null;
   invoicePrefix?: string;
   quotePrefix?: string;
   /** @nullable */
@@ -335,6 +356,8 @@ export interface SettingsUpdate {
   businessEmail?: string;
   currency?: string;
   taxRate?: number;
+  gstRate?: number;
+  qstRate?: number;
   invoicePrefix?: string;
   quotePrefix?: string;
   invoiceFooter?: string;
@@ -343,6 +366,143 @@ export interface SettingsUpdate {
   smtpPort?: number;
   smtpUser?: string;
   smtpPass?: string;
+}
+
+export interface RepairPhoto {
+  id: number;
+  repairId: number;
+  /** @nullable */
+  caption?: string | null;
+  dataUrl: string;
+  createdAt: string;
+}
+
+export interface RepairPart {
+  id: number;
+  repairId: number;
+  productId: number;
+  name: string;
+  /** @nullable */
+  serialNumber?: string | null;
+  quantity: number;
+  unitPrice: number;
+  /** @nullable */
+  cost?: number | null;
+  total: number;
+  createdAt: string;
+}
+
+export interface Repair {
+  id: number;
+  ticketNumber: string;
+  /** @nullable */
+  customerId?: number | null;
+  /** @nullable */
+  customerName?: string | null;
+  /** @nullable */
+  customerPhone?: string | null;
+  /** @nullable */
+  customerEmail?: string | null;
+  deviceType: string;
+  /** @nullable */
+  deviceBrand?: string | null;
+  /** @nullable */
+  deviceModel?: string | null;
+  /** @nullable */
+  serialNumber?: string | null;
+  /** @nullable */
+  imei?: string | null;
+  /** @nullable */
+  devicePassword?: string | null;
+  /** @nullable */
+  problemDescription?: string | null;
+  /** @nullable */
+  diagnosticNotes?: string | null;
+  status: string;
+  priority: string;
+  /** @nullable */
+  technicianId?: number | null;
+  /** @nullable */
+  technicianName?: string | null;
+  /** @nullable */
+  estimatedCost?: number | null;
+  deposit: number;
+  total: number;
+  balance: number;
+  /** @nullable */
+  notifiedAt?: string | null;
+  /** @nullable */
+  pickedUpAt?: string | null;
+  /** @nullable */
+  completedAt?: string | null;
+  createdAt: string;
+  updatedAt?: string;
+  photos?: RepairPhoto[];
+  parts?: RepairPart[];
+}
+
+export interface RepairInput {
+  customerId?: number;
+  customerName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  deviceType: string;
+  deviceBrand?: string;
+  deviceModel?: string;
+  serialNumber?: string;
+  imei?: string;
+  devicePassword?: string;
+  problemDescription: string;
+  diagnosticNotes?: string;
+  status?: string;
+  priority?: string;
+  technicianId?: number;
+  estimatedCost?: number;
+  deposit?: number;
+  total?: number;
+}
+
+export interface RepairUpdate {
+  customerId?: number;
+  customerName?: string;
+  customerPhone?: string;
+  customerEmail?: string;
+  deviceType?: string;
+  deviceBrand?: string;
+  deviceModel?: string;
+  serialNumber?: string;
+  imei?: string;
+  devicePassword?: string;
+  problemDescription?: string;
+  diagnosticNotes?: string;
+  status?: string;
+  priority?: string;
+  technicianId?: number;
+  estimatedCost?: number;
+  deposit?: number;
+  total?: number;
+  pickedUpAt?: string;
+  completedAt?: string;
+}
+
+export interface RepairStatusChange {
+  status: string;
+  notes?: string;
+  notify?: boolean;
+}
+
+export interface RepairPhotoInput {
+  caption?: string;
+  dataUrl: string;
+}
+
+export interface RepairPartInput {
+  productId: number;
+  name: string;
+  serialNumber?: string;
+  quantity: number;
+  unitPrice: number;
+  cost?: number;
 }
 
 export type GetProductsParams = {
@@ -372,5 +532,13 @@ weekOffset?: number;
 export type GetMonthlyReportParams = {
 year?: number;
 month?: number;
+};
+
+export type GetRepairsParams = {
+status?: string;
+customerId?: number;
+technicianId?: number;
+dateFrom?: string;
+dateTo?: string;
 };
 

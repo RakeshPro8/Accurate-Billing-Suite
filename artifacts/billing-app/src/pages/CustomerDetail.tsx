@@ -75,7 +75,7 @@ export default function CustomerDetail() {
               <div className="bg-primary/10 p-2 rounded-lg"><DollarSign className="h-5 w-5 text-primary" /></div>
               <div>
                 <p className="text-xs text-muted-foreground">Total Spent</p>
-                <p className="text-lg font-bold">{formatCurrency(customer.totalSpent)}</p>
+                <p className="text-lg font-bold">{formatCurrency(customer.totalSpent ?? 0)}</p>
               </div>
             </CardContent>
           </Card>

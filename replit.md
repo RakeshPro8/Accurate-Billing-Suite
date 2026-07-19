@@ -1,6 +1,6 @@
-# [Project name]
+# BillPro
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+All-in-one billing and repair shop operations app: sales, quotations, customers, inventory, employees, reports, and work-order/repair ticketing.
 
 ## Run & Operate
 
@@ -22,24 +22,44 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `lib/api-spec/openapi.yaml` — source of truth for API contracts and generated hooks
+- `lib/db/src/schema/` — Drizzle schemas, one file per domain
+- `lib/db/src/schema/repairs.ts` — repair tickets, intake photos, and repair parts
+- `artifacts/api-server/src/routes/` — Express route handlers
+- `artifacts/billing-app/src/pages/` — React page components
+- `artifacts/billing-app/src/components/ui/` — shadcn/ui components themed for BillPro
+- `artifacts/billing-app/src/index.css` — dark PyQt terminal theme CSS variables
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- OpenAPI-first: update the spec first, then run codegen to keep frontend hooks, Zod validators, and backend types in sync.
+- Repair intake photos are stored as base64 `data_url` in PostgreSQL to keep the feature self-contained. Object Storage would require Replit Auth for protected uploads, which conflicts with the existing PIN-based employee auth model.
+- Express routes consistently `return` the response object so TypeScript strict checks pass without declaring explicit return types.
+- Optional Radix Select choices use a `"none"` sentinel value because empty string is reserved for the placeholder state.
+- Employee auth is PIN-based and kept in localStorage via `EmployeeContext`; no JWT or OAuth is used.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- Point-of-sale sales with invoicing, payments, and printable receipts
+- Customer database with order history and total spent tracking
+- Product and service catalog with stock tracking
+- Quotation workflow with status lifecycle and conversion to sales
+- Employee management with PIN sign-in and discount limits
+- Repair/work-order tracking: intake, diagnostic, parts, QA, pickup, and customer notifications
+- Dashboard reports for revenue, sales, and top products
+- Settings for business profile, tax rates, SMTP, and receipt branding
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+_None recorded yet._
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- After changing `lib/api-spec/openapi.yaml`, run `pnpm --filter @workspace/api-spec run codegen` and `pnpm --filter @workspace/db run push` before testing.
+- Express routes must `return` the `res` object in every branch, or `tsc` will fail with `TS7030`.
+- Do not use `<SelectItem value="">`; Radix rejects empty item values.
 
 ## Pointers
 
 - See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- See `.agents/memory/repair-ticketing.md` for repair-module implementation decisions

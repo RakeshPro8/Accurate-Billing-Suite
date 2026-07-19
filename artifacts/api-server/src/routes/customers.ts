@@ -34,14 +34,14 @@ router.get("/", async (req, res) => {
     }
 
     const customers = await baseQuery.orderBy(customersTable.name);
-    res.json(customers.map(c => ({
+    return res.json(customers.map(c => ({
       ...c,
       totalSpent: parseFloat(String(c.totalSpent)),
       totalOrders: Number(c.totalOrders),
       createdAt: c.createdAt.toISOString(),
     })));
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    return res.status(500).json({ error: String(e) });
   }
 });
 
@@ -55,9 +55,9 @@ router.post("/", async (req, res) => {
       address: body.address || null,
       notes: body.notes || null,
     }).returning();
-    res.status(201).json({ ...customer, totalSpent: 0, totalOrders: 0, createdAt: customer.createdAt.toISOString() });
+    return res.status(201).json({ ...customer, totalSpent: 0, totalOrders: 0, createdAt: customer.createdAt.toISOString() });
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    return res.status(500).json({ error: String(e) });
   }
 });
 
@@ -70,14 +70,14 @@ router.get("/:id", async (req, res) => {
       totalSpent: sql<number>`coalesce(sum(${salesTable.total}::numeric), 0)`,
       totalOrders: sql<number>`count(${salesTable.id})`,
     }).from(salesTable).where(eq(salesTable.customerId, id));
-    res.json({
+    return res.json({
       ...customer,
       totalSpent: parseFloat(String(stats.totalSpent)),
       totalOrders: Number(stats.totalOrders),
       createdAt: customer.createdAt.toISOString(),
     });
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    return res.status(500).json({ error: String(e) });
   }
 });
 
@@ -92,18 +92,18 @@ router.patch("/:id", async (req, res) => {
     if (body.notes !== undefined) updates.notes = body.notes;
     const [customer] = await db.update(customersTable).set(updates).where(eq(customersTable.id, Number(req.params.id))).returning();
     if (!customer) return res.status(404).json({ error: "Not found" });
-    res.json({ ...customer, totalSpent: 0, totalOrders: 0, createdAt: customer.createdAt.toISOString() });
+    return res.json({ ...customer, totalSpent: 0, totalOrders: 0, createdAt: customer.createdAt.toISOString() });
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    return res.status(500).json({ error: String(e) });
   }
 });
 
 router.delete("/:id", async (req, res) => {
   try {
     await db.delete(customersTable).where(eq(customersTable.id, Number(req.params.id)));
-    res.status(204).send();
+    return res.status(204).send();
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    return res.status(500).json({ error: String(e) });
   }
 });
 

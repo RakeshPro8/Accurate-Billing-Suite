@@ -1,3 +1,4 @@
 - [BillPro Stack & Conventions](billpro-stack.md) — full-stack billing app: React+Vite, Express, PostgreSQL+Drizzle, Orval-generated hooks, wouter routing.
 - [BillPro Employee Auth Design](billpro-employee-auth.md) — employees use PIN-based session stored in localStorage via EmployeeContext; no JWT/OAuth.
 - [BillPro Theme](billpro-theme.md) — dark PyQt terminal theme applied via :root CSS variables; primary = hsl(173 100% 45%) neon teal; monospaced font stack.
+- [Repair Ticketing Implementation](repair-ticketing.md) — base64 photos in PostgreSQL, OpenAPI-first workflow, strict return rules in Express routes, Radix Select empty-value constraint.

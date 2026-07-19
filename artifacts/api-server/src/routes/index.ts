@@ -8,6 +8,7 @@ import quotationsRouter from "./quotations";
 import reportsRouter from "./reports";
 import settingsRouter from "./settings";
 import employeesRouter from "./employees";
+import repairsRouter from "./repairs";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use("/quotations", quotationsRouter);
 router.use("/reports", reportsRouter);
 router.use("/settings", settingsRouter);
 router.use("/employees", employeesRouter);
+router.use("/repairs", repairsRouter);
 
 export default router;

@@ -48,12 +48,12 @@ router.get("/", async (req, res) => {
     if (status) q = q.where(eq(quotationsTable.status, status));
     const quotes = await q.orderBy(sql`${quotationsTable.createdAt} desc`);
     const items = await db.select().from(quotationLineItemsTable);
-    res.json(quotes.map(quo => ({
+    return res.json(quotes.map(quo => ({
       ...parseQuote(quo),
       items: items.filter(i => i.quotationId === quo.id).map(parseItem),
     })));
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    return res.status(500).json({ error: String(e) });
   }
 });
 
@@ -95,9 +95,9 @@ router.post("/", async (req, res) => {
       }).returning();
       return li;
     }));
-    res.status(201).json({ ...parseQuote(quote), items: lineItems.map(parseItem) });
+    return res.status(201).json({ ...parseQuote(quote), items: lineItems.map(parseItem) });
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    return res.status(500).json({ error: String(e) });
   }
 });
 
@@ -107,9 +107,9 @@ router.get("/:id", async (req, res) => {
     const [quote] = await db.select().from(quotationsTable).where(eq(quotationsTable.id, id));
     if (!quote) return res.status(404).json({ error: "Not found" });
     const items = await db.select().from(quotationLineItemsTable).where(eq(quotationLineItemsTable.quotationId, id));
-    res.json({ ...parseQuote(quote), items: items.map(parseItem) });
+    return res.json({ ...parseQuote(quote), items: items.map(parseItem) });
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    return res.status(500).json({ error: String(e) });
   }
 });
 
@@ -153,9 +153,9 @@ router.patch("/:id", async (req, res) => {
     const [quote] = await db.update(quotationsTable).set(updates).where(eq(quotationsTable.id, id)).returning();
     if (!quote) return res.status(404).json({ error: "Not found" });
     const items = await db.select().from(quotationLineItemsTable).where(eq(quotationLineItemsTable.quotationId, id));
-    res.json({ ...parseQuote(quote), items: items.map(parseItem) });
+    return res.json({ ...parseQuote(quote), items: items.map(parseItem) });
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    return res.status(500).json({ error: String(e) });
   }
 });
 
@@ -164,9 +164,9 @@ router.delete("/:id", async (req, res) => {
     const id = Number(req.params.id);
     await db.delete(quotationLineItemsTable).where(eq(quotationLineItemsTable.quotationId, id));
     await db.delete(quotationsTable).where(eq(quotationsTable.id, id));
-    res.status(204).send();
+    return res.status(204).send();
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    return res.status(500).json({ error: String(e) });
   }
 });
 
@@ -209,7 +209,7 @@ router.post("/:id/convert", async (req, res) => {
       return li;
     }));
     await db.update(quotationsTable).set({ status: "converted" }).where(eq(quotationsTable.id, id));
-    res.status(201).json({
+    return res.status(201).json({
       ...sale,
       subtotal: parseFloat(sale.subtotal),
       taxRate: parseFloat(sale.taxRate),
@@ -226,7 +226,7 @@ router.post("/:id/convert", async (req, res) => {
       })),
     });
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    return res.status(500).json({ error: String(e) });
   }
 });
 

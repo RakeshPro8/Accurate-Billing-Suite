@@ -119,9 +119,9 @@ export default function SaleDetail() {
       total: i.total,
     })),
     subtotal: sale.subtotal,
-    taxRate: sale.taxRate,
-    tax: sale.tax,
-    discount: sale.discount,
+    taxRate: sale.taxRate ?? 0,
+    tax: sale.tax ?? 0,
+    discount: sale.discount ?? 0,
     total: sale.total,
     notes: sale.notes ?? undefined,
   };
@@ -233,7 +233,7 @@ export default function SaleDetail() {
                     </td>
                     <td className="py-2.5 text-right">{item.quantity}</td>
                     <td className="py-2.5 text-right">{formatCurrency(item.unitPrice)}</td>
-                    <td className="py-2.5 text-right">{item.discount > 0 ? `-${formatCurrency(item.discount)}` : "—"}</td>
+                    <td className="py-2.5 text-right">{(item.discount ?? 0) > 0 ? `-${formatCurrency(item.discount ?? 0)}` : "—"}</td>
                     <td className="py-2.5 text-right font-semibold">{formatCurrency(item.total)}</td>
                   </tr>
                 ))}
@@ -244,11 +244,11 @@ export default function SaleDetail() {
             <div className="flex justify-end">
               <div className="w-64 space-y-1.5 text-sm">
                 <div className="flex justify-between text-muted-foreground"><span>Subtotal</span><span>{formatCurrency(sale.subtotal)}</span></div>
-                {sale.discount > 0 && (
-                  <div className="flex justify-between text-muted-foreground"><span>Discount</span><span>-{formatCurrency(sale.discount)}</span></div>
+                {(sale.discount ?? 0) > 0 && (
+                  <div className="flex justify-between text-muted-foreground"><span>Discount</span><span>-{formatCurrency(sale.discount ?? 0)}</span></div>
                 )}
-                {sale.taxRate > 0 && (
-                  <div className="flex justify-between text-muted-foreground"><span>Tax ({sale.taxRate}%)</span><span>{formatCurrency(sale.tax)}</span></div>
+                {(sale.taxRate ?? 0) > 0 && (
+                  <div className="flex justify-between text-muted-foreground"><span>Tax ({sale.taxRate ?? 0}%)</span><span>{formatCurrency(sale.tax ?? 0)}</span></div>
                 )}
                 <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2 text-[#0d4d47]">
                   <span>TOTAL</span>

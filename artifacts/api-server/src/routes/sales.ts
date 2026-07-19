@@ -60,12 +60,12 @@ router.get("/", async (req, res) => {
     if (conds.length) q = q.where(and(...conds));
     const sales = await q.orderBy(sql`${salesTable.createdAt} desc`);
     const items = await db.select().from(saleLineItemsTable);
-    res.json(sales.map(s => ({
+    return res.json(sales.map(s => ({
       ...parseSale(s),
       items: items.filter(i => i.saleId === s.id).map(parseItem),
     })));
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    return res.status(500).json({ error: String(e) });
   }
 });
 
@@ -135,9 +135,9 @@ router.post("/", async (req, res) => {
       }).returning();
       return li;
     }));
-    res.status(201).json({ ...parseSale(sale), items: lineItems.map(parseItem) });
+    return res.status(201).json({ ...parseSale(sale), items: lineItems.map(parseItem) });
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    return res.status(500).json({ error: String(e) });
   }
 });
 
@@ -147,9 +147,9 @@ router.get("/:id", async (req, res) => {
     const [sale] = await db.select().from(salesTable).where(eq(salesTable.id, id));
     if (!sale) return res.status(404).json({ error: "Not found" });
     const items = await db.select().from(saleLineItemsTable).where(eq(saleLineItemsTable.saleId, id));
-    res.json({ ...parseSale(sale), items: items.map(parseItem) });
+    return res.json({ ...parseSale(sale), items: items.map(parseItem) });
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    return res.status(500).json({ error: String(e) });
   }
 });
 
@@ -205,9 +205,9 @@ router.patch("/:id", async (req, res) => {
     const [sale] = await db.update(salesTable).set(updates).where(eq(salesTable.id, id)).returning();
     if (!sale) return res.status(404).json({ error: "Not found" });
     const items = await db.select().from(saleLineItemsTable).where(eq(saleLineItemsTable.saleId, id));
-    res.json({ ...parseSale(sale), items: items.map(parseItem) });
+    return res.json({ ...parseSale(sale), items: items.map(parseItem) });
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    return res.status(500).json({ error: String(e) });
   }
 });
 
@@ -216,9 +216,9 @@ router.delete("/:id", async (req, res) => {
     const id = Number(req.params.id);
     await db.delete(saleLineItemsTable).where(eq(saleLineItemsTable.saleId, id));
     await db.delete(salesTable).where(eq(salesTable.id, id));
-    res.status(204).send();
+    return res.status(204).send();
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    return res.status(500).json({ error: String(e) });
   }
 });
 
@@ -276,9 +276,9 @@ router.post("/:id/send-email", async (req, res) => {
       `,
     });
 
-    res.json({ message: `Invoice emailed to ${toEmail}` });
+    return res.json({ message: `Invoice emailed to ${toEmail}` });
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    return res.status(500).json({ error: String(e) });
   }
 });
 

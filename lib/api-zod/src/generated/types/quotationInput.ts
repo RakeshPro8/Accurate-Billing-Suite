@@ -15,5 +15,6 @@ export interface QuotationInput {
   discount?: number;
   notes?: string;
   validUntil?: string;
+  expiresAt?: string;
   items: LineItemInput[];
 }

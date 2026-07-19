@@ -16,5 +16,6 @@ export interface QuotationUpdate {
   discount?: number;
   notes?: string;
   validUntil?: string;
+  expiresAt?: string;
   items?: LineItemInput[];
 }

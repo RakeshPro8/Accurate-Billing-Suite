@@ -1,4 +1,4 @@
-import { pgTable, serial, text, numeric, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, numeric, integer, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -12,6 +12,10 @@ export const productsTable = pgTable("products", {
   cost: numeric("cost", { precision: 10, scale: 2 }),
   stock: integer("stock").notNull().default(0),
   unit: text("unit").notNull().default("pcs"),
+  trackSerials: boolean("track_serials").notNull().default(false),
+  warrantyDays: integer("warranty_days"),
+  isRefurbished: boolean("is_refurbished").notNull().default(false),
+  isBundle: boolean("is_bundle").notNull().default(false),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

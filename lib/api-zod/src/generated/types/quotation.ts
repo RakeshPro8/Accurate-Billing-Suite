@@ -26,6 +26,8 @@ export interface Quotation {
   notes?: string | null;
   /** @nullable */
   validUntil?: string | null;
+  /** @nullable */
+  expiresAt?: string | null;
   items?: LineItem[];
   createdAt: string;
 }

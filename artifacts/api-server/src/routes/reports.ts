@@ -59,7 +59,7 @@ router.get("/dashboard", async (_req, res) => {
       .groupBy(sql`date_trunc('day', created_at)`)
       .orderBy(sql`date_trunc('day', created_at)`);
 
-    res.json({
+    return res.json({
       totalRevenueMtd:  parseFloat(String(mtdStats.revenue)),
       totalSalesMtd:    Number(mtdStats.count),
       totalCustomers:   Number(totalCustomers),
@@ -74,7 +74,7 @@ router.get("/dashboard", async (_req, res) => {
       })),
     });
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    return res.status(500).json({ error: String(e) });
   }
 });
 
@@ -114,7 +114,7 @@ router.get("/weekly", async (req, res) => {
     });
     const topItems = Object.values(itemMap).sort((a, b) => b.totalRevenue - a.totalRevenue).slice(0, 5);
 
-    res.json({
+    return res.json({
       weekStart: weekStart.toISOString().split("T")[0],
       weekEnd:   weekEnd.toISOString().split("T")[0],
       totalRevenue,
@@ -125,7 +125,7 @@ router.get("/weekly", async (req, res) => {
       dailyBreakdown: Object.entries(dailyMap).map(([date, v]) => ({ date, ...v })),
     });
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    return res.status(500).json({ error: String(e) });
   }
 });
 
@@ -153,7 +153,7 @@ router.get("/monthly", async (req, res) => {
       weekMap[w].salesCount++;
     });
 
-    res.json({
+    return res.json({
       year, month,
       totalRevenue,
       totalSales:   sales.length,
@@ -172,7 +172,7 @@ router.get("/monthly", async (req, res) => {
       })),
     });
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    return res.status(500).json({ error: String(e) });
   }
 });
 
@@ -185,9 +185,9 @@ router.get("/top-products", async (_req, res) => {
       map[i.name].totalRevenue += parseFloat(i.total);
       map[i.name].totalQty    += parseFloat(i.quantity);
     });
-    res.json(Object.values(map).sort((a, b) => b.totalRevenue - a.totalRevenue).slice(0, 10));
+    return res.json(Object.values(map).sort((a, b) => b.totalRevenue - a.totalRevenue).slice(0, 10));
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    return res.status(500).json({ error: String(e) });
   }
 });
 
@@ -207,13 +207,13 @@ router.get("/revenue-by-category", async (_req, res) => {
       catMap[cat] = (catMap[cat] || 0) + parseFloat(i.total);
     });
     const total = Object.values(catMap).reduce((a, b) => a + b, 0) || 1;
-    res.json(Object.entries(catMap).map(([category, revenue]) => ({
+    return res.json(Object.entries(catMap).map(([category, revenue]) => ({
       category,
       revenue,
       percentage: Math.round((revenue / total) * 100),
     })));
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    return res.status(500).json({ error: String(e) });
   }
 });
 

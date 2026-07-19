@@ -27,9 +27,9 @@ router.get("/", async (_req, res) => {
         quotePrefix: "QUO-",
       }).returning();
     }
-    res.json(parseSettings(settings));
+    return res.json(parseSettings(settings));
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    return res.status(500).json({ error: String(e) });
   }
 });
 
@@ -54,9 +54,9 @@ router.patch("/", async (req, res) => {
       [settings] = await db.update(settingsTable).set(updates)
         .where(sql`id = ${settings.id}`).returning();
     }
-    res.json(parseSettings(settings));
+    return res.json(parseSettings(settings));
   } catch (e) {
-    res.status(500).json({ error: String(e) });
+    return res.status(500).json({ error: String(e) });
   }
 });
 

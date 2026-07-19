@@ -13,6 +13,8 @@ export interface SettingsUpdate {
   businessEmail?: string;
   currency?: string;
   taxRate?: number;
+  gstRate?: number;
+  qstRate?: number;
   invoicePrefix?: string;
   quotePrefix?: string;
   invoiceFooter?: string;

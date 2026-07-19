@@ -19,6 +19,10 @@ export interface Settings {
   logoUrl?: string | null;
   currency: string;
   taxRate: number;
+  /** @nullable */
+  gstRate?: number | null;
+  /** @nullable */
+  qstRate?: number | null;
   invoicePrefix?: string;
   quotePrefix?: string;
   /** @nullable */
