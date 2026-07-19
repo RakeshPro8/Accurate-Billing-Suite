@@ -1,6 +1,6 @@
-# BillPro
+# Mobilinq
 
-All-in-one billing and repair shop operations app: sales, quotations, customers, inventory, employees, reports, and work-order/repair ticketing.
+All-in-one repair shop and store operations app: sales, quotations, customers, inventory, employees, reports, and work-order/repair ticketing.
 
 ## Run & Operate
 
@@ -27,8 +27,9 @@ All-in-one billing and repair shop operations app: sales, quotations, customers,
 - `lib/db/src/schema/repairs.ts` — repair tickets, intake photos, and repair parts
 - `artifacts/api-server/src/routes/` — Express route handlers
 - `artifacts/billing-app/src/pages/` — React page components
-- `artifacts/billing-app/src/components/ui/` — shadcn/ui components themed for BillPro
+- `artifacts/billing-app/src/components/ui/` — shadcn/ui components themed for Mobilinq
 - `artifacts/billing-app/src/index.css` — dark PyQt terminal theme CSS variables
+- `artifacts/billing-app/public/logo.jpg` — Mobilinq logo used in the app header and on invoices/receipts
 
 ## Architecture decisions
 
@@ -37,6 +38,7 @@ All-in-one billing and repair shop operations app: sales, quotations, customers,
 - Express routes consistently `return` the response object so TypeScript strict checks pass without declaring explicit return types.
 - Optional Radix Select choices use a `"none"` sentinel value because empty string is reserved for the placeholder state.
 - Employee auth is PIN-based and kept in localStorage via `EmployeeContext`; no JWT or OAuth is used.
+- Business logo and name are stored in `settings` and rendered on invoices, thermal receipts, and repair tickets.
 
 ## Product
 
@@ -47,7 +49,7 @@ All-in-one billing and repair shop operations app: sales, quotations, customers,
 - Employee management with PIN sign-in and discount limits
 - Repair/work-order tracking: intake, diagnostic, parts, QA, pickup, and customer notifications
 - Dashboard reports for revenue, sales, and top products
-- Settings for business profile, tax rates, SMTP, and receipt branding
+- Settings for business profile (logo, name, address, tax rates), receipt branding, and SMTP
 
 ## User preferences
 
@@ -58,6 +60,7 @@ _None recorded yet._
 - After changing `lib/api-spec/openapi.yaml`, run `pnpm --filter @workspace/api-spec run codegen` and `pnpm --filter @workspace/db run push` before testing.
 - Express routes must `return` the `res` object in every branch, or `tsc` will fail with `TS7030`.
 - Do not use `<SelectItem value="">`; Radix rejects empty item values.
+- The logo lives in `public/logo.jpg` and is referenced by `/logo.jpg` in settings/logoUrl. The default `BASE_PATH` is `/`; if that changes, update the logo path accordingly.
 
 ## Pointers
 

@@ -4,7 +4,7 @@ import { z } from "zod/v4";
 
 export const settingsTable = pgTable("settings", {
   id: serial("id").primaryKey(),
-  businessName: text("business_name").notNull().default("My Store"),
+  businessName: text("business_name").notNull().default("Mobilinq"),
   businessAddress: text("business_address"),
   businessPhone: text("business_phone"),
   businessEmail: text("business_email"),

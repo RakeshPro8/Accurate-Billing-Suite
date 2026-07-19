@@ -1,6 +1,6 @@
 kind = "web"
 previewPath = "/"
-title = "BillPro - Store Billing & Reports"
+title = "Mobilinq"
 version = "1.0.0"
 id = "artifacts/billing-app"
 router = "path"

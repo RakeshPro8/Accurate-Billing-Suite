@@ -184,14 +184,18 @@ export default function SaleDetail() {
           <div className="bg-[#0d4d47] text-white p-8">
             <div className="flex items-start justify-between">
               <div>
-                {settings?.logoUrl && (
-                  <img
-                    src={settings.logoUrl}
-                    alt="logo"
-                    className="mb-3 max-h-16 max-w-[140px] object-contain brightness-0 invert"
-                  />
-                )}
-                <div className="text-2xl font-bold mb-0.5">{settings?.businessName ?? "Your Business"}</div>
+                <div className="flex items-center gap-4 mb-3">
+                  {settings?.logoUrl && (
+                    <div className="bg-white rounded p-2">
+                      <img
+                        src={settings.logoUrl}
+                        alt="logo"
+                        className="max-h-14 max-w-[140px] object-contain"
+                      />
+                    </div>
+                  )}
+                  <div className="text-2xl font-bold mb-0.5">{settings?.businessName ?? "Mobilinq"}</div>
+                </div>
                 {settings?.businessAddress && <div className="text-sm text-teal-200">{settings.businessAddress}</div>}
                 {settings?.businessPhone && <div className="text-sm text-teal-200">{settings.businessPhone}</div>}
                 {settings?.businessEmail && <div className="text-sm text-teal-200">{settings.businessEmail}</div>}

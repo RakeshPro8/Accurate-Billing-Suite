@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import {
   useGetRepair, useUpdateRepair, useUpdateRepairStatus, useAddRepairPhoto, useDeleteRepairPhoto,
-  useAddRepairPart, useRemoveRepairPart, useGetProducts,
+  useAddRepairPart, useRemoveRepairPart, useGetProducts, useGetSettings,
   getGetRepairQueryKey, getGetRepairsQueryKey, getGetProductsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -46,6 +46,7 @@ export default function RepairDetail() {
 
   const { data: repair, isLoading } = useGetRepair(id, { query: { queryKey: getGetRepairQueryKey(id) } });
   const { data: products } = useGetProducts();
+  const { data: settings } = useGetSettings();
   const updateRepair = useUpdateRepair();
   const updateStatus = useUpdateRepairStatus();
   const addPhoto = useAddRepairPhoto();
@@ -388,15 +389,24 @@ export default function RepairDetail() {
 
       {/* Print invoice area */}
       <div ref={invoiceRef} className="invoice-print-area hidden print:block">
-        <div className="bg-card rounded-xl border shadow-sm overflow-hidden p-8">
+        <div className="bg-white text-black rounded-xl border shadow-sm overflow-hidden p-8">
           <div className="flex justify-between items-start mb-8">
             <div>
-              <h2 className="text-2xl font-bold text-primary">Repair Ticket</h2>
-              <p className="text-lg font-mono">{r.ticketNumber}</p>
+              <div className="flex items-center gap-3 mb-2">
+                {settings?.logoUrl && (
+                  <div className="bg-white rounded border p-2">
+                    <img src={settings.logoUrl} alt="Mobilinq" className="max-h-14 max-w-[140px] object-contain" />
+                  </div>
+                )}
+                <div>
+                  <h2 className="text-2xl font-bold text-black">{settings?.businessName ?? "Mobilinq"}</h2>
+                  <p className="text-lg font-mono text-black">{r.ticketNumber}</p>
+                </div>
+              </div>
             </div>
             <div className="text-right">
-              <p className="text-sm text-muted-foreground">Created: {formatDate(r.createdAt)}</p>
-              <p className="text-sm font-medium mt-1">Status: {getRepairStatusLabel(r.status)}</p>
+              <p className="text-sm text-black/70">Created: {formatDate(r.createdAt)}</p>
+              <p className="text-sm font-medium mt-1 text-black">Status: {getRepairStatusLabel(r.status)}</p>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-8 mb-8">

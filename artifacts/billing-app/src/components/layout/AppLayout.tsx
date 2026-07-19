@@ -91,8 +91,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
       <aside className="hidden md:flex w-60 flex-col border-r bg-card">
         <div className="p-4 border-b h-14 flex items-center">
           <h1 className="text-lg font-bold text-primary flex items-center gap-2 font-mono tracking-tight">
-            <span className="bg-primary text-primary-foreground w-7 h-7 rounded flex items-center justify-center font-bold text-sm">B</span>
-            BillPro
+            <img src="/logo.jpg" alt="Mobilinq" className="h-8 w-auto rounded bg-white object-contain p-0.5" />
+            Mobilinq
           </h1>
         </div>
         <div className="flex-1 overflow-auto p-3">
@@ -117,8 +117,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
               <SheetContent side="left" className="w-60 p-0 bg-card">
                 <div className="p-4 border-b h-14 flex items-center">
                   <h1 className="text-lg font-bold text-primary flex items-center gap-2 font-mono">
-                    <span className="bg-primary text-primary-foreground w-7 h-7 rounded flex items-center justify-center font-bold text-sm">B</span>
-                    BillPro
+                    <img src="/logo.jpg" alt="Mobilinq" className="h-8 w-auto rounded bg-white object-contain p-0.5" />
+                    Mobilinq
                   </h1>
                 </div>
                 <div className="p-3">
@@ -126,7 +126,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                 </div>
               </SheetContent>
             </Sheet>
-            <h1 className="ml-2 font-semibold font-mono">BillPro</h1>
+            <h1 className="ml-2 font-semibold font-mono">Mobilinq</h1>
           </div>
 
           <div className="flex items-center gap-3 ml-auto">
