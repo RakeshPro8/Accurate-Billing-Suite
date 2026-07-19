@@ -787,11 +787,13 @@ export const GetRevenueByCategoryResponse = zod.array(GetRevenueByCategoryRespon
  */
 export const GetSettingsResponse = zod.object({
   "id": zod.number(),
+  "appName": zod.string(),
   "businessName": zod.string(),
   "businessAddress": zod.string().nullish(),
   "businessPhone": zod.string().nullish(),
   "businessEmail": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
+  "theme": zod.string(),
   "currency": zod.string(),
   "taxRate": zod.number(),
   "gstRate": zod.number().nullish(),
@@ -810,10 +812,13 @@ export const GetSettingsResponse = zod.object({
  * @summary Update business settings
  */
 export const UpdateSettingsBody = zod.object({
+  "appName": zod.string().optional(),
   "businessName": zod.string().optional(),
   "businessAddress": zod.string().optional(),
   "businessPhone": zod.string().optional(),
   "businessEmail": zod.string().optional(),
+  "logoUrl": zod.string().optional(),
+  "theme": zod.string().optional(),
   "currency": zod.string().optional(),
   "taxRate": zod.number().optional(),
   "gstRate": zod.number().optional(),
@@ -830,11 +835,13 @@ export const UpdateSettingsBody = zod.object({
 
 export const UpdateSettingsResponse = zod.object({
   "id": zod.number(),
+  "appName": zod.string(),
   "businessName": zod.string(),
   "businessAddress": zod.string().nullish(),
   "businessPhone": zod.string().nullish(),
   "businessEmail": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
+  "theme": zod.string(),
   "currency": zod.string(),
   "taxRate": zod.number(),
   "gstRate": zod.number().nullish(),

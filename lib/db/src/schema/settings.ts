@@ -4,11 +4,13 @@ import { z } from "zod/v4";
 
 export const settingsTable = pgTable("settings", {
   id: serial("id").primaryKey(),
+  appName: text("app_name").notNull().default("Mobilinq"),
   businessName: text("business_name").notNull().default("Mobilinq"),
   businessAddress: text("business_address"),
   businessPhone: text("business_phone"),
   businessEmail: text("business_email"),
   logoUrl: text("logo_url"),
+  theme: text("theme").notNull().default("terminal"),
   currency: text("currency").notNull().default("USD"),
   taxRate: numeric("tax_rate", { precision: 5, scale: 2 }).notNull().default("0"),
   gstRate: numeric("gst_rate", { precision: 5, scale: 3 }).notNull().default("0"),

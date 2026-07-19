@@ -37,7 +37,7 @@ router.patch("/", async (req, res) => {
   try {
     const body = req.body;
     const updates: Record<string, unknown> = {};
-    const strFields = ["businessName","businessAddress","businessPhone","businessEmail","logoUrl","currency","invoicePrefix","quotePrefix","invoiceFooter","thankYouMessage","smtpHost","smtpUser","smtpPass"] as const;
+    const strFields = ["appName","businessName","businessAddress","businessPhone","businessEmail","logoUrl","theme","currency","invoicePrefix","quotePrefix","invoiceFooter","thankYouMessage","smtpHost","smtpUser","smtpPass"] as const;
     strFields.forEach(f => { if (body[f] !== undefined) updates[f] = body[f]; });
     if (body.taxRate !== undefined) updates.taxRate = String(body.taxRate);
     if (body.gstRate !== undefined) updates.gstRate = String(body.gstRate);

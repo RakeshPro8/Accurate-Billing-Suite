@@ -8,6 +8,7 @@
 
 export interface Settings {
   id: number;
+  appName: string;
   businessName: string;
   /** @nullable */
   businessAddress?: string | null;
@@ -17,6 +18,7 @@ export interface Settings {
   businessEmail?: string | null;
   /** @nullable */
   logoUrl?: string | null;
+  theme: string;
   currency: string;
   taxRate: number;
   /** @nullable */

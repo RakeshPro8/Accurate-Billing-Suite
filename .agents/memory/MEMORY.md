@@ -4,3 +4,5 @@
 - [Repair Ticketing Implementation](repair-ticketing.md) — base64 photos in PostgreSQL, OpenAPI-first workflow, strict return rules in Express routes, Radix Select empty-value constraint.
 - [Mobilinq Branding](mobilinq-branding.md) — logo stored in `public/logo.jpg`, referenced via `/logo.jpg` in settings.logoUrl; app name and artifact title updated to Mobilinq.
 - [Print CSS](print-css.md) — wrap screen content in `no-print`, hide app shell on print, and use a fixed full-viewport print area to isolate invoices and tickets.
+- [App Branding & Themes](app-branding.md) — settings-driven app name, logo, and preset color themes with `data-theme` CSS variable overrides.
+- [Interactive Device Diagram](device-diagram.md) — SVG-based Android/iPhone motherboard page for explaining repair components to customers.

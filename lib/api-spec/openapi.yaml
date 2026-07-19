@@ -1266,14 +1266,16 @@ components:
     # ── Settings ──
     Settings:
       type: object
-      required: [id, businessName, currency, taxRate]
+      required: [id, appName, businessName, currency, taxRate, theme]
       properties:
         id:               { type: integer }
+        appName:          { type: string }
         businessName:     { type: string }
         businessAddress:  { type: ["string", "null"] }
         businessPhone:    { type: ["string", "null"] }
         businessEmail:    { type: ["string", "null"] }
         logoUrl:          { type: ["string", "null"] }
+        theme:            { type: string }
         currency:         { type: string }
         taxRate:          { type: number }
         gstRate:          { type: ["number", "null"] }
@@ -1289,10 +1291,13 @@ components:
     SettingsUpdate:
       type: object
       properties:
+        appName:          { type: string }
         businessName:     { type: string }
         businessAddress:  { type: string }
         businessPhone:    { type: string }
         businessEmail:    { type: string }
+        logoUrl:          { type: string }
+        theme:            { type: string }
         currency:         { type: string }
         taxRate:          { type: number }
         gstRate:          { type: number }

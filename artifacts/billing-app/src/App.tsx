@@ -19,6 +19,7 @@ import CustomerDetail from "@/pages/CustomerDetail";
 import Products from "@/pages/Products";
 import Reports from "@/pages/Reports";
 import Settings from "@/pages/Settings";
+import DeviceDiagram from "@/pages/DeviceDiagram";
 import Employees from "@/pages/Employees";
 import RepairsList from "@/pages/RepairsList";
 import RepairForm from "@/pages/RepairForm";
@@ -60,6 +61,7 @@ function Router() {
         <Route path="/repairs/new" component={RepairForm} />
         <Route path="/repairs/:id/edit">{(params) => <RepairForm key={params.id} />}</Route>
         <Route path="/repairs/:id" component={RepairDetail} />
+        <Route path="/device-diagram" component={DeviceDiagram} />
         <Route path="/reports" component={Reports} />
         <Route path="/settings" component={Settings} />
 

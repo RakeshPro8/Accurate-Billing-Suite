@@ -1,13 +1,14 @@
-import { useState, ReactNode } from "react";
+import { useState, ReactNode, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import {
   LayoutDashboard, Receipt, FileText, Users, PackageSearch,
-  BarChart3, Settings, Menu, ShieldCheck, UserCircle2, LogIn, Wrench
+  BarChart3, Settings, Menu, ShieldCheck, UserCircle2, LogIn, Wrench, Cpu
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useEmployee, ROLE_COLORS, ROLE_LABELS } from "@/context/EmployeeContext";
 import { EmployeePinDialog } from "@/components/EmployeePinDialog";
+import { useGetSettings } from "@workspace/api-client-react";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -16,6 +17,7 @@ const navItems = [
   { href: "/customers", label: "Customers", icon: Users },
   { href: "/products", label: "Products & Services", icon: PackageSearch },
   { href: "/repairs", label: "Repairs", icon: Wrench },
+  { href: "/device-diagram", label: "Device Diagram", icon: Cpu },
   { href: "/employees", label: "Employees", icon: ShieldCheck },
   { href: "/reports", label: "Reports", icon: BarChart3 },
   { href: "/settings", label: "Settings", icon: Settings },
@@ -84,6 +86,15 @@ function EmployeeBadge({ onOpen }: { onOpen: () => void }) {
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const [pinDialogOpen, setPinDialogOpen] = useState(false);
+  const { data: settings } = useGetSettings();
+  const appName = settings?.appName || "Mobilinq";
+  const logoUrl = settings?.logoUrl || "/logo.jpg";
+  const theme = settings?.theme || "terminal";
+
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", theme);
+    document.title = appName;
+  }, [theme, appName]);
 
   return (
     <div className="min-h-screen bg-background flex w-full">
@@ -91,8 +102,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
       <aside className="hidden md:flex w-60 flex-col border-r bg-card no-print">
         <div className="p-4 border-b h-14 flex items-center">
           <h1 className="text-lg font-bold text-primary flex items-center gap-2 font-mono tracking-tight">
-            <img src="/logo.jpg" alt="Mobilinq" className="h-8 w-auto rounded bg-white object-contain p-0.5" />
-            Mobilinq
+            <img src={logoUrl} alt={appName} className="h-8 w-auto max-w-[120px] rounded bg-white object-contain p-0.5" />
+            {appName}
           </h1>
         </div>
         <div className="flex-1 overflow-auto p-3">
@@ -117,8 +128,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
               <SheetContent side="left" className="w-60 p-0 bg-card no-print">
                 <div className="p-4 border-b h-14 flex items-center">
                   <h1 className="text-lg font-bold text-primary flex items-center gap-2 font-mono">
-                    <img src="/logo.jpg" alt="Mobilinq" className="h-8 w-auto rounded bg-white object-contain p-0.5" />
-                    Mobilinq
+                    <img src={logoUrl} alt={appName} className="h-8 w-auto max-w-[120px] rounded bg-white object-contain p-0.5" />
+                    {appName}
                   </h1>
                 </div>
                 <div className="p-3">
@@ -126,7 +137,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
                 </div>
               </SheetContent>
             </Sheet>
-            <h1 className="ml-2 font-semibold font-mono">Mobilinq</h1>
+            <h1 className="ml-2 font-semibold font-mono">{appName}</h1>
           </div>
 
           <div className="flex items-center gap-3 ml-auto">

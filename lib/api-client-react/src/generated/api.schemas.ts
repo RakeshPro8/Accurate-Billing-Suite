@@ -320,6 +320,7 @@ export interface CategoryRevenue {
 
 export interface Settings {
   id: number;
+  appName: string;
   businessName: string;
   /** @nullable */
   businessAddress?: string | null;
@@ -329,6 +330,7 @@ export interface Settings {
   businessEmail?: string | null;
   /** @nullable */
   logoUrl?: string | null;
+  theme: string;
   currency: string;
   taxRate: number;
   /** @nullable */
@@ -350,10 +352,13 @@ export interface Settings {
 }
 
 export interface SettingsUpdate {
+  appName?: string;
   businessName?: string;
   businessAddress?: string;
   businessPhone?: string;
   businessEmail?: string;
+  logoUrl?: string;
+  theme?: string;
   currency?: string;
   taxRate?: number;
   gstRate?: number;

@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, Mail, Percent, ImageIcon, Trash2, Upload } from "lucide-react";
+import { Building2, Mail, Percent, ImageIcon, Trash2, Upload, Type, Palette } from "lucide-react";
 
 export default function Settings() {
   const { data: settings, isLoading } = useGetSettings();
@@ -19,7 +19,17 @@ export default function Settings() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
 
-  const { register, handleSubmit, reset, setValue } = useForm<any>();
+  const { register, handleSubmit, reset, setValue, watch } = useForm<any>();
+  const themeValue = watch("theme") || "terminal";
+
+  const themes = [
+    { id: "terminal", label: "Terminal", desc: "Dark teal — the original Mobilinq look", color: "hsl(173 100% 45%)" },
+    { id: "ocean", label: "Ocean", desc: "Cool blue professional", color: "hsl(205 90% 55%)" },
+    { id: "sunset", label: "Sunset", desc: "Warm orange and amber", color: "hsl(25 95% 55%)" },
+    { id: "berry", label: "Berry", desc: "Purple and pink accent", color: "hsl(320 85% 60%)" },
+    { id: "forest", label: "Forest", desc: "Green and natural", color: "hsl(145 80% 45%)" },
+    { id: "monochrome", label: "Monochrome", desc: "Clean grayscale", color: "hsl(0 0% 75%)" },
+  ];
 
   useEffect(() => {
     if (settings) {
@@ -128,6 +138,46 @@ export default function Settings() {
                   </Button>
                 )}
                 <p className="text-xs text-muted-foreground">PNG, JPG, SVG · max 500 KB</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* App Branding */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <Type className="h-4 w-4 text-primary" /> App Branding
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="appName">App Name</Label>
+              <Input id="appName" {...register("appName")} placeholder="Mobilinq" />
+              <p className="text-xs text-muted-foreground">Shown in the sidebar, mobile header, and browser tab.</p>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Theme</Label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {themes.map((t) => (
+                  <div
+                    key={t.id}
+                    role="radio"
+                    aria-checked={themeValue === t.id}
+                    tabIndex={0}
+                    onClick={() => setValue("theme", t.id, { shouldDirty: true })}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setValue("theme", t.id, { shouldDirty: true }); }}
+                    className={`cursor-pointer rounded-lg border p-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
+                      themeValue === t.id ? "border-primary bg-primary/10" : "border-border hover:border-primary/40"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-4 h-4 rounded-full border border-white/10" style={{ background: t.color }} />
+                      <span className="text-sm font-medium">{t.label}</span>
+                    </div>
+                    <p className="text-xs text-muted-foreground">{t.desc}</p>
+                  </div>
+                ))}
               </div>
             </div>
           </CardContent>

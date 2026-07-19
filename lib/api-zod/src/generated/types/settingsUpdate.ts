@@ -7,10 +7,13 @@
  */
 
 export interface SettingsUpdate {
+  appName?: string;
   businessName?: string;
   businessAddress?: string;
   businessPhone?: string;
   businessEmail?: string;
+  logoUrl?: string;
+  theme?: string;
   currency?: string;
   taxRate?: number;
   gstRate?: number;
