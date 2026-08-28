@@ -21,6 +21,7 @@ export const repairsTable = pgTable("repairs", {
   priority: text("priority").notNull().default("normal"),
   technicianId: integer("technician_id"),
   technicianName: text("technician_name"),
+  storeId: integer("store_id"),
   estimatedCost: numeric("estimated_cost", { precision: 10, scale: 2 }),
   deposit: numeric("deposit", { precision: 10, scale: 2 }).notNull().default("0"),
   total: numeric("total", { precision: 10, scale: 2 }).notNull().default("0"),

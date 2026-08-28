@@ -9,40 +9,62 @@ export interface ActiveEmployee {
 
 interface EmployeeContextValue {
   activeEmployee: ActiveEmployee | null;
-  setActiveEmployee: (emp: ActiveEmployee | null) => void;
-  clearEmployee: () => void;
+  isLoading: boolean;
+  refresh: () => Promise<void>;
+  clearEmployee: () => Promise<void>;
 }
 
 const EmployeeContext = createContext<EmployeeContextValue>({
   activeEmployee: null,
-  setActiveEmployee: () => {},
-  clearEmployee: () => {},
+  isLoading: true,
+  refresh: async () => {},
+  clearEmployee: async () => {},
 });
 
-const STORAGE_KEY = "billpro_active_employee";
+async function fetchSession(): Promise<ActiveEmployee | null> {
+  const res = await fetch(`${import.meta.env.BASE_URL}api/auth/session`, {
+    credentials: "include",
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  if (!data.authenticated || !data.employee) return null;
+  return {
+    id: data.employee.id,
+    name: data.employee.name,
+    role: data.employee.role,
+    maxDiscountPct: data.employee.maxDiscountPct,
+  };
+}
 
 export function EmployeeProvider({ children }: { children: ReactNode }) {
-  const [activeEmployee, setActiveEmployeeState] = useState<ActiveEmployee | null>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      return stored ? JSON.parse(stored) : null;
-    } catch {
-      return null;
-    }
-  });
+  const [activeEmployee, setActiveEmployee] = useState<ActiveEmployee | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  function setActiveEmployee(emp: ActiveEmployee | null) {
-    setActiveEmployeeState(emp);
-    if (emp) localStorage.setItem(STORAGE_KEY, JSON.stringify(emp));
-    else localStorage.removeItem(STORAGE_KEY);
+  async function refresh() {
+    try {
+      const emp = await fetchSession();
+      setActiveEmployee(emp);
+    } catch {
+      setActiveEmployee(null);
+    } finally {
+      setIsLoading(false);
+    }
   }
 
-  function clearEmployee() {
+  async function clearEmployee() {
+    await fetch(`${import.meta.env.BASE_URL}api/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    });
     setActiveEmployee(null);
   }
 
+  useEffect(() => {
+    refresh();
+  }, []);
+
   return (
-    <EmployeeContext.Provider value={{ activeEmployee, setActiveEmployee, clearEmployee }}>
+    <EmployeeContext.Provider value={{ activeEmployee, isLoading, refresh, clearEmployee }}>
       {children}
     </EmployeeContext.Provider>
   );

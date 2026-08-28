@@ -16,6 +16,7 @@ export const productsTable = pgTable("products", {
   warrantyDays: integer("warranty_days"),
   isRefurbished: boolean("is_refurbished").notNull().default(false),
   isBundle: boolean("is_bundle").notNull().default(false),
+  storeId: integer("store_id"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

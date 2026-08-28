@@ -6,7 +6,9 @@ export const employeesTable = pgTable("employees", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
   email: text("email"),
-  pin: text("pin").notNull(),
+  // Deprecated: plaintext PIN kept only for one-time migration. Always null for new employees.
+  pin: text("pin"),
+  pinHash: text("pin_hash"),
   role: text("role").notNull().default("staff"),
   maxDiscountPct: numeric("max_discount_pct", { precision: 5, scale: 2 }).notNull().default("0"),
   active: boolean("active").notNull().default(true),

@@ -8,6 +8,7 @@ export const quotationsTable = pgTable("quotations", {
   customerId: integer("customer_id"),
   customerName: text("customer_name"),
   customerEmail: text("customer_email"),
+  storeId: integer("store_id"),
   status: text("status").notNull().default("draft"),
   subtotal: numeric("subtotal", { precision: 10, scale: 2 }).notNull().default("0"),
   taxRate: numeric("tax_rate", { precision: 5, scale: 2 }).notNull().default("0"),

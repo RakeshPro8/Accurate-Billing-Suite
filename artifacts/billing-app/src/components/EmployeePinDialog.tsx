@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useEmployee, ActiveEmployee, ROLE_COLORS, ROLE_LABELS } from "@/context/EmployeeContext";
+import { useEmployee, ROLE_COLORS, ROLE_LABELS } from "@/context/EmployeeContext";
 import { useEmployees, useVerifyPin } from "@/lib/employees-api";
 import { ShieldCheck, LogOut, User } from "lucide-react";
 
@@ -14,7 +14,7 @@ interface Props {
 }
 
 export function EmployeePinDialog({ open, onClose }: Props) {
-  const { activeEmployee, setActiveEmployee, clearEmployee } = useEmployee();
+  const { activeEmployee, refresh, clearEmployee } = useEmployee();
   const { data: employees } = useEmployees();
   const verifyPin = useVerifyPin();
 
@@ -52,14 +52,8 @@ export function EmployeePinDialog({ open, onClose }: Props) {
       return;
     }
     verifyPin.mutate({ employeeId: Number(selectedId), pin }, {
-      onSuccess: (data: any) => {
-        const emp: ActiveEmployee = {
-          id: data.employee.id,
-          name: data.employee.name,
-          role: data.employee.role,
-          maxDiscountPct: data.employee.maxDiscountPct,
-        };
-        setActiveEmployee(emp);
+      onSuccess: async () => {
+        await refresh();
         handleClose();
       },
       onError: (e: any) => setError(e.message ?? "Incorrect PIN."),

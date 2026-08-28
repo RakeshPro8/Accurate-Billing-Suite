@@ -25,6 +25,7 @@ export interface CreateEmployeeInput {
 async function apiFetch(path: string, options?: RequestInit) {
   const res = await fetch(`${API}${path}`, {
     ...options,
+    credentials: "include",
     headers: { "Content-Type": "application/json", ...(options?.headers ?? {}) },
   });
   if (!res.ok) {

@@ -6,3 +6,5 @@ export * from "./quotations";
 export * from "./settings";
 export * from "./employees";
 export * from "./repairs";
+export * from "./stores";
+export * from "./auditLogs";

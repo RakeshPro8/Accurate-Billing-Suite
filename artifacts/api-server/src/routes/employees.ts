@@ -2,15 +2,19 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { employeesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { hashPin } from "../lib/auth";
 
 const router = Router();
 
 function parseEmployee(e: typeof employeesTable.$inferSelect) {
   return {
-    ...e,
+    id: e.id,
+    name: e.name,
+    email: e.email,
+    role: e.role,
     maxDiscountPct: parseFloat(e.maxDiscountPct),
+    active: e.active,
     createdAt: e.createdAt.toISOString(),
-    pin: undefined,
   };
 }
 
@@ -33,10 +37,12 @@ router.post("/", async (req, res) => {
     if (role && !validRoles.includes(role)) {
       return res.status(400).json({ error: "Role must be admin, manager, or staff." });
     }
+    const pinHash = await hashPin(pin);
     const [emp] = await db.insert(employeesTable).values({
       name,
       email: email || null,
-      pin,
+      pin: null,
+      pinHash,
       role: role || "staff",
       maxDiscountPct: String(maxDiscountPct ?? 0),
       active: active !== false,
@@ -56,7 +62,8 @@ router.patch("/:id", async (req, res) => {
     if (email !== undefined) updates.email = email;
     if (pin !== undefined) {
       if (pin.length < 4 || pin.length > 8) return res.status(400).json({ error: "PIN must be 4-8 digits." });
-      updates.pin = pin;
+      updates.pin = null;
+      updates.pinHash = await hashPin(pin);
     }
     if (role !== undefined) {
       const validRoles = ["admin", "manager", "staff"];
