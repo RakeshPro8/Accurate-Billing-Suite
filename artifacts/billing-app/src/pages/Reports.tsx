@@ -68,7 +68,7 @@ export default function Reports() {
 
   async function exportMonthlyExcel() {
     if (!monthly) return;
-    const XLSX = await import("xlsx");
+    const XLSX = await import("@e965/xlsx");
     const wb = XLSX.utils.book_new();
     const salesData = [
       ["Invoice #", "Customer", "Employee", "Date", "Status", "Payment", "Subtotal", "Tax", "Discount", "Total"],
@@ -106,7 +106,7 @@ export default function Reports() {
       const resp = await fetch(`${BASE}/api/sales?${params.toString()}`);
       const sales = await resp.json();
       if (!sales.length) { alert("No sales found for the selected filters."); return; }
-      const XLSX = await import("xlsx");
+      const XLSX = await import("@e965/xlsx");
       const wb = XLSX.utils.book_new();
       const rows = [
         ["Invoice #", "Customer", "Employee", "Date", "Status", "Payment", "Subtotal ($)", "Tax ($)", "Discount ($)", "Total ($)"],

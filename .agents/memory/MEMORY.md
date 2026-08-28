@@ -6,3 +6,4 @@
 - [Print CSS](print-css.md) — wrap screen content in `no-print`, hide app shell on print, and use a fixed full-viewport print area to isolate invoices and tickets.
 - [App Branding & Themes](app-branding.md) — settings-driven app name, logo, and preset color themes with `data-theme` CSS variable overrides.
 - [Interactive Device Diagram](device-diagram.md) — SVG-based Android/iPhone motherboard page for explaining repair components to customers.
+- [Workspace Dependency Updates](workspace-dependency-updates.md) — use a workspace-aware lockfile install when package installation would otherwise target the root.
