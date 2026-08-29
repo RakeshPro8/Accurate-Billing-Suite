@@ -1,5 +1,6 @@
 import { db, auditLogsTable } from "@workspace/db";
 import type { Request, Response, NextFunction } from "express";
+import { logger } from "./logger";
 
 export type AuditAction = "create" | "update" | "delete" | "login" | "logout" | "print" | "payment" | "store" | "authentication" | "convert" | "status_change";
 export type AuditEntityType = "sale" | "quotation" | "repair" | "repair_photo" | "customer" | "product" | "service" | "employee" | "settings" | "store" | "backup";
@@ -21,16 +22,36 @@ export async function logAudit(
     employeeName = req.employee.name;
   }
 
-  await db.insert(auditLogsTable).values({
-    employeeId: employeeId ?? null,
-    employeeName,
-    storeId: req.session?.storeId ?? null,
-    action,
-    entityType,
-    entityId: entityId ? String(entityId) : null,
-    details: details ?? null,
-  });
+  try {
+    await db.insert(auditLogsTable).values({
+      employeeId: employeeId ?? null,
+      employeeName,
+      storeId: req.session?.storeId ?? null,
+      action,
+      entityType,
+      entityId: entityId ? String(entityId) : null,
+      details: details ?? null,
+    });
+  } catch {
+    // Audit failures must not turn a successful business operation into a
+    // crashed request or terminate the API process.
+    logger.error({ path: req.originalUrl }, "Audit log write failed");
+  }
 }
+
+const AUDIT_ENTITY_TYPES = new Set<AuditEntityType>([
+  "sale",
+  "quotation",
+  "repair",
+  "repair_photo",
+  "customer",
+  "product",
+  "service",
+  "employee",
+  "settings",
+  "store",
+  "backup",
+]);
 
 export function auditMutation(req: Request, res: Response, next: NextFunction) {
   if (["GET", "HEAD", "OPTIONS"].includes(req.method)) {
@@ -39,8 +60,14 @@ export function auditMutation(req: Request, res: Response, next: NextFunction) {
   }
   res.on("finish", () => {
     if (res.statusCode >= 400 || !req.employee) return;
-    const [rawEntity, rawId] = req.path.split("/").filter(Boolean);
-    const entityType = (rawEntity === "audit-logs" ? "settings" : rawEntity) as AuditEntityType;
+    const routePath = req.originalUrl.split("?")[0].replace(/^\/api(?:\/|$)/, "");
+    const [rawEntity, rawId] = routePath.split("/").filter(Boolean);
+    const normalizedEntity = rawEntity === "audit-logs" ? "settings" : rawEntity;
+    if (!AUDIT_ENTITY_TYPES.has(normalizedEntity as AuditEntityType)) {
+      logger.warn({ path: req.originalUrl }, "Skipping audit for unmapped mutation");
+      return;
+    }
+    const entityType = normalizedEntity as AuditEntityType;
     const action: AuditAction = req.path.includes("/status") ? "status_change"
       : req.path.includes("/pay") ? "payment"
       : req.method === "POST" ? "create"

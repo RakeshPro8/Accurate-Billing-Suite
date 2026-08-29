@@ -8,7 +8,7 @@ import { useEmployee, ROLE_COLORS, ROLE_LABELS } from "@/context/EmployeeContext
 import { trackEmployeeAuthOutcome } from "@/lib/analytics";
 
 export function EmployeeSignIn() {
-  const { needsSetup, signInEmployees, signIn, bootstrap, refresh } = useEmployee();
+  const { needsSetup, signInEmployees, publicStateError, signIn, bootstrap, refresh } = useEmployee();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [pin, setPin] = useState("");
   const [name, setName] = useState("");
@@ -131,7 +131,14 @@ export function EmployeeSignIn() {
             <>
               <div className="space-y-2">
                 <Label>Employee account</Label>
-                {signInEmployees.length > 0 ? (
+                {publicStateError ? (
+                  <div className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm">
+                    <p className="text-destructive">{publicStateError}</p>
+                    <Button type="button" variant="link" className="h-auto px-0 pt-2" onClick={() => void refresh()}>
+                      Retry connection
+                    </Button>
+                  </div>
+                ) : signInEmployees.length > 0 ? (
                   <div className="grid gap-2 max-h-64 overflow-y-auto">
                     {signInEmployees.map((employee) => (
                       <button
