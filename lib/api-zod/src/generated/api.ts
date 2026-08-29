@@ -2417,3 +2417,134 @@ export const RemoveRepairPartParams = zod.object({
 export const RemoveRepairPartResponse = zod.void()
 
 
+/**
+ * @summary Search active products in the current store
+ */
+export const SearchOperationProductsQueryParams = zod.object({
+  "q": zod.coerce.string().optional()
+})
+
+export const SearchOperationProductsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "sku": zod.string(),
+  "category": zod.string(),
+  "description": zod.string().nullish(),
+  "price": zod.number(),
+  "cost": zod.number().nullish(),
+  "stock": zod.number().int(),
+  "unit": zod.string().optional(),
+  "trackSerials": zod.boolean().optional(),
+  "warrantyDays": zod.number().int().nullish(),
+  "isRefurbished": zod.boolean().optional(),
+  "isBundle": zod.boolean().optional(),
+  "createdAt": zod.string()
+})
+export const SearchOperationProductsResponse = zod.array(SearchOperationProductsResponseItem)
+
+
+/**
+ * @summary Inventory summary for the current store
+ */
+export const GetInventorySummaryResponse = zod.object({
+
+}).passthrough()
+
+
+/**
+ * @summary List append-only inventory movements
+ */
+export const GetInventoryMovementsResponseItem = zod.object({
+
+}).passthrough()
+export const GetInventoryMovementsResponse = zod.array(GetInventoryMovementsResponseItem)
+
+
+/**
+ * @summary Manager inventory adjustment
+ */
+export const adjustInventoryBodyIdempotencyKeyMin = 8;
+
+
+
+export const AdjustInventoryBody = zod.object({
+  "productId": zod.number().int(),
+  "quantity": zod.number(),
+  "reason": zod.string(),
+  "idempotencyKey": zod.string().min(adjustInventoryBodyIdempotencyKeyMin)
+})
+
+export const AdjustInventoryResponse = zod.object({
+
+}).passthrough()
+
+
+export const GetSuppliersResponseItem = zod.object({
+
+}).passthrough()
+export const GetSuppliersResponse = zod.array(GetSuppliersResponseItem)
+
+
+export const CreateSupplierBody = zod.object({
+  "name": zod.string(),
+  "email": zod.string().email().optional()
+})
+
+export const CreateSupplierResponse = zod.object({
+
+}).passthrough()
+
+
+export const GetPurchaseOrdersResponseItem = zod.object({
+
+}).passthrough()
+export const GetPurchaseOrdersResponse = zod.array(GetPurchaseOrdersResponseItem)
+
+
+export const CreatePurchaseOrderBody = zod.object({
+  "supplierId": zod.number().int(),
+  "lines": zod.array(zod.object({
+
+}).passthrough())
+})
+
+export const CreatePurchaseOrderResponse = zod.object({
+
+}).passthrough()
+
+
+export const ReceivePurchaseOrderParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const ReceivePurchaseOrderBody = zod.object({
+  "idempotencyKey": zod.string(),
+  "lines": zod.array(zod.object({
+
+}).passthrough())
+})
+
+export const ReceivePurchaseOrderResponse = zod.object({
+
+}).passthrough()
+
+
+export const ReserveInventoryBody = zod.object({
+  "productId": zod.number().int(),
+  "quantity": zod.number()
+})
+
+export const ReserveInventoryResponse = zod.object({
+
+}).passthrough()
+
+
+export const ReleaseInventoryReservationParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const ReleaseInventoryReservationResponse = zod.object({
+
+}).passthrough()
+
+

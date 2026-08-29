@@ -5,6 +5,38 @@
  * Mobilinq store operations API
  * OpenAPI spec version: 0.2.0
  */
+export interface InventoryAdjustmentInput {
+  productId: number;
+  quantity: number;
+  reason: string;
+  /** @minLength 8 */
+  idempotencyKey: string;
+}
+
+export interface SupplierInput {
+  name: string;
+  email?: string;
+}
+
+export type PurchaseOrderInputLinesItem = { [key: string]: unknown };
+
+export interface PurchaseOrderInput {
+  supplierId: number;
+  lines: PurchaseOrderInputLinesItem[];
+}
+
+export type PurchaseReceiptInputLinesItem = { [key: string]: unknown };
+
+export interface PurchaseReceiptInput {
+  idempotencyKey: string;
+  lines: PurchaseReceiptInputLinesItem[];
+}
+
+export interface ReservationInput {
+  productId: number;
+  quantity: number;
+}
+
 export interface HealthStatus {
   status: string;
 }
@@ -1119,4 +1151,28 @@ technicianId?: number;
 dateFrom?: string;
 dateTo?: string;
 };
+
+export type SearchOperationProductsParams = {
+q?: string;
+};
+
+export type GetInventorySummary200 = { [key: string]: unknown };
+
+export type GetInventoryMovements200Item = { [key: string]: unknown };
+
+export type AdjustInventory201 = { [key: string]: unknown };
+
+export type GetSuppliers200Item = { [key: string]: unknown };
+
+export type CreateSupplier201 = { [key: string]: unknown };
+
+export type GetPurchaseOrders200Item = { [key: string]: unknown };
+
+export type CreatePurchaseOrder201 = { [key: string]: unknown };
+
+export type ReceivePurchaseOrder201 = { [key: string]: unknown };
+
+export type ReserveInventory201 = { [key: string]: unknown };
+
+export type ReleaseInventoryReservation200 = { [key: string]: unknown };
 

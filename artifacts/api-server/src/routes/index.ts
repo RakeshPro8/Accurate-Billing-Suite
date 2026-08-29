@@ -16,6 +16,7 @@ import storesRouter from "./stores";
 import auditLogsRouter from "./auditLogs";
 import syncRouter from "./sync";
 import { auditMutation } from "../lib/audit";
+import operationsRouter from "./operations";
 
 const router: IRouter = Router();
 
@@ -37,6 +38,7 @@ router.use("/repairs", repairsRouter);
 router.use("/stores", storesRouter);
 router.use("/audit-logs", auditLogsRouter);
 router.use("/sync", syncRouter);
+router.use("/operations", operationsRouter);
 router.use(requireRole("admin"), backupRouter);
 
 export default router;

@@ -1,31 +1,38 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
-import { getGetRepairsQueryKey, getGetSalesQueryKey, getGetSignInEmployeesQueryKey, useGetAuthSession, useGetRepairs, useGetSales, useGetSignInEmployees, useSignInEmployee } from '@workspace/api-client-react';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { getGetInventorySummaryQueryKey, getGetRepairsQueryKey, getGetSalesQueryKey, getGetSignInEmployeesQueryKey, useGetAuthSession, useGetInventorySummary, useGetRepairs, useGetSales, useGetSignInEmployees, useSignInEmployee } from '@workspace/api-client-react';
 import { Feather } from '@expo/vector-icons';
+import { InventoryHealth, getInventoryItems } from '@/components/InventoryHealth';
+import { getTopInset, ScreenSkeleton } from '@/components/BusinessUI';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
+  const topInset = getTopInset(insets.top);
   const session = useGetAuthSession();
   const employees = useGetSignInEmployees({ query: { queryKey: getGetSignInEmployeesQueryKey(), enabled: !session.data?.authenticated } });
   const repairs = useGetRepairs(undefined, { query: { queryKey: getGetRepairsQueryKey(), enabled: !!session.data?.authenticated } });
   const sales = useGetSales(undefined, { query: { queryKey: getGetSalesQueryKey(), enabled: !!session.data?.authenticated } });
+  const inventory = useGetInventorySummary({ query: { queryKey: getGetInventorySummaryQueryKey(), enabled: !!session.data?.authenticated } });
   const signIn = useSignInEmployee();
   const [employeeId, setEmployeeId] = useState<number | null>(null);
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const activeRepairs = useMemo(() => (repairs.data ?? []).filter((repair) => !['picked_up', 'cancelled'].includes(repair.status)), [repairs.data]);
+  const inventoryItems = useMemo(() => getInventoryItems(inventory.data), [inventory.data]);
+  const atRiskRepairs = useMemo(() => activeRepairs.filter((repair) => isSlaRisk(repair)), [activeRepairs]);
+  const lowStockCount = useMemo(() => inventoryItems.filter((item) => item.active !== false && (item.stock <= 0 || item.lowStock === true || (typeof item.reorderPoint === 'number' && item.stock <= item.reorderPoint))).length, [inventoryItems]);
 
   useEffect(() => {
     if (!employeeId && employees.data?.[0]) setEmployeeId(employees.data[0].id);
   }, [employees.data, employeeId]);
 
-  if (session.isLoading || employees.isLoading) return <View style={[styles.center, { backgroundColor: colors.background }]}><ActivityIndicator color={colors.primary} /></View>;
+  if (session.isLoading || employees.isLoading || (session.data?.authenticated && inventory.isLoading)) return <ScreenSkeleton colors={colors} topInset={topInset} />;
   if (!session.data?.authenticated) {
-    return <ScrollView contentContainerStyle={[styles.auth, { paddingTop: insets.top + 48, backgroundColor: colors.background }]}>
+    return <ScrollView contentContainerStyle={[styles.auth, { paddingTop: topInset + 48, backgroundColor: colors.background }]}>
       <View style={[styles.logo, { backgroundColor: colors.primary }]}><Feather name="smartphone" size={30} color={colors.primaryForeground} /></View>
       <Text style={[styles.brand, { color: colors.foreground }]}>MOBILINQ</Text>
       <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>Operations, wherever you are.</Text>
@@ -42,11 +49,18 @@ export default function HomeScreen() {
   }
 
   const employee = session.data.employee;
-  return <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); await Promise.all([session.refetch(), repairs.refetch(), sales.refetch()]); setRefreshing(false); }} tintColor={colors.primary} />} contentContainerStyle={[styles.content, { paddingTop: insets.top + 24, backgroundColor: colors.background }]}>
+  return <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); try { await Promise.all([session.refetch(), repairs.refetch(), sales.refetch(), inventory.refetch()]); } finally { setRefreshing(false); } }} tintColor={colors.primary} colors={[colors.primary]} />} contentContainerStyle={[styles.content, { paddingTop: topInset + 24, backgroundColor: colors.background }]}>
     <View style={styles.header}><View><Text style={[styles.kicker, { color: colors.primary }]}>MOBILINQ / LIVE</Text><Text style={[styles.title, { color: colors.foreground }]}>Good to see you, {employee.name.split(' ')[0]}.</Text></View><View style={[styles.statusDot, { backgroundColor: colors.primary }]} /></View>
-    <View style={styles.grid}><Metric label="OPEN REPAIRS" value={String(activeRepairs.length)} icon="tool" colors={colors} /><Metric label="SALES TODAY" value={String(sales.data?.items?.length ?? 0)} icon="credit-card" colors={colors} /></View>
+      <View style={styles.grid}><Metric label="OPEN REPAIRS" value={String(activeRepairs.length)} icon="tool" colors={colors} /><Metric label="AT RISK" value={String(atRiskRepairs.length)} icon="alert-triangle" colors={colors} /><Metric label="LOW STOCK" value={String(lowStockCount)} icon="package" colors={colors} /></View>
+      <InventoryHealth items={inventoryItems} />
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}><View style={styles.row}><Text style={[styles.sectionTitle, { color: colors.foreground }]}>Active repair queue</Text><Text style={[styles.link, { color: colors.primary }]}>SYNCED</Text></View>{activeRepairs.slice(0, 5).map((repair) => <View key={repair.id} style={[styles.repairRow, { borderTopColor: colors.border }]}><View style={[styles.repairIcon, { backgroundColor: colors.accent }]}><Feather name="tool" size={16} color={colors.primary} /></View><View style={{ flex: 1 }}><Text style={[styles.repairName, { color: colors.foreground }]}>{repair.ticketNumber} · {repair.deviceType}</Text><Text style={[styles.repairMeta, { color: colors.mutedForeground }]}>{repair.customerName ?? 'Walk-in'} · {repair.status.replace('_', ' ')}</Text></View></View>)}{activeRepairs.length === 0 && <Text style={[styles.empty, { color: colors.mutedForeground }]}>No active repairs right now.</Text>}</View>
   </ScrollView>;
+}
+
+function isSlaRisk(repair: { status: string; priority: string; createdAt: string }) {
+  if (['picked_up', 'cancelled'].includes(repair.status)) return false;
+  const targetDays = repair.priority === 'urgent' ? 1 : repair.priority === 'high' ? 2 : repair.priority === 'low' ? 7 : 4;
+  return new Date(repair.createdAt).getTime() + targetDays * 24 * 60 * 60 * 1000 - Date.now() <= 24 * 60 * 60 * 1000;
 }
 
 function Metric({ label, value, icon, colors }: { label: string; value: string; icon: keyof typeof Feather.glyphMap; colors: ReturnType<typeof useColors> }) {

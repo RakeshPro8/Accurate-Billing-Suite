@@ -1312,8 +1312,131 @@ paths:
         "204":
           description: Removed
 
+  /operations/products/search:
+    get:
+      operationId: searchOperationProducts
+      tags: [products]
+      summary: Search active products in the current store
+      parameters:
+        - { name: q, in: query, schema: { type: string } }
+      responses:
+        "200": { description: Products, content: { application/json: { schema: { type: array, items: { $ref: "#/components/schemas/Product" } } } } }
+  /operations/inventory/summary:
+    get:
+      operationId: getInventorySummary
+      tags: [operations]
+      summary: Inventory summary for the current store
+      responses:
+        "200": { description: Inventory summary, content: { application/json: { schema: { type: object } } } }
+  /operations/inventory/movements:
+    get:
+      operationId: getInventoryMovements
+      tags: [operations]
+      summary: List append-only inventory movements
+      responses:
+        "200": { description: Movements, content: { application/json: { schema: { type: array, items: { type: object } } } } }
+  /operations/inventory/adjust:
+    post:
+      operationId: adjustInventory
+      tags: [operations]
+      summary: Manager inventory adjustment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+                $ref: "#/components/schemas/InventoryAdjustmentInput"
+      responses:
+        "201": { description: Movement recorded, content: { application/json: { schema: { type: object } } } }
+  /operations/suppliers:
+    get:
+      operationId: getSuppliers
+      tags: [operations]
+      responses:
+        "200": { description: Suppliers, content: { application/json: { schema: { type: array, items: { type: object } } } } }
+    post:
+      operationId: createSupplier
+      tags: [operations]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/SupplierInput" } } }
+      responses:
+        "201": { description: Supplier created, content: { application/json: { schema: { type: object } } } }
+  /operations/purchase-orders:
+    get:
+      operationId: getPurchaseOrders
+      tags: [operations]
+      responses:
+        "200": { description: Purchase orders, content: { application/json: { schema: { type: array, items: { type: object } } } } }
+    post:
+      operationId: createPurchaseOrder
+      tags: [operations]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/PurchaseOrderInput" } } }
+      responses:
+        "201": { description: Purchase order created, content: { application/json: { schema: { type: object } } } }
+  /operations/purchase-orders/{id}/receive:
+    post:
+      operationId: receivePurchaseOrder
+      tags: [operations]
+      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/PurchaseReceiptInput" } } }
+      responses:
+        "201": { description: Receipt created, content: { application/json: { schema: { type: object } } } }
+  /operations/reservations:
+    post:
+      operationId: reserveInventory
+      tags: [operations]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/ReservationInput" } } }
+      responses:
+        "201": { description: Reservation created, content: { application/json: { schema: { type: object } } } }
+  /operations/reservations/{id}/release:
+    post:
+      operationId: releaseInventoryReservation
+      tags: [operations]
+      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+      responses:
+        "200": { description: Reservation released, content: { application/json: { schema: { type: object } } } }
+
 components:
   schemas:
+    InventoryAdjustmentInput:
+      type: object
+      required: [productId, quantity, reason, idempotencyKey]
+      properties:
+        productId: { type: integer }
+        quantity: { type: number }
+        reason: { type: string }
+        idempotencyKey: { type: string, minLength: 8 }
+    SupplierInput:
+      type: object
+      required: [name]
+      properties:
+        name: { type: string }
+        email: { type: string, format: email }
+    PurchaseOrderInput:
+      type: object
+      required: [supplierId, lines]
+      properties:
+        supplierId: { type: integer }
+        lines: { type: array, items: { type: object } }
+    PurchaseReceiptInput:
+      type: object
+      required: [idempotencyKey, lines]
+      properties:
+        idempotencyKey: { type: string }
+        lines: { type: array, items: { type: object } }
+    ReservationInput:
+      type: object
+      required: [productId, quantity]
+      properties:
+        productId: { type: integer }
+        quantity: { type: number }
     HealthStatus:
       type: object
       properties:

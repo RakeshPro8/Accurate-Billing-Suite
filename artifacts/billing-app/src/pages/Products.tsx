@@ -37,7 +37,12 @@ function ProductModal({ open, onClose, editing }: { open: boolean; onClose: () =
   const update = useUpdateProduct();
 
   function onSubmit(data: any) {
-    const payload = { ...data, price: parseFloat(data.price), cost: data.cost ? parseFloat(data.cost) : undefined, stock: parseInt(data.stock) };
+    const payload = {
+      ...data,
+      price: parseFloat(data.price),
+      cost: data.cost ? parseFloat(data.cost) : undefined,
+      ...(editing ? {} : { stock: parseInt(data.stock ?? "0") }),
+    };
     if (editing) {
       update.mutate({ id: editing.id, data: payload }, {
         onSuccess: () => { queryClient.invalidateQueries({ queryKey: getGetProductsQueryKey() }); toast({ title: "Product updated" }); onClose(); reset(); },

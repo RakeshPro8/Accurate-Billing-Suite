@@ -17,6 +17,10 @@ export const productsTable = pgTable("products", {
   isRefurbished: boolean("is_refurbished").notNull().default(false),
   isBundle: boolean("is_bundle").notNull().default(false),
   storeId: integer("store_id"),
+  active: boolean("active").notNull().default(true),
+  reorderPoint: integer("reorder_point").notNull().default(0),
+  reorderQuantity: integer("reorder_quantity").notNull().default(0),
+  archivedAt: timestamp("archived_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

@@ -2,7 +2,7 @@ import { Router } from "express";
 import { and, asc, desc, eq, exists, gte, ilike, inArray, lte, or, sql } from "drizzle-orm";
 import nodemailer from "nodemailer";
 import { z } from "zod";
-import { db, customersTable, productsTable, saleEventsTable, saleLineItemsTable, salePaymentsTable, salesTable, settingsTable } from "@workspace/db";
+import { db, customersTable, productsTable, saleEventsTable, saleLineItemsTable, salePaymentsTable, salesTable, settingsTable, inventoryMovementsTable } from "@workspace/db";
 import {
   CreateSaleBody, DeleteSaleParams, GetSaleParams, GetSalesQueryParams,
   SendSaleEmailParams, UpdateSaleBody, UpdateSaleParams,
@@ -87,6 +87,10 @@ async function adjustInventory(tx: any, items: Array<{ productId?: number | null
       : and(eq(productsTable.id, item.productId), eq(productsTable.storeId, storeId), sql`${productsTable.stock} >= ${item.quantity}`);
     const [product] = await tx.update(productsTable).set({ stock: sql`${productsTable.stock} + ${quantity}` }).where(condition).returning({ id: productsTable.id });
     if (!product) throw new HttpError(409, `Insufficient stock for ${item.name}.`, "INSUFFICIENT_STOCK");
+    await tx.insert(inventoryMovementsTable).values({
+      productId: item.productId, storeId, quantity: String(quantity), reason: direction === "restore" ? "sale_restore" : "sale",
+      employeeId: null, employeeName: null, referenceType: "sale", referenceId: null,
+    });
   }
 }
 async function paymentTotals(tx: any, saleId: number) {

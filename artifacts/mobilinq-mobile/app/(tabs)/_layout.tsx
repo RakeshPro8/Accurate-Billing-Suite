@@ -19,6 +19,30 @@ function NativeTabLayout() {
         <Icon sf={{ default: 'house', selected: 'house.fill' }} />
         <Label>Home</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="repairs">
+        <Icon sf={{ default: 'wrench.and.screwdriver', selected: 'wrench.and.screwdriver.fill' }} />
+        <Label>Repairs</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="dashboard">
+        <Icon sf={{ default: 'chart.bar', selected: 'chart.bar.fill' }} />
+        <Label>Dashboard</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="sales">
+        <Icon sf={{ default: 'creditcard', selected: 'creditcard.fill' }} />
+        <Label>Sales</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="quotes">
+        <Icon sf={{ default: 'text.bubble', selected: 'text.bubble.fill' }} />
+        <Label>Quotes</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="billing">
+        <Icon sf={{ default: 'dollarsign.circle', selected: 'dollarsign.circle.fill' }} />
+        <Label>Billing</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="settings">
+        <Icon sf={{ default: 'gearshape', selected: 'gearshape.fill' }} />
+        <Label>Settings</Label>
+      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }
@@ -74,6 +98,10 @@ function ClassicTabLayout() {
         }}
       />
       <Tabs.Screen name="repairs" options={{ title: 'Repairs', tabBarIcon: ({ color }) => <Feather name="tool" size={22} color={color} /> }} />
+      <Tabs.Screen name="dashboard" options={{ title: 'Dashboard', tabBarIcon: ({ color }) => <Feather name="bar-chart-2" size={22} color={color} /> }} />
+      <Tabs.Screen name="sales" options={{ title: 'Sales', tabBarIcon: ({ color }) => <Feather name="credit-card" size={22} color={color} /> }} />
+      <Tabs.Screen name="quotes" options={{ title: 'Quotes', tabBarIcon: ({ color }) => <Feather name="message-square" size={22} color={color} /> }} />
+      <Tabs.Screen name="billing" options={{ title: 'Billing', tabBarIcon: ({ color }) => <Feather name="dollar-sign" size={22} color={color} /> }} />
       <Tabs.Screen name="settings" options={{ title: 'Settings', tabBarIcon: ({ color }) => <Feather name="settings" size={22} color={color} /> }} />
     </Tabs>
   );

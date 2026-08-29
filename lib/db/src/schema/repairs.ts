@@ -31,6 +31,12 @@ export const repairsTable = pgTable("repairs", {
   completedAt: timestamp("completed_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  dueDate: timestamp("due_date"),
+  slaHours: integer("sla_hours"),
+  approvalState: text("approval_state").notNull().default("pending"),
+  warrantyState: text("warranty_state").notNull().default("none"),
+  warrantyUntil: timestamp("warranty_until"),
+  returnEligibleUntil: timestamp("return_eligible_until"),
 });
 
 export const repairPhotosTable = pgTable("repair_photos", {
