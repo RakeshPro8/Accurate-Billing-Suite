@@ -18,15 +18,18 @@ import {
 } from "@workspace/db";
 import { requireRole } from "../lib/auth";
 import { logAudit } from "../lib/audit";
+import { requireCurrentStoreId } from "../lib/stores";
+import { eq } from "drizzle-orm";
 
 const router = Router();
 
 router.get("/backup", requireRole("admin"), async (req, res) => {
   try {
+    const storeId = await requireCurrentStoreId(req);
     const [products, services, customers, employees, settings, stores, sales, saleLineItems, quotations, quotationLineItems, repairs, repairPhotos, repairParts, auditLogs] = await Promise.all([
-      db.select().from(productsTable),
+       db.select().from(productsTable).where(eq(productsTable.storeId, storeId)),
       db.select().from(servicesTable),
-      db.select().from(customersTable),
+       db.select().from(customersTable).where(eq(customersTable.storeId, storeId)),
       db.select({
         id: employeesTable.id,
         name: employeesTable.name,
@@ -57,11 +60,11 @@ router.get("/backup", requireRole("admin"), async (req, res) => {
         thankYouMessage: settingsTable.thankYouMessage,
         defaultStoreId: settingsTable.defaultStoreId,
       }).from(settingsTable),
-      db.select().from(storesTable),
-      db.select().from(salesTable),
-      db.select().from(saleLineItemsTable),
-      db.select().from(quotationsTable),
-      db.select().from(quotationLineItemsTable),
+       db.select().from(storesTable).where(eq(storesTable.id, storeId)),
+       db.select().from(salesTable).where(eq(salesTable.storeId, storeId)),
+       db.select().from(saleLineItemsTable),
+       db.select().from(quotationsTable).where(eq(quotationsTable.storeId, storeId)),
+       db.select().from(quotationLineItemsTable),
       db.select({
         id: repairsTable.id, ticketNumber: repairsTable.ticketNumber, customerId: repairsTable.customerId,
         customerName: repairsTable.customerName, customerPhone: repairsTable.customerPhone,
@@ -74,10 +77,10 @@ router.get("/backup", requireRole("admin"), async (req, res) => {
         estimatedCost: repairsTable.estimatedCost, deposit: repairsTable.deposit, total: repairsTable.total,
         balance: repairsTable.balance, notifiedAt: repairsTable.notifiedAt, pickedUpAt: repairsTable.pickedUpAt,
         completedAt: repairsTable.completedAt, createdAt: repairsTable.createdAt, updatedAt: repairsTable.updatedAt,
-      }).from(repairsTable),
+       }).from(repairsTable).where(eq(repairsTable.storeId, storeId)),
       db.select({ id: repairPhotosTable.id, repairId: repairPhotosTable.repairId, caption: repairPhotosTable.caption, createdAt: repairPhotosTable.createdAt }).from(repairPhotosTable),
       db.select().from(repairPartsTable),
-      db.select().from(auditLogsTable),
+       db.select().from(auditLogsTable).where(eq(auditLogsTable.storeId, storeId)),
     ]);
 
     const backup = {
@@ -103,12 +106,12 @@ router.get("/backup", requireRole("admin"), async (req, res) => {
         settings,
         stores,
         sales,
-        saleLineItems,
+         saleLineItems: saleLineItems.filter((item) => sales.some((sale) => sale.id === item.saleId)),
         quotations,
-        quotationLineItems,
+         quotationLineItems: quotationLineItems.filter((item) => quotations.some((quote) => quote.id === item.quotationId)),
         repairs,
-        repairPhotos,
-        repairParts,
+         repairPhotos: repairPhotos.filter((photo) => repairs.some((repair) => repair.id === photo.repairId)),
+         repairParts: repairParts.filter((part) => repairs.some((repair) => repair.id === part.repairId)),
         auditLogs,
       },
     };
@@ -118,7 +121,7 @@ router.get("/backup", requireRole("admin"), async (req, res) => {
     res.setHeader("Content-Type", "application/json");
     return res.json(backup);
   } catch (e) {
-    return res.status(500).json({ error: String(e) });
+    throw e;
   }
 });
 

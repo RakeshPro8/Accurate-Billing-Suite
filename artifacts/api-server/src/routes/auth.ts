@@ -11,6 +11,7 @@ const PIN_PATTERN = /^\d{4,8}$/;
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOCKOUT_MS = 60_000;
 const ATTEMPT_WINDOW_MS = 15 * 60_000;
+const MAX_TRACKED_ATTEMPTS = 10_000;
 const failedAttempts = new Map<string, { count: number; firstAttemptAt: number; blockedUntil?: number }>();
 
 type PublicEmployee = {
@@ -59,7 +60,21 @@ function attemptKey(req: Request, employeeId: number) {
   return `${ip}:${employeeId}`;
 }
 
+function pruneFailures() {
+  const now = Date.now();
+  for (const [key, attempt] of failedAttempts) {
+    if ((!attempt.blockedUntil || attempt.blockedUntil <= now) && now - attempt.firstAttemptAt > ATTEMPT_WINDOW_MS) failedAttempts.delete(key);
+  }
+  // Do not allow untrusted identifiers/IPs to grow this in-memory limiter indefinitely.
+  while (failedAttempts.size >= MAX_TRACKED_ATTEMPTS) {
+    const oldest = failedAttempts.keys().next().value;
+    if (oldest === undefined) break;
+    failedAttempts.delete(oldest);
+  }
+}
+
 function isBlocked(key: string): number {
+  pruneFailures();
   const attempt = failedAttempts.get(key);
   if (!attempt) return 0;
   const now = Date.now();
@@ -72,6 +87,7 @@ function isBlocked(key: string): number {
 }
 
 function recordFailure(key: string) {
+  pruneFailures();
   const now = Date.now();
   const previous = failedAttempts.get(key);
   const attempt = !previous || now - previous.firstAttemptAt > ATTEMPT_WINDOW_MS
@@ -181,8 +197,10 @@ router.post("/sign-in", async (req, res) => {
     }
 
     const [employee] = await db.select().from(employeesTable).where(eq(employeesTable.id, employeeId));
-    if (!employee) return res.status(404).json({ error: "Employee account not found." });
-    if (!employee.active) return res.status(403).json({ error: "Employee account is inactive." });
+    if (!employee || !employee.active) {
+      recordFailure(key);
+      return res.status(401).json({ error: "Invalid employee ID or PIN." });
+    }
 
     let valid = employee.pinHash ? await verifyPin(pin, employee.pinHash) : employee.pin === pin;
     if (valid && !employee.pinHash && employee.pin) {
@@ -192,7 +210,7 @@ router.post("/sign-in", async (req, res) => {
     }
     if (!valid) {
       recordFailure(key);
-      return res.status(401).json({ error: "Incorrect PIN." });
+      return res.status(401).json({ error: "Invalid employee ID or PIN." });
     }
 
     clearFailures(key);

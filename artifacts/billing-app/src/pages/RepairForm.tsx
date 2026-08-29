@@ -61,7 +61,9 @@ export default function RepairForm() {
         deviceModel: existing.deviceModel || "",
         serialNumber: existing.serialNumber || "",
         imei: existing.imei || "",
-        devicePassword: existing.devicePassword || "",
+        // Existing credentials are intentionally write-only and are never
+        // returned in ordinary repair payloads.
+        devicePassword: "",
         problemDescription: existing.problemDescription || "",
         diagnosticNotes: existing.diagnosticNotes || "",
         status: existing.status,
@@ -88,13 +90,19 @@ export default function RepairForm() {
   }, [customerId, customers, setValue]);
 
   function onSubmit(data: any) {
+    const {
+      total: _serverTotal,
+      status: _serverStatus,
+      devicePassword,
+      ...editable
+    } = data;
     const payload = {
-      ...data,
+      ...editable,
       customerId: data.customerId ? Number(data.customerId) : undefined,
       technicianId: data.technicianId ? Number(data.technicianId) : undefined,
       estimatedCost: data.estimatedCost ? parseFloat(data.estimatedCost) : undefined,
       deposit: parseFloat(data.deposit || 0),
-      total: parseFloat(data.total || 0),
+      ...(devicePassword ? { devicePassword } : {}),
     };
 
     if (isEditing) {

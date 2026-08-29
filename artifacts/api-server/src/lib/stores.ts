@@ -1,16 +1,33 @@
 import { db, settingsTable, storesTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import type { Request } from "express";
+import { HttpError } from "./http";
 
 export async function getCurrentStoreId(req: Request): Promise<number | null> {
   if (req.session?.storeScopeAll) return null;
-  if (req.session?.storeId) return req.session.storeId;
+  if (req.session?.storeId) {
+    const [activeStore] = await db.select({ id: storesTable.id }).from(storesTable)
+      .where(and(eq(storesTable.id, req.session.storeId), eq(storesTable.active, true))).limit(1);
+    return activeStore?.id ?? null;
+  }
   const [settings] = await db.select({ defaultStoreId: settingsTable.defaultStoreId })
     .from(settingsTable).limit(1);
-  if (settings?.defaultStoreId) return settings.defaultStoreId;
+  if (settings?.defaultStoreId) {
+    const [activeStore] = await db.select({ id: storesTable.id }).from(storesTable)
+      .where(and(eq(storesTable.id, settings.defaultStoreId), eq(storesTable.active, true))).limit(1);
+    if (activeStore) return activeStore.id;
+  }
   const [store] = await db.select({ id: storesTable.id }).from(storesTable)
-    .where(eq(storesTable.isDefault, true)).limit(1);
+    .where(and(eq(storesTable.isDefault, true), eq(storesTable.active, true))).limit(1);
   return store?.id ?? null;
+}
+
+export async function requireCurrentStoreId(req: Request): Promise<number> {
+  const storeId = await getCurrentStoreId(req);
+  if (!storeId) {
+    throw new HttpError(409, "Select an active store before continuing.", "STORE_SCOPE_REQUIRED");
+  }
+  return storeId;
 }
 
 export async function setCurrentStoreId(req: Request, storeId: number | null) {

@@ -1,8 +1,12 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { settingsTable } from "@workspace/db";
+import { settingsTable, storesTable } from "@workspace/db";
 import { sql } from "drizzle-orm";
 import { logAudit } from "../lib/audit";
+import { requireRole } from "../lib/auth";
+import { requireCurrentStoreId } from "../lib/stores";
+import { HttpError } from "../lib/http";
+import { eq } from "drizzle-orm";
 
 const router = Router();
 
@@ -34,8 +38,9 @@ function parseSettings(s: typeof settingsTable.$inferSelect) {
   };
 }
 
-router.get("/", async (_req, res) => {
+router.get("/", requireRole("manager"), async (req, res) => {
   try {
+    await requireCurrentStoreId(req);
     let [settings] = await db.select().from(settingsTable).limit(1);
     if (!settings) {
       [settings] = await db.insert(settingsTable).values({
@@ -48,13 +53,17 @@ router.get("/", async (_req, res) => {
     }
     return res.json(parseSettings(settings));
   } catch (e) {
-    return res.status(500).json({ error: String(e) });
+    throw e;
   }
 });
 
-router.patch("/", async (req, res) => {
+router.patch("/", requireRole("admin"), async (req, res) => {
   try {
-    const body = req.body;
+    await requireCurrentStoreId(req);
+    const body = req.body ?? {};
+    if (body.businessEmail && (typeof body.businessEmail !== "string" || body.businessEmail.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.businessEmail))) throw new HttpError(400, "Invalid settings.");
+    if (body.smtpPort !== undefined && (!Number.isInteger(Number(body.smtpPort)) || Number(body.smtpPort) < 1 || Number(body.smtpPort) > 65535)) throw new HttpError(400, "Invalid settings.");
+    for (const field of ["taxRate", "gstRate", "qstRate"]) if (body[field] !== undefined && (!Number.isFinite(Number(body[field])) || Number(body[field]) < 0 || Number(body[field]) > 100)) throw new HttpError(400, "Invalid settings.");
     const updates: Record<string, unknown> = {};
     const strFields = ["appName","businessName","businessAddress","businessPhone","businessEmail","logoUrl","theme","currency","invoicePrefix","quotePrefix","invoiceFooter","thankYouMessage","smtpHost","smtpUser","smtpPass"] as const;
     strFields.forEach(f => { if (body[f] !== undefined) updates[f] = body[f]; });
@@ -63,23 +72,27 @@ router.patch("/", async (req, res) => {
     if (body.qstRate !== undefined) updates.qstRate = String(body.qstRate);
     if (body.taxName !== undefined) updates.taxName = String(body.taxName).trim() || "Tax";
     if (body.taxEnabled !== undefined) updates.taxEnabled = Boolean(body.taxEnabled);
-    if (body.defaultStoreId !== undefined) updates.defaultStoreId = body.defaultStoreId ? Number(body.defaultStoreId) : null;
+    if (body.defaultStoreId !== undefined) {
+      const defaultStoreId = body.defaultStoreId ? Number(body.defaultStoreId) : null;
+      if (defaultStoreId !== null && (!Number.isSafeInteger(defaultStoreId) || defaultStoreId < 1)) throw new HttpError(400, "Invalid default store.");
+      updates.defaultStoreId = defaultStoreId;
+    }
     if (body.smtpPort !== undefined) updates.smtpPort = Number(body.smtpPort);
 
-    let [settings] = await db.select().from(settingsTable).limit(1);
-    if (!settings) {
-      [settings] = await db.insert(settingsTable).values({
-        businessName: "My Store", currency: "USD", taxRate: "0",
-        invoicePrefix: "INV-", quotePrefix: "QUO-", ...updates
-      }).returning();
-    } else {
-      [settings] = await db.update(settingsTable).set(updates)
-        .where(sql`id = ${settings.id}`).returning();
-    }
+    const settings = await db.transaction(async (tx) => {
+      if (updates.defaultStoreId) {
+        const [store] = await tx.select({ id: storesTable.id }).from(storesTable).where(eq(storesTable.id, updates.defaultStoreId as number)).limit(1);
+        if (!store) throw new HttpError(400, "Invalid default store.");
+      }
+      let [current] = await tx.select().from(settingsTable).limit(1);
+      if (!current) [current] = await tx.insert(settingsTable).values({ businessName: "My Store", currency: "USD", taxRate: "0", invoicePrefix: "INV-", quotePrefix: "QUO-", ...updates }).returning();
+      else [current] = await tx.update(settingsTable).set(updates).where(sql`id = ${current.id}`).returning();
+      return current;
+    });
     await logAudit(req, "update", "settings", settings.id, { fields: Object.keys(updates).filter((key) => key !== "smtpPass") });
     return res.json(parseSettings(settings));
   } catch (e) {
-    return res.status(500).json({ error: String(e) });
+    throw e;
   }
 });
 

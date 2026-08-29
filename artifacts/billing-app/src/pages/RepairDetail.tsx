@@ -5,6 +5,7 @@ import {
   useAddRepairPart, useRemoveRepairPart, useGetProducts, useGetSettings,
   getGetRepairQueryKey, getGetRepairsQueryKey, getGetProductsQueryKey,
 } from "@workspace/api-client-react";
+import type { RepairStatusChangeStatus } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   formatCurrency, formatDate, formatDateTime, getRepairStatusColor, getRepairStatusLabel,
@@ -25,7 +26,7 @@ import { recordAuditEvent } from "@/lib/audit-client";
 import { apiUrl } from "@/lib/api-config";
 import {
   ArrowLeft, Edit, Printer, Camera, Trash2, Plus, Package, CheckCircle, User, Phone, Mail,
-  Wrench, FileText, Download, Send, Lock,
+  Wrench, FileText, Download, Send,
 } from "lucide-react";
 
 const STATUS_PIPELINE = [
@@ -63,7 +64,6 @@ export default function RepairDetail() {
   const [selectedProductId, setSelectedProductId] = useState("");
   const [partQty, setPartQty] = useState(1);
   const [partSerial, setPartSerial] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
   const [showPhotoDialog, setShowPhotoDialog] = useState(false);
   const [showPartDialog, setShowPartDialog] = useState(false);
 
@@ -88,7 +88,7 @@ export default function RepairDetail() {
       toast({ title: "Status queued for sync", description: "Customer notifications stay server-side and will not run while offline." });
       return;
     }
-    updateStatus.mutate({ id, data: { status: newStatus, notes: statusNote, notify: notifyCustomer && !!r.customerEmail } }, {
+    updateStatus.mutate({ id, data: { status: newStatus as RepairStatusChangeStatus, notes: statusNote, notify: notifyCustomer && !!r.customerEmail } }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetRepairQueryKey(id) });
         queryClient.invalidateQueries({ queryKey: getGetRepairsQueryKey() });
@@ -284,15 +284,6 @@ export default function RepairDetail() {
                 <div className="md:col-span-2">
                   <p className="text-xs text-muted-foreground uppercase tracking-wider">Diagnostic Notes</p>
                   <p className="text-sm mt-1 text-muted-foreground">{r.diagnosticNotes}</p>
-                </div>
-              )}
-              {r.devicePassword && (
-                <div className="md:col-span-2 bg-muted/50 rounded p-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider flex items-center gap-1"><Lock className="h-3 w-3" /> Device Password</p>
-                    <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={() => setShowPassword(!showPassword)}>{showPassword ? "Hide" : "Show"}</Button>
-                  </div>
-                  <p className="text-sm font-mono mt-1">{showPassword ? r.devicePassword : "••••••••"}</p>
                 </div>
               )}
             </CardContent>

@@ -5,6 +5,7 @@ import connectPgSimple from "connect-pg-simple";
 import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
+import { errorHandler } from "./lib/http";
 
 const app: Express = express();
 
@@ -46,7 +47,7 @@ const configuredOrigins = (process.env["CORS_ORIGIN"] ?? process.env["APP_ORIGIN
 app.use(cors({
   origin: (origin, callback) => {
     // Same-origin browser requests do not include an Origin header.
-    if (!origin || configuredOrigins.length === 0 || configuredOrigins.includes(origin)) {
+    if (!origin || configuredOrigins.includes(origin) || (process.env["NODE_ENV"] !== "production" && configuredOrigins.length === 0)) {
       callback(null, true);
       return;
     }
@@ -54,8 +55,29 @@ app.use(cors({
   },
   credentials: true,
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use((_req, res, next) => {
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("X-Frame-Options", "DENY");
+  res.setHeader("Referrer-Policy", "no-referrer");
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+  res.setHeader("Cross-Origin-Resource-Policy", "same-site");
+  res.setHeader("Cache-Control", "no-store");
+  if (process.env["NODE_ENV"] === "production") {
+    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+  }
+  next();
+});
+app.use(express.json({ limit: "4mb", type: ["application/json", "application/*+json"] }));
+app.use(express.urlencoded({ extended: false, limit: "256kb" }));
+app.use((req, res, next) => {
+  if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return next();
+  const origin = req.get("origin");
+  if (!origin) return next();
+  if (configuredOrigins.includes(origin) || (process.env["NODE_ENV"] !== "production" && configuredOrigins.length === 0)) {
+    return next();
+  }
+  return res.status(403).json({ error: "Request origin is not allowed.", code: "ORIGIN_NOT_ALLOWED" });
+});
 app.use(
   session({
     store: new PostgresStore({
@@ -76,5 +98,6 @@ app.use(
 );
 
 app.use("/api", router);
+app.use(errorHandler);
 
 export default app;

@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { employeesTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { hashPin } from "../lib/auth";
+import { HttpError } from "../lib/http";
 
 const router = Router();
 
@@ -26,16 +27,16 @@ function validPin(value: unknown): value is string {
   return typeof value === "string" && /^\d{4,8}$/.test(value);
 }
 
-router.get("/", async (_req, res) => {
+router.get("/", async (_req, res, next) => {
   try {
     const employees = await db.select().from(employeesTable).orderBy(employeesTable.name);
     return res.json(employees.map(parseEmployee));
-  } catch (e) {
-    return res.status(500).json({ error: String(e) });
+  } catch (error) {
+    return next(error);
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/", async (req, res, next) => {
   try {
     const { name, email, pin, role, maxDiscountPct, active } = req.body ?? {};
     if (!validName(name) || !validPin(pin)) {
@@ -62,14 +63,15 @@ router.post("/", async (req, res) => {
       active: active !== false,
     }).returning();
     return res.status(201).json(parseEmployee(emp));
-  } catch (e) {
-    return res.status(500).json({ error: String(e) });
+  } catch (error) {
+    return next(error);
   }
 });
 
-router.patch("/:id", async (req, res) => {
+router.patch("/:id", async (req, res, next) => {
   try {
     const id = Number(req.params.id);
+    if (!Number.isSafeInteger(id) || id <= 0) throw new HttpError(400, "Employee ID is invalid.", "INVALID_REQUEST");
     const { name, email, pin, role, maxDiscountPct, active } = req.body ?? {};
     const updates: Record<string, unknown> = {};
     if (name !== undefined) {
@@ -101,18 +103,20 @@ router.patch("/:id", async (req, res) => {
     const [emp] = await db.update(employeesTable).set(updates).where(eq(employeesTable.id, id)).returning();
     if (!emp) return res.status(404).json({ error: "Employee not found." });
     return res.json(parseEmployee(emp));
-  } catch (e) {
-    return res.status(500).json({ error: String(e) });
+  } catch (error) {
+    return next(error);
   }
 });
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", async (req, res, next) => {
   try {
     const id = Number(req.params.id);
+    if (!Number.isSafeInteger(id) || id <= 0) throw new HttpError(400, "Employee ID is invalid.", "INVALID_REQUEST");
+    if (id === req.employee?.id) throw new HttpError(409, "You cannot delete your active employee account.", "EMPLOYEE_IN_USE");
     await db.delete(employeesTable).where(eq(employeesTable.id, id));
     return res.status(204).send();
-  } catch (e) {
-    return res.status(500).json({ error: String(e) });
+  } catch (error) {
+    return next(error);
   }
 });
 

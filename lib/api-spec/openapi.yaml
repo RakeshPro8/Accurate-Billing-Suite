@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
-  title: Api
-  version: 0.1.0
-  description: BillPro - Store Billing & Reports API
+  title: Mobilinq API
+  version: 0.2.0
+  description: Mobilinq store operations API
 servers:
   - url: /api
     description: Base API path
@@ -1122,6 +1122,28 @@ paths:
               schema:
                 $ref: "#/components/schemas/Repair"
 
+  /repairs/{id}/device-password:
+    get:
+      operationId: revealRepairDeviceCredential
+      tags: [repairs]
+      summary: Reveal a stored device credential (manager or admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1 }
+      responses:
+        "200":
+          description: Decrypted credential returned after authorization and audit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeviceCredentialResponse"
+        "403":
+          description: Manager permission is required
+        "404":
+          description: Repair or credential not found
+
   /repairs/{id}/photos:
     post:
       operationId: addRepairPhoto
@@ -1872,7 +1894,6 @@ components:
         deviceModel:        { type: ["string", "null"] }
         serialNumber:       { type: ["string", "null"] }
         imei:               { type: ["string", "null"] }
-        devicePassword:     { type: ["string", "null"] }
         problemDescription: { type: ["string", "null"] }
         diagnosticNotes:    { type: ["string", "null"] }
         status:             { type: string }
@@ -1900,28 +1921,28 @@ components:
     RepairInput:
       type: object
       required: [deviceType, problemDescription]
+      additionalProperties: false
       properties:
-        customerId:         { type: integer }
-        customerName:       { type: string }
-        customerPhone:      { type: string }
-        customerEmail:      { type: string }
-        deviceType:         { type: string }
-        deviceBrand:        { type: string }
-        deviceModel:        { type: string }
-        serialNumber:       { type: string }
-        imei:               { type: string }
-        devicePassword:     { type: string }
-        problemDescription: { type: string }
-        diagnosticNotes:    { type: string }
-        status:             { type: string }
-        priority:           { type: string }
-        technicianId:       { type: integer }
-        estimatedCost:      { type: number }
-        deposit:            { type: number }
-        total:              { type: number }
+        customerId:         { type: ["integer", "null"], minimum: 1 }
+        customerName:       { type: ["string", "null"], maxLength: 200 }
+        customerPhone:      { type: ["string", "null"], maxLength: 50 }
+        customerEmail:      { type: ["string", "null"], format: email, maxLength: 320 }
+        deviceType:         { type: string, minLength: 1, maxLength: 100 }
+        deviceBrand:        { type: ["string", "null"], maxLength: 100 }
+        deviceModel:        { type: ["string", "null"], maxLength: 150 }
+        serialNumber:       { type: ["string", "null"], maxLength: 150 }
+        imei:               { type: ["string", "null"], maxLength: 50 }
+        devicePassword:     { type: ["string", "null"], maxLength: 1000, writeOnly: true }
+        problemDescription: { type: string, minLength: 1, maxLength: 5000 }
+        diagnosticNotes:    { type: ["string", "null"], maxLength: 5000 }
+        priority:           { type: string, enum: [low, normal, high, urgent] }
+        technicianId:       { type: ["integer", "null"], minimum: 1 }
+        estimatedCost:      { type: ["number", "null"], minimum: 0, maximum: 10000000 }
+        deposit:            { type: number, minimum: 0, maximum: 10000000 }
 
     RepairUpdate:
       type: object
+      additionalProperties: false
       properties:
         customerId:         { type: integer }
         customerName:       { type: string }
@@ -1935,22 +1956,26 @@ components:
         devicePassword:     { type: string }
         problemDescription: { type: string }
         diagnosticNotes:    { type: string }
-        status:             { type: string }
-        priority:           { type: string }
+        priority:           { type: string, enum: [low, normal, high, urgent] }
         technicianId:       { type: integer }
         estimatedCost:      { type: number }
         deposit:            { type: number }
-        total:              { type: number }
-        pickedUpAt:         { type: string }
-        completedAt:        { type: string }
 
     RepairStatusChange:
       type: object
       required: [status]
+      additionalProperties: false
       properties:
-        status:     { type: string }
-        notes:      { type: string }
+        status:     { type: string, enum: [intake, diagnostic, waiting_parts, in_progress, ready_qa, completed, picked_up, cancelled] }
+        notes:      { type: string, maxLength: 2000 }
         notify:     { type: boolean }
+
+    DeviceCredentialResponse:
+      type: object
+      additionalProperties: false
+      required: [devicePassword]
+      properties:
+        devicePassword: { type: string }
 
     RepairPhoto:
       type: object
@@ -1965,9 +1990,10 @@ components:
     RepairPhotoInput:
       type: object
       required: [dataUrl]
+      additionalProperties: false
       properties:
-        caption:    { type: string }
-        dataUrl:    { type: string }
+        caption:    { type: string, maxLength: 500 }
+        dataUrl:    { type: string, maxLength: 2800000, pattern: "^data:image/(jpeg|png|webp);base64," }
 
     RepairPart:
       type: object
@@ -1987,10 +2013,11 @@ components:
     RepairPartInput:
       type: object
       required: [productId, name, quantity, unitPrice]
+      additionalProperties: false
       properties:
-        productId:    { type: integer }
-        name:         { type: string }
-        serialNumber: { type: string }
-        quantity:     { type: number }
-        unitPrice:    { type: number }
-        cost:         { type: number }
+        productId:    { type: integer, minimum: 1 }
+        name:         { type: string, minLength: 1, maxLength: 250 }
+        serialNumber: { type: string, maxLength: 150 }
+        quantity:     { type: number, exclusiveMinimum: 0, maximum: 100000 }
+        unitPrice:    { type: number, minimum: 0, maximum: 10000000 }
+        cost:         { type: number, minimum: 0, maximum: 10000000 }

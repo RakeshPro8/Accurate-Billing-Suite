@@ -2,7 +2,8 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { salesTable, saleLineItemsTable, customersTable, productsTable, servicesTable, quotationsTable } from "@workspace/db";
 import { eq, gte, lte, and, sql } from "drizzle-orm";
-import { getCurrentStoreId } from "../lib/stores";
+import { requireCurrentStoreId } from "../lib/stores";
+import { HttpError } from "../lib/http";
 
 const router = Router();
 
@@ -29,8 +30,8 @@ router.get("/dashboard", async (_req, res) => {
     const lastWeekStart = new Date(weekStart); lastWeekStart.setDate(weekStart.getDate() - 7);
     const lastWeekEnd   = new Date(weekStart); lastWeekEnd.setMilliseconds(-1);
 
-    const storeId = await getCurrentStoreId(_req);
-    const storeFilter = storeId ? eq(salesTable.storeId, storeId) : undefined;
+    const storeId = await requireCurrentStoreId(_req);
+    const storeFilter = eq(salesTable.storeId, storeId);
     const [mtdStats] = await db.select({
       revenue: sql<number>`coalesce(sum(total::numeric), 0)`,
       count:   sql<number>`count(*)`,
@@ -49,8 +50,8 @@ router.get("/dashboard", async (_req, res) => {
       storeFilter
     ));
 
-    const customerFilter = storeId ? eq(customersTable.storeId, storeId) : undefined;
-    const quoteFilter = storeId ? eq(quotationsTable.storeId, storeId) : undefined;
+    const customerFilter = eq(customersTable.storeId, storeId);
+    const quoteFilter = eq(quotationsTable.storeId, storeId);
     const [{ count: totalCustomers }]  = await db.select({ count: sql<number>`count(*)` }).from(customersTable).where(customerFilter);
     const [{ count: pendingInvoices }] = await db.select({ count: sql<number>`count(*)` }).from(salesTable).where(and(eq(salesTable.status, "invoice"), storeFilter));
     const [{ count: openQuotations }]  = await db.select({ count: sql<number>`count(*)` }).from(quotationsTable).where(and(eq(quotationsTable.status, "draft"), quoteFilter));
@@ -80,25 +81,26 @@ router.get("/dashboard", async (_req, res) => {
       })),
     });
   } catch (e) {
-    return res.status(500).json({ error: String(e) });
+    throw e;
   }
 });
 
 router.get("/weekly", async (req, res) => {
   try {
-    const weekOffset = Number(req.query.weekOffset) || 0;
+    const weekOffset = req.query.weekOffset === undefined ? 0 : Number(req.query.weekOffset);
+    if (!Number.isInteger(weekOffset) || Math.abs(weekOffset) > 104) throw new HttpError(400, "Invalid week offset.");
     const base = new Date();
     base.setDate(base.getDate() - weekOffset * 7);
     const weekStart = startOfWeek(base);
     const weekEnd   = endOfWeek(new Date(weekStart));
 
-    const storeId = await getCurrentStoreId(req);
-    const storeFilter = storeId ? eq(salesTable.storeId, storeId) : undefined;
+    const storeId = await requireCurrentStoreId(req);
+    const storeFilter = eq(salesTable.storeId, storeId);
     const sales = await db.select().from(salesTable)
       .where(and(gte(salesTable.createdAt, weekStart), lte(salesTable.createdAt, weekEnd), storeFilter));
 
     const [{ newCustomers }] = await db.select({ newCustomers: sql<number>`count(*)` }).from(customersTable)
-      .where(and(gte(customersTable.createdAt, weekStart), lte(customersTable.createdAt, weekEnd), storeId ? eq(customersTable.storeId, storeId) : undefined));
+      .where(and(gte(customersTable.createdAt, weekStart), lte(customersTable.createdAt, weekEnd), eq(customersTable.storeId, storeId)));
 
     const paidSales = sales.filter(s => s.status === "paid");
     const totalRevenue = paidSales.reduce((sum, s) => sum + parseFloat(s.total), 0);
@@ -133,24 +135,25 @@ router.get("/weekly", async (req, res) => {
       dailyBreakdown: Object.entries(dailyMap).map(([date, v]) => ({ date, ...v })),
     });
   } catch (e) {
-    return res.status(500).json({ error: String(e) });
+    throw e;
   }
 });
 
 router.get("/monthly", async (req, res) => {
   try {
-    const year  = Number(req.query.year)  || new Date().getFullYear();
-    const month = Number(req.query.month) || new Date().getMonth() + 1;
+    const year  = req.query.year === undefined ? new Date().getFullYear() : Number(req.query.year);
+    const month = req.query.month === undefined ? new Date().getMonth() + 1 : Number(req.query.month);
+    if (!Number.isInteger(year) || year < 2000 || year > 2100 || !Number.isInteger(month) || month < 1 || month > 12) throw new HttpError(400, "Invalid reporting period.");
     const start = startOfMonth(year, month);
     const end   = endOfMonth(year, month);
 
-    const storeId = await getCurrentStoreId(req);
-    const storeFilter = storeId ? eq(salesTable.storeId, storeId) : undefined;
+    const storeId = await requireCurrentStoreId(req);
+    const storeFilter = eq(salesTable.storeId, storeId);
     const sales = await db.select().from(salesTable)
       .where(and(gte(salesTable.createdAt, start), lte(salesTable.createdAt, end), storeFilter));
 
     const [{ newCustomers }] = await db.select({ newCustomers: sql<number>`count(*)` }).from(customersTable)
-      .where(and(gte(customersTable.createdAt, start), lte(customersTable.createdAt, end), storeId ? eq(customersTable.storeId, storeId) : undefined));
+      .where(and(gte(customersTable.createdAt, start), lte(customersTable.createdAt, end), eq(customersTable.storeId, storeId)));
 
     const paidSales = sales.filter(s => s.status === "paid");
     const totalRevenue = paidSales.reduce((sum, s) => sum + parseFloat(s.total), 0);
@@ -182,14 +185,14 @@ router.get("/monthly", async (req, res) => {
       })),
     });
   } catch (e) {
-    return res.status(500).json({ error: String(e) });
+    throw e;
   }
 });
 
 router.get("/top-products", async (req, res) => {
   try {
-    const storeId = await getCurrentStoreId(req);
-    const scopedSales = await db.select({ id: salesTable.id }).from(salesTable).where(storeId ? eq(salesTable.storeId, storeId) : undefined);
+    const storeId = await requireCurrentStoreId(req);
+    const scopedSales = await db.select({ id: salesTable.id }).from(salesTable).where(eq(salesTable.storeId, storeId));
     const saleIds = new Set(scopedSales.map((sale) => sale.id));
     const items = await db.select().from(saleLineItemsTable);
     const map: Record<string, { name: string; type: string; totalRevenue: number; totalQty: number }> = {};
@@ -200,14 +203,14 @@ router.get("/top-products", async (req, res) => {
     });
     return res.json(Object.values(map).sort((a, b) => b.totalRevenue - a.totalRevenue).slice(0, 10));
   } catch (e) {
-    return res.status(500).json({ error: String(e) });
+    throw e;
   }
 });
 
 router.get("/revenue-by-category", async (req, res) => {
   try {
-    const storeId = await getCurrentStoreId(req);
-    const scopedSales = await db.select({ id: salesTable.id }).from(salesTable).where(storeId ? eq(salesTable.storeId, storeId) : undefined);
+    const storeId = await requireCurrentStoreId(req);
+    const scopedSales = await db.select({ id: salesTable.id }).from(salesTable).where(eq(salesTable.storeId, storeId));
     const saleIds = new Set(scopedSales.map((sale) => sale.id));
     const items    = await db.select().from(saleLineItemsTable);
     const products = await db.select({ id: productsTable.id, category: productsTable.category }).from(productsTable);
@@ -229,7 +232,7 @@ router.get("/revenue-by-category", async (req, res) => {
       percentage: Math.round((revenue / total) * 100),
     })));
   } catch (e) {
-    return res.status(500).json({ error: String(e) });
+    throw e;
   }
 });
 

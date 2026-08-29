@@ -6,4 +6,6 @@
  * OpenAPI spec version: 0.2.0
  */
 
-export type SyncReplayResponseResultsItemData = { [key: string]: unknown };
+export interface DeviceCredentialResponse {
+  devicePassword: string;
+}
