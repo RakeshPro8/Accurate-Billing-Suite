@@ -19,6 +19,7 @@ export function EmployeeSignIn() {
 
   async function handleSignIn() {
     if (!selectedId) {
+      trackEmployeeAuthOutcome("sign_in", "invalid_input");
       setError("Choose your employee account.");
       return;
     }
@@ -41,6 +42,7 @@ export function EmployeeSignIn() {
 
   async function handleBootstrap() {
     if (!name.trim()) {
+      trackEmployeeAuthOutcome("setup", "invalid_input");
       setError("Enter your full name.");
       return;
     }

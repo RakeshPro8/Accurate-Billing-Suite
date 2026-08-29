@@ -10,8 +10,11 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import {
   trackEmployeeAuthOutcome,
-  type EmployeeAuthOutcome,
 } from "@/lib/analytics";
+import {
+  classifySetupError,
+  classifySignInError,
+} from "@/lib/employee-auth-outcomes";
 
 export type EmployeeRole = "admin" | "manager" | "staff";
 
@@ -62,41 +65,6 @@ function asActiveEmployee(employee: any): ActiveEmployee {
     maxDiscountPct: Number(employee.maxDiscountPct ?? 0),
     active: employee.active !== false,
   };
-}
-
-function getHttpStatus(error: unknown): number | undefined {
-  if (!error || typeof error !== "object") return undefined;
-
-  const status = (error as { status?: unknown }).status;
-  return typeof status === "number" ? status : undefined;
-}
-
-function classifySignInError(error: unknown): EmployeeAuthOutcome {
-  switch (getHttpStatus(error)) {
-    case 400:
-      return "invalid_input";
-    case 401:
-      return "invalid_pin";
-    case 403:
-      return "inactive_account";
-    case 404:
-      return "account_not_found";
-    case 429:
-      return "throttled";
-    default:
-      return "error";
-  }
-}
-
-function classifySetupError(error: unknown): EmployeeAuthOutcome {
-  switch (getHttpStatus(error)) {
-    case 400:
-      return "invalid_input";
-    case 409:
-      return "setup_already_complete";
-    default:
-      return "error";
-  }
 }
 
 export function EmployeeProvider({ children }: { children: ReactNode }) {
