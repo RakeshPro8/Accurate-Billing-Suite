@@ -3,6 +3,7 @@ import { useGetSettings, useUpdateSettings, getGetSettingsQueryKey } from "@work
 import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,7 @@ function DesktopDiagnosticsPanel() {
     lastSyncAt: getLastSyncAt(),
   });
   const [refreshing, setRefreshing] = useState(false);
+  const [updateAvailable, setUpdateAvailable] = useState(false);
   const endpoint = getApiEndpointStatus();
 
   async function refreshDiagnostics() {
@@ -46,6 +48,23 @@ function DesktopDiagnosticsPanel() {
     return () => window.removeEventListener("mobilinq:last-sync", onSync);
   }, []);
 
+  useEffect(() => {
+    let mounted = true;
+    const onUpdateAvailable = () => setUpdateAvailable(true);
+
+    window.addEventListener("mobilinq:service-worker-update", onUpdateAvailable);
+    void navigator.serviceWorker?.getRegistration(import.meta.env.BASE_URL).then((registration) => {
+      if (mounted && registration?.waiting) {
+        setUpdateAvailable(true);
+      }
+    });
+
+    return () => {
+      mounted = false;
+      window.removeEventListener("mobilinq:service-worker-update", onUpdateAvailable);
+    };
+  }, []);
+
   return (
     <Card className="border-primary/20">
       <CardHeader className="pb-3">
@@ -57,6 +76,19 @@ function DesktopDiagnosticsPanel() {
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
+        {updateAvailable && (
+          <Alert className="border-amber-500/40 bg-amber-500/10">
+            <RefreshCw className="h-4 w-4 text-amber-400" />
+            <AlertTitle>Update ready</AlertTitle>
+            <AlertDescription className="flex flex-wrap items-center justify-between gap-3">
+              <span>A newer version of Mobilinq is ready. Reload the app to apply the update.</span>
+              <Button type="button" size="sm" className="gap-1.5" onClick={() => window.location.reload()}>
+                <RefreshCw className="h-3.5 w-3.5" /> Reload app
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="rounded-md border bg-muted/20 p-3">
             <p className="text-[11px] uppercase tracking-wide text-muted-foreground">API origin</p>

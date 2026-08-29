@@ -1,8 +1,8 @@
-const VERSION = "mobilinq-shell-v3";
+const VERSION = "mobilinq-shell-v4";
 const SHELL = [".", "./", "./index.html", "./favicon.svg", "./manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(VERSION).then((cache) => cache.addAll(SHELL)).then(() => self.skipWaiting()));
+  event.waitUntil(caches.open(VERSION).then((cache) => cache.addAll(SHELL)));
 });
 
 self.addEventListener("activate", (event) => {
