@@ -2,6 +2,7 @@
   "name": "Mobilinq Operations",
   "short_name": "Mobilinq",
   "description": "Store billing, repairs, and operations",
+  "version": "1.0.0",
   "start_url": "./",
   "display": "standalone",
   "background_color": "#09090b",

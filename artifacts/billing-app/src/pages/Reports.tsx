@@ -14,10 +14,9 @@ import {
   XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
 import { Download, ChevronLeft, ChevronRight, TrendingUp, Users, ShoppingCart, DollarSign, Filter, FileSpreadsheet } from "lucide-react";
+import { apiUrl } from "@/lib/api-config";
 
 const COLORS = ["#00e5c8","#3b82f6","#a855f7","#f59e0b","#ef4444","#10b981"];
-
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 function SummaryCard({ title, value, icon: Icon }: { title: string; value: string; icon: React.ElementType }) {
   return (
@@ -103,7 +102,7 @@ export default function Reports() {
       if (filter.dateTo) params.set("dateTo", new Date(filter.dateTo + "T23:59:59").toISOString());
       if (filter.status && filter.status !== "all") params.set("status", filter.status);
       if (filter.employeeId) params.set("employeeId", filter.employeeId);
-      const resp = await fetch(`${BASE}/api/sales?${params.toString()}`);
+      const resp = await fetch(`${apiUrl("/sales")}?${params.toString()}`);
       const sales = await resp.json();
       if (!sales.length) { alert("No sales found for the selected filters."); return; }
       const XLSX = await import("@e965/xlsx");

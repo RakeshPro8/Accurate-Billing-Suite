@@ -6,13 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils";
+import { apiUrl } from "@/lib/api-config";
 
 interface AuditLog {
   id: number; employeeName?: string | null; storeId?: number | null; action: string;
   entityType: string; entityId?: string | null; details?: Record<string, unknown> | null; createdAt: string;
 }
-const API = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api`;
-
 export default function AuditLogs() {
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [action, setAction] = useState("all");
@@ -25,7 +24,7 @@ export default function AuditLogs() {
     if (action !== "all") query.set("action", action);
     if (entityType !== "all") query.set("entityType", entityType);
     try {
-      const response = await fetch(`${API}/audit-logs?${query}`, { credentials: "include" });
+      const response = await fetch(`${apiUrl("/audit-logs")}?${query}`, { credentials: "include" });
       if (response.ok) setLogs(await response.json());
     } finally { setLoading(false); }
   }

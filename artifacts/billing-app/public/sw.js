@@ -1,4 +1,4 @@
-const VERSION = "mobilinq-shell-v2";
+const VERSION = "mobilinq-shell-v3";
 const SHELL = [".", "./", "./index.html", "./favicon.svg", "./manifest.webmanifest"];
 
 self.addEventListener("install", (event) => {
@@ -9,6 +9,12 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((keys) => Promise.all(keys.filter((key) => key !== VERSION).map((key) => caches.delete(key)))).then(() => self.clients.claim()),
   );
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data?.type === "mobilinq:diagnostics") {
+    event.ports[0]?.postMessage({ version: VERSION });
+  }
 });
 
 self.addEventListener("fetch", (event) => {

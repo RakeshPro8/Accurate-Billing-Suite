@@ -22,6 +22,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useEmployee } from "@/context/EmployeeContext";
 import { queueOfflineOperation } from "@/lib/offline-store";
 import { recordAuditEvent } from "@/lib/audit-client";
+import { apiUrl } from "@/lib/api-config";
 import {
   ArrowLeft, Edit, Printer, Camera, Trash2, Plus, Package, CheckCircle, User, Phone, Mail,
   Wrench, FileText, Download, Send, Lock,
@@ -80,7 +81,7 @@ export default function RepairDetail() {
     if (!navigator.onLine) {
       await queueOfflineOperation({
         operationId: crypto.randomUUID(), action: "repair_status", method: "POST",
-        url: `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/sync/replay`,
+        url: apiUrl("/sync/replay"),
         body: { repairId: id, status: newStatus, notes: statusNote },
         expectedVersion: r.updatedAt,
       });
@@ -106,7 +107,7 @@ export default function RepairDetail() {
       if (!navigator.onLine) {
         await queueOfflineOperation({
           operationId: crypto.randomUUID(), action: "repair_photo", method: "POST",
-          url: `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/sync/replay`,
+          url: apiUrl("/sync/replay"),
           body: { repairId: id, dataUrl: resized, caption: photoCaption },
         });
         setPhotoCaption("");

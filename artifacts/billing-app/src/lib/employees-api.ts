@@ -1,7 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-
-const BASE = import.meta.env.BASE_URL.replace(/\/$/, "");
-const API = `${BASE}/api`;
+import { apiUrl } from "@/lib/api-config";
 
 export interface Employee {
   id: number;
@@ -23,7 +21,7 @@ export interface CreateEmployeeInput {
 }
 
 async function apiFetch(path: string, options?: RequestInit) {
-  const res = await fetch(`${API}${path}`, {
+  const res = await fetch(apiUrl(path), {
     ...options,
     credentials: "include",
     headers: { "Content-Type": "application/json", ...(options?.headers ?? {}) },

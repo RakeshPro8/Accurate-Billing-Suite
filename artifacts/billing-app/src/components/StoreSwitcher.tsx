@@ -1,12 +1,11 @@
 import { useEffect, useState } from "react";
+import { apiUrl } from "@/lib/api-config";
 import { MapPin } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEmployee } from "@/context/EmployeeContext";
 import { setOfflineScope } from "@/lib/offline-store";
 
 interface Store { id: number; name: string; active: boolean; }
-const API = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api`;
-
 export function StoreSwitcher() {
   const { activeEmployee } = useEmployee();
   const [stores, setStores] = useState<Store[]>([]);
@@ -16,7 +15,7 @@ export function StoreSwitcher() {
     if (!activeEmployee) return;
     const saved = localStorage.getItem(`mobilinq.storeId:${activeEmployee.id}`);
     setStoreId(saved ?? "all");
-    void fetch(`${API}/stores`, { credentials: "include" })
+    void fetch(apiUrl("/stores"), { credentials: "include" })
       .then((response) => response.ok ? response.json() : [])
       .then((value: Store[]) => setStores(value.filter((store) => store.active)))
       .catch(() => setStores([]));
@@ -28,7 +27,7 @@ export function StoreSwitcher() {
     const employee = activeEmployee;
     if (!employee) return;
     const id = value === "all" ? null : Number(value);
-    const response = await fetch(`${API}/stores/current`, {
+    const response = await fetch(apiUrl("/stores/current"), {
       method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ storeId: id }),
     });

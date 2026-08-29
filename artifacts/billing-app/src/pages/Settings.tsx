@@ -10,7 +10,107 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { StoreAdmin } from "@/components/StoreAdmin";
-import { Building2, Mail, Percent, ImageIcon, Trash2, Upload, Type, Palette, Download, ShieldCheck } from "lucide-react";
+import { Building2, Mail, Percent, ImageIcon, Trash2, Upload, Type, Download, ShieldCheck, MonitorCog, RefreshCw, Printer, CheckCircle2, AlertTriangle } from "lucide-react";
+import { apiUrl, getApiEndpointStatus } from "@/lib/api-config";
+import { readDesktopDiagnostics, type DesktopDiagnostics } from "@/lib/desktop-diagnostics";
+import { getLastSyncAt } from "@/lib/offline-store";
+
+function formatDiagnosticDate(value: string | null) {
+  if (!value) return "Not synced yet";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "Unknown" : date.toLocaleString();
+}
+
+function DesktopDiagnosticsPanel() {
+  const [diagnostics, setDiagnostics] = useState<DesktopDiagnostics>({
+    appVersion: "Loading…",
+    serviceWorkerVersion: "Loading…",
+    lastSyncAt: getLastSyncAt(),
+  });
+  const [refreshing, setRefreshing] = useState(false);
+  const endpoint = getApiEndpointStatus();
+
+  async function refreshDiagnostics() {
+    setRefreshing(true);
+    try {
+      setDiagnostics(await readDesktopDiagnostics());
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
+  useEffect(() => {
+    void refreshDiagnostics();
+    const onSync = () => setDiagnostics((current) => ({ ...current, lastSyncAt: getLastSyncAt() }));
+    window.addEventListener("mobilinq:last-sync", onSync);
+    return () => window.removeEventListener("mobilinq:last-sync", onSync);
+  }, []);
+
+  return (
+    <Card className="border-primary/20">
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base flex items-center gap-2">
+          <MonitorCog className="h-4 w-4 text-primary" /> Desktop / PWA diagnostics
+        </CardTitle>
+        <p className="text-xs text-muted-foreground">
+          Admin-only runtime details for the installed desktop app and its company-server connection.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid gap-3 sm:grid-cols-2">
+          <div className="rounded-md border bg-muted/20 p-3">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">API origin</p>
+            <p className="mt-1 break-all font-mono text-sm">{endpoint.origin}</p>
+          </div>
+          <div className="rounded-md border bg-muted/20 p-3">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">App version</p>
+            <p className="mt-1 font-mono text-sm">{diagnostics.appVersion}</p>
+          </div>
+          <div className="rounded-md border bg-muted/20 p-3">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Service-worker version</p>
+            <p className="mt-1 font-mono text-sm">{diagnostics.serviceWorkerVersion}</p>
+          </div>
+          <div className="rounded-md border bg-muted/20 p-3">
+            <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Last sync time</p>
+            <p className="mt-1 text-sm">{formatDiagnosticDate(diagnostics.lastSyncAt)}</p>
+          </div>
+        </div>
+
+        {endpoint.warning ? (
+          <div className="flex items-start gap-2 rounded-md border border-destructive/30 bg-destructive/10 p-3 text-xs text-destructive">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <p>{endpoint.warning} Requests are using the app origin until this deployment setting is corrected.</p>
+          </div>
+        ) : (
+          <div className="flex items-start gap-2 rounded-md border border-emerald-500/20 bg-emerald-500/5 p-3 text-xs text-muted-foreground">
+            <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-400" />
+            <p>
+              Same-origin session protection is active. Approved company-server builds may set <code className="font-mono text-foreground">VITE_API_ORIGIN</code> to the exact HTTPS origin serving this app; credentials are never sent to another origin.
+            </p>
+          </div>
+        )}
+
+        {!endpoint.secure && (
+          <p className="text-xs text-amber-400">
+            This page is not using HTTPS. Install the desktop PWA only from the HTTPS company-server origin.
+          </p>
+        )}
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={() => void refreshDiagnostics()} disabled={refreshing}>
+            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? "animate-spin" : ""}`} /> Refresh diagnostics
+          </Button>
+          <Button type="button" variant="outline" size="sm" className="gap-1.5" onClick={() => window.print()}>
+            <Printer className="h-3.5 w-3.5" /> Open browser print dialog
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          For a supported thermal print, use Print on a sale receipt or repair ticket, then choose the OS-installed thermal printer in the browser dialog. Mobilinq does not request direct USB or network-printer access.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function Settings() {
   const { data: settings, isLoading } = useGetSettings();
@@ -124,7 +224,7 @@ export default function Settings() {
   async function downloadBackup() {
     setBackupLoading(true);
     try {
-      const response = await fetch(`${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/backup`, { credentials: "include" });
+      const response = await fetch(apiUrl("/backup"), { credentials: "include" });
       if (!response.ok) throw new Error("Backup download failed");
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
@@ -155,6 +255,7 @@ export default function Settings() {
       </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        <DesktopDiagnosticsPanel />
 
         {/* Logo */}
         <Card>

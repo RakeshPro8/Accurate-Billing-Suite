@@ -2,6 +2,7 @@ const DB_NAME = "mobilinq-offline";
 const DB_VERSION = 1;
 const CACHE_STORE = "read-cache";
 const OUTBOX_STORE = "outbox";
+const LAST_SYNC_KEY = "mobilinq.lastSyncAt";
 const SAFE_PATHS = ["/products", "/services", "/customers", "/sales", "/quotations", "/repairs", "/settings", "/stores"];
 
 export type OutboxStatus = "pending" | "syncing" | "completed" | "conflict" | "error";
@@ -62,6 +63,17 @@ export function setOfflineScope(next: OfflineScope | null) {
 
 export function getOfflineScope() {
   return scope;
+}
+
+export function getLastSyncAt() {
+  if (typeof localStorage === "undefined") return null;
+  return localStorage.getItem(LAST_SYNC_KEY);
+}
+
+export function setLastSyncAt(timestamp = new Date().toISOString()) {
+  if (typeof localStorage === "undefined") return;
+  localStorage.setItem(LAST_SYNC_KEY, timestamp);
+  window.dispatchEvent(new CustomEvent("mobilinq:last-sync", { detail: timestamp }));
 }
 
 export function subscribeOfflineScope(listener: () => void) {

@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useEmployee, ROLE_COLORS, ROLE_LABELS } from "@/context/EmployeeContext";
 import { ArrowLeft, Plus, Trash2, Search, ShieldCheck, Star, AlertTriangle } from "lucide-react";
 import { queueOfflineOperation } from "@/lib/offline-store";
+import { apiUrl } from "@/lib/api-config";
 
 interface LineItemForm {
   type: "product" | "service" | "custom";
@@ -172,7 +173,7 @@ export default function SaleForm({ isQuote = false }: { isQuote?: boolean }) {
       if (!isEdit && !navigator.onLine) {
         await queueOfflineOperation({
           operationId: crypto.randomUUID(), action: "create_sale", method: "POST",
-          url: `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/sync/replay`, body: payload,
+          url: apiUrl("/sync/replay"), body: payload,
         });
         toast({ title: "Sale queued for sync", description: "It will be numbered and priced by the server when connection returns." });
         navigate("/sales");

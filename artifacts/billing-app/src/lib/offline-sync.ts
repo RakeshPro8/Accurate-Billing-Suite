@@ -1,4 +1,4 @@
-import { listOutbox, updateOutbox } from "./offline-store";
+import { listOutbox, setLastSyncAt, updateOutbox } from "./offline-store";
 
 let syncing = false;
 const syncListeners = new Set<() => void>();
@@ -15,6 +15,7 @@ function notify() {
 export async function syncOutbox() {
   if (syncing || !navigator.onLine) return;
   syncing = true;
+  let syncFailed = false;
   try {
     for (const operation of await listOutbox()) {
       if (operation.status === "completed") continue;
@@ -30,19 +31,23 @@ export async function syncOutbox() {
             : operation.body === undefined ? undefined : JSON.stringify(operation.body),
         });
         if (response.status === 409) {
+          syncFailed = true;
           await updateOutbox(operation.operationId, { status: "conflict", lastError: "The server changed this record while the device was offline." });
         } else if (!response.ok) {
+          syncFailed = true;
           const error = await response.json().catch(() => ({}));
           await updateOutbox(operation.operationId, { status: "error", attempts: operation.attempts + 1, lastError: error.error ?? `HTTP ${response.status}` });
         } else {
           await updateOutbox(operation.operationId, { status: "completed", attempts: operation.attempts + 1, lastError: undefined });
         }
       } catch (error) {
+        syncFailed = true;
         await updateOutbox(operation.operationId, { status: "error", attempts: operation.attempts + 1, lastError: error instanceof Error ? error.message : "Network unavailable." });
         break;
       }
       notify();
     }
+    if (!syncFailed) setLastSyncAt();
   } finally {
     syncing = false;
     notify();
