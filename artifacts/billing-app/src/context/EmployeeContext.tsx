@@ -41,6 +41,7 @@ interface EmployeeContextValue {
   activeEmployee: ActiveEmployee | null;
   signInEmployees: SignInEmployee[];
   needsSetup: boolean;
+  publicStateError: string | null;
   isLoading: boolean;
   refresh: () => Promise<void>;
   signIn: (employeeId: number, pin: string) => Promise<void>;
@@ -52,6 +53,7 @@ const EmployeeContext = createContext<EmployeeContextValue>({
   activeEmployee: null,
   signInEmployees: [],
   needsSetup: false,
+  publicStateError: null,
   isLoading: true,
   refresh: async () => {},
   signIn: async () => {},
@@ -75,17 +77,25 @@ export function EmployeeProvider({ children }: { children: ReactNode }) {
   const [activeEmployee, setActiveEmployee] = useState<ActiveEmployee | null>(null);
   const [signInEmployees, setSignInEmployees] = useState<SignInEmployee[]>([]);
   const [needsSetup, setNeedsSetup] = useState(false);
+  const [publicStateError, setPublicStateError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   async function loadPublicState() {
-    const setup = await getAuthSetupStatus();
-    setNeedsSetup(Boolean(setup.needsSetup));
-    if (setup.needsSetup) {
-      setSignInEmployees([]);
-      return;
+    try {
+      const setup = await getAuthSetupStatus();
+      setNeedsSetup(Boolean(setup.needsSetup));
+      if (setup.needsSetup) {
+        setSignInEmployees([]);
+        setPublicStateError(null);
+        return;
+      }
+      const employees = await getSignInEmployees();
+      setSignInEmployees(employees);
+      setPublicStateError(null);
+    } catch (error) {
+      setPublicStateError("Unable to reach the employee service. Check the connection and try again.");
+      throw error;
     }
-    const employees = await getSignInEmployees();
-    setSignInEmployees(employees);
   }
 
   async function refresh() {
@@ -99,6 +109,7 @@ export function EmployeeProvider({ children }: { children: ReactNode }) {
         setOfflineScope({ employeeId: employee.id, storeId });
         setOfflineCacheScope(`${employee.id}:${storeId ?? "all"}`);
         setNeedsSetup(false);
+        setPublicStateError(null);
       } else {
         setActiveEmployee(null);
         await loadPublicState();
@@ -110,6 +121,7 @@ export function EmployeeProvider({ children }: { children: ReactNode }) {
       } catch {
         setNeedsSetup(false);
         setSignInEmployees([]);
+        setPublicStateError("Unable to reach the employee service. Check the connection and try again.");
       }
     } finally {
       setIsLoading(false);
@@ -125,6 +137,7 @@ export function EmployeeProvider({ children }: { children: ReactNode }) {
       setOfflineScope({ employeeId: result.employee.id, storeId });
       setOfflineCacheScope(`${result.employee.id}:${storeId ?? "all"}`);
       setNeedsSetup(false);
+      setPublicStateError(null);
       trackEmployeeAuthOutcome("sign_in", "success");
     } catch (error) {
       trackEmployeeAuthOutcome("sign_in", classifySignInError(error));
@@ -140,6 +153,7 @@ export function EmployeeProvider({ children }: { children: ReactNode }) {
       setOfflineScope({ employeeId: result.employee.id, storeId: null });
       setOfflineCacheScope(`${result.employee.id}:all`);
       setNeedsSetup(false);
+      setPublicStateError(null);
       trackEmployeeAuthOutcome("setup", "success");
     } catch (error) {
       trackEmployeeAuthOutcome("setup", classifySetupError(error));
@@ -180,6 +194,7 @@ export function EmployeeProvider({ children }: { children: ReactNode }) {
       activeEmployee,
       signInEmployees,
       needsSetup,
+      publicStateError,
       isLoading,
       refresh,
       signIn,
