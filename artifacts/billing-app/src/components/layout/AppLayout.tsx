@@ -100,7 +100,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="min-h-screen bg-background flex w-full">
       {/* Desktop Sidebar */}
-      <aside className="hidden md:flex w-60 flex-col border-r bg-card no-print">
+      <aside className="app-sidebar hidden md:flex w-60 flex-col border-r bg-card no-print">
         <div className="p-4 border-b h-14 flex items-center">
           <h1 className="text-lg font-bold text-primary flex items-center gap-2 font-mono tracking-tight">
             <img src={logoUrl} alt={appName} className="h-8 w-auto max-w-[120px] rounded bg-white object-contain p-0.5" />
@@ -117,7 +117,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col min-w-0">
-        <header className="h-14 border-b bg-card flex items-center px-4 md:px-6 justify-between shrink-0 no-print">
+        <header className="app-header h-14 border-b bg-card flex items-center px-4 md:px-6 justify-between shrink-0 no-print">
           <div className="flex items-center md:hidden">
             <Sheet>
               <SheetTrigger asChild>

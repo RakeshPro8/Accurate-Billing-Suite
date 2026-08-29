@@ -393,9 +393,250 @@
   --sidebar-accent-border: hsl(var(--sidebar-accent));
 }
 
+/* ─── VISUAL PERSONALITY ────────────────────────────────────
+   The theme presets intentionally change more than hue. These
+   tokens control the overall visual language of the workspace. */
+[data-theme="terminal"] {
+  --app-font-sans: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  --app-font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+  --radius: 0.375rem;
+  --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, .5);
+  --shadow: 0 2px 6px 0 rgba(0, 0, 0, .6);
+  --shadow-md: 0 4px 12px 0 rgba(0, 0, 0, .6);
+  --shadow-lg: 0 8px 24px 0 rgba(0, 0, 0, .7);
+  --app-background-image: linear-gradient(rgba(0, 229, 200, .025) 1px, transparent 1px), linear-gradient(90deg, rgba(0, 229, 200, .025) 1px, transparent 1px);
+  --app-background-size: 32px 32px;
+  --app-sidebar-shadow: 8px 0 28px rgba(0, 0, 0, .16);
+  --app-header-shadow: 0 1px 0 rgba(0, 229, 200, .08);
+  --app-control-shadow: inset 0 1px 0 rgba(255, 255, 255, .02);
+}
+
+[data-theme="ocean"] {
+  --background: 210 40% 97%;
+  --foreground: 222 35% 16%;
+  --border: 214 28% 86%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 35% 16%;
+  --card-border: 214 30% 89%;
+  --sidebar: 222 45% 15%;
+  --sidebar-foreground: 214 30% 90%;
+  --sidebar-border: 222 32% 24%;
+  --sidebar-primary: 190 90% 60%;
+  --sidebar-primary-foreground: 222 45% 12%;
+  --sidebar-accent: 222 36% 21%;
+  --sidebar-accent-foreground: 214 30% 96%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 35% 16%;
+  --popover-border: 214 30% 86%;
+  --primary: 199 89% 43%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 210 35% 93%;
+  --secondary-foreground: 222 35% 22%;
+  --muted: 210 35% 94%;
+  --muted-foreground: 215 16% 45%;
+  --accent: 195 70% 91%;
+  --accent-foreground: 199 89% 30%;
+  --input: 210 30% 91%;
+  --ring: 199 89% 43%;
+  --chart-1: 199 89% 43%;
+  --chart-2: 190 70% 45%;
+  --chart-3: 225 75% 58%;
+  --chart-4: 35 85% 52%;
+  --chart-5: 160 60% 42%;
+  --app-font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
+  --app-font-mono: 'SFMono-Regular', Consolas, monospace;
+  --radius: 0.75rem;
+  --shadow-sm: 0 1px 2px rgba(15, 35, 60, .06);
+  --shadow: 0 4px 12px rgba(15, 35, 60, .08);
+  --shadow-md: 0 8px 20px rgba(15, 35, 60, .1);
+  --shadow-lg: 0 18px 42px rgba(15, 35, 60, .14);
+  --app-background-image: linear-gradient(135deg, rgba(31, 125, 166, .045), transparent 42%);
+  --app-background-size: auto;
+  --app-sidebar-shadow: 8px 0 28px rgba(15, 35, 60, .12);
+  --app-header-shadow: 0 1px 0 rgba(15, 35, 60, .06), 0 4px 12px rgba(15, 35, 60, .04);
+  --app-control-shadow: 0 1px 2px rgba(15, 35, 60, .04);
+  --primary-border: hsl(199 89% 36%);
+}
+
+[data-theme="sunset"] {
+  --background: 34 60% 96%;
+  --foreground: 22 30% 18%;
+  --border: 30 35% 83%;
+  --card: 42 100% 99%;
+  --card-foreground: 22 30% 18%;
+  --card-border: 30 35% 85%;
+  --sidebar: 20 60% 24%;
+  --sidebar-foreground: 35 55% 92%;
+  --sidebar-border: 20 45% 34%;
+  --sidebar-primary: 36 100% 68%;
+  --sidebar-primary-foreground: 20 60% 18%;
+  --sidebar-accent: 20 48% 31%;
+  --sidebar-accent-foreground: 35 55% 96%;
+  --popover: 42 100% 99%;
+  --popover-foreground: 22 30% 18%;
+  --popover-border: 30 35% 82%;
+  --primary: 15 80% 51%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 35 65% 90%;
+  --secondary-foreground: 22 30% 22%;
+  --muted: 35 50% 92%;
+  --muted-foreground: 24 20% 46%;
+  --accent: 28 85% 88%;
+  --accent-foreground: 15 75% 35%;
+  --input: 34 35% 89%;
+  --ring: 15 80% 51%;
+  --chart-1: 15 80% 51%;
+  --chart-2: 35 90% 52%;
+  --chart-3: 340 65% 55%;
+  --chart-4: 190 60% 42%;
+  --chart-5: 145 50% 40%;
+  --app-font-sans: 'Trebuchet MS', 'Avenir Next', ui-sans-serif, system-ui, sans-serif;
+  --app-font-mono: 'SFMono-Regular', Consolas, monospace;
+  --radius: 0.625rem;
+  --shadow-sm: 0 1px 2px rgba(92, 45, 22, .06);
+  --shadow: 0 4px 12px rgba(92, 45, 22, .09);
+  --shadow-md: 0 9px 24px rgba(92, 45, 22, .12);
+  --shadow-lg: 0 20px 44px rgba(92, 45, 22, .16);
+  --app-background-image: radial-gradient(circle at 100% 0%, rgba(247, 146, 56, .12), transparent 34%), linear-gradient(180deg, rgba(255, 247, 230, .45), transparent 48%);
+  --app-background-size: auto;
+  --app-sidebar-shadow: 8px 0 28px rgba(92, 45, 22, .12);
+  --app-header-shadow: 0 1px 0 rgba(92, 45, 22, .08), 0 4px 12px rgba(92, 45, 22, .04);
+  --app-control-shadow: inset 0 1px 0 rgba(255, 255, 255, .6);
+  --primary-border: hsl(15 80% 43%);
+}
+
+[data-theme="berry"] {
+  --app-font-sans: 'Avenir Next', 'Trebuchet MS', ui-sans-serif, system-ui, sans-serif;
+  --app-font-mono: 'SFMono-Regular', Consolas, monospace;
+  --radius: 1rem;
+  --shadow-sm: 0 2px 5px rgba(0, 0, 0, .28);
+  --shadow: 0 6px 16px rgba(0, 0, 0, .32);
+  --shadow-md: 0 12px 28px rgba(0, 0, 0, .38);
+  --shadow-lg: 0 22px 52px rgba(0, 0, 0, .48);
+  --app-background-image: radial-gradient(circle at 10% 0%, rgba(218, 77, 155, .12), transparent 30%), radial-gradient(circle at 100% 80%, rgba(124, 89, 220, .1), transparent 34%);
+  --app-background-size: auto;
+  --app-sidebar-shadow: 10px 0 34px rgba(0, 0, 0, .24);
+  --app-header-shadow: 0 1px 0 rgba(218, 77, 155, .12);
+  --app-control-shadow: inset 0 1px 0 rgba(255, 255, 255, .035);
+}
+
+[data-theme="forest"] {
+  --background: 95 28% 96%;
+  --foreground: 145 30% 18%;
+  --border: 105 22% 82%;
+  --card: 0 0% 100%;
+  --card-foreground: 145 30% 18%;
+  --card-border: 105 22% 85%;
+  --sidebar: 150 40% 16%;
+  --sidebar-foreground: 105 30% 90%;
+  --sidebar-border: 150 28% 26%;
+  --sidebar-primary: 75 75% 62%;
+  --sidebar-primary-foreground: 150 40% 12%;
+  --sidebar-accent: 150 30% 23%;
+  --sidebar-accent-foreground: 105 30% 94%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 145 30% 18%;
+  --popover-border: 105 22% 82%;
+  --primary: 154 60% 31%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 95 28% 90%;
+  --secondary-foreground: 145 30% 22%;
+  --muted: 95 25% 92%;
+  --muted-foreground: 125 15% 45%;
+  --accent: 83 55% 87%;
+  --accent-foreground: 150 50% 26%;
+  --input: 100 20% 89%;
+  --ring: 154 60% 31%;
+  --chart-1: 154 60% 31%;
+  --chart-2: 88 55% 40%;
+  --chart-3: 190 55% 40%;
+  --chart-4: 38 75% 48%;
+  --chart-5: 12 60% 48%;
+  --app-font-sans: 'Avenir Next', 'Trebuchet MS', ui-sans-serif, system-ui, sans-serif;
+  --app-font-mono: 'SFMono-Regular', Consolas, monospace;
+  --radius: 0.5rem;
+  --shadow-sm: 0 1px 2px rgba(25, 65, 42, .06);
+  --shadow: 0 4px 11px rgba(25, 65, 42, .08);
+  --shadow-md: 0 9px 22px rgba(25, 65, 42, .1);
+  --shadow-lg: 0 18px 40px rgba(25, 65, 42, .13);
+  --app-background-image: linear-gradient(135deg, rgba(113, 145, 70, .07), transparent 42%), radial-gradient(circle at 100% 0%, rgba(192, 214, 126, .15), transparent 28%);
+  --app-background-size: auto;
+  --app-sidebar-shadow: 8px 0 28px rgba(25, 65, 42, .12);
+  --app-header-shadow: 0 1px 0 rgba(25, 65, 42, .07), 0 4px 12px rgba(25, 65, 42, .035);
+  --app-control-shadow: 0 1px 2px rgba(25, 65, 42, .04);
+  --primary-border: hsl(154 60% 25%);
+}
+
+[data-theme="monochrome"] {
+  --background: 0 0% 97%;
+  --foreground: 0 0% 12%;
+  --border: 0 0% 82%;
+  --card: 0 0% 100%;
+  --card-foreground: 0 0% 12%;
+  --card-border: 0 0% 84%;
+  --sidebar: 0 0% 14%;
+  --sidebar-foreground: 0 0% 90%;
+  --sidebar-border: 0 0% 25%;
+  --sidebar-primary: 0 0% 100%;
+  --sidebar-primary-foreground: 0 0% 10%;
+  --sidebar-accent: 0 0% 23%;
+  --sidebar-accent-foreground: 0 0% 96%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 0 0% 12%;
+  --popover-border: 0 0% 80%;
+  --primary: 0 0% 12%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 0 0% 92%;
+  --secondary-foreground: 0 0% 18%;
+  --muted: 0 0% 93%;
+  --muted-foreground: 0 0% 42%;
+  --accent: 0 0% 88%;
+  --accent-foreground: 0 0% 10%;
+  --input: 0 0% 88%;
+  --ring: 0 0% 18%;
+  --chart-1: 0 0% 12%;
+  --chart-2: 0 0% 30%;
+  --chart-3: 0 0% 48%;
+  --chart-4: 0 0% 66%;
+  --chart-5: 0 0% 82%;
+  --app-font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+  --app-font-mono: 'SFMono-Regular', Consolas, monospace;
+  --radius: 0.25rem;
+  --shadow-sm: 0 1px 1px rgba(0, 0, 0, .05);
+  --shadow: 0 1px 2px rgba(0, 0, 0, .07);
+  --shadow-md: 0 4px 10px rgba(0, 0, 0, .08);
+  --shadow-lg: 0 12px 24px rgba(0, 0, 0, .1);
+  --app-background-image: none;
+  --app-background-size: auto;
+  --app-sidebar-shadow: 5px 0 0 rgba(0, 0, 0, .08);
+  --app-header-shadow: 0 1px 0 rgba(0, 0, 0, .1);
+  --app-control-shadow: none;
+  --primary-border: hsl(0 0% 4%);
+}
+
 @layer base {
   * { @apply border-border; }
-  body { @apply font-sans antialiased bg-background text-foreground; }
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    background-image: var(--app-background-image);
+    background-size: var(--app-background-size);
+    background-attachment: fixed;
+  }
+  input, textarea, select {
+    box-shadow: var(--app-control-shadow);
+  }
+}
+
+@layer components {
+  .app-sidebar {
+    background-image: var(--app-sidebar-background-image, none);
+    box-shadow: var(--app-sidebar-shadow);
+  }
+
+  .app-header {
+    box-shadow: var(--app-header-shadow);
+    backdrop-filter: var(--app-header-backdrop, none);
+  }
 }
 
 @layer utilities {

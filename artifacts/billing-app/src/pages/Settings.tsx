@@ -23,12 +23,60 @@ export default function Settings() {
   const themeValue = watch("theme") || "terminal";
 
   const themes = [
-    { id: "terminal", label: "Terminal", desc: "Dark teal — the original Mobilinq look", color: "hsl(173 100% 45%)" },
-    { id: "ocean", label: "Ocean", desc: "Cool blue professional", color: "hsl(205 90% 55%)" },
-    { id: "sunset", label: "Sunset", desc: "Warm orange and amber", color: "hsl(25 95% 55%)" },
-    { id: "berry", label: "Berry", desc: "Purple and pink accent", color: "hsl(320 85% 60%)" },
-    { id: "forest", label: "Forest", desc: "Green and natural", color: "hsl(145 80% 45%)" },
-    { id: "monochrome", label: "Monochrome", desc: "Clean grayscale", color: "hsl(0 0% 75%)" },
+    {
+      id: "terminal",
+      label: "Terminal",
+      desc: "Dark, technical, and compact",
+      color: "hsl(173 100% 45%)",
+      surface: "hsl(240 30% 8%)",
+      panel: "hsl(240 40% 4%)",
+      mode: "Dark",
+    },
+    {
+      id: "ocean",
+      label: "Ocean",
+      desc: "Bright workspace with navy navigation",
+      color: "hsl(199 89% 43%)",
+      surface: "hsl(0 0% 100%)",
+      panel: "hsl(222 45% 15%)",
+      mode: "Light",
+    },
+    {
+      id: "sunset",
+      label: "Sunset",
+      desc: "Warm, welcoming, and editorial",
+      color: "hsl(15 80% 51%)",
+      surface: "hsl(42 100% 99%)",
+      panel: "hsl(20 60% 24%)",
+      mode: "Light",
+    },
+    {
+      id: "berry",
+      label: "Berry",
+      desc: "Expressive plum with rounded surfaces",
+      color: "hsl(327 78% 62%)",
+      surface: "hsl(275 32% 13%)",
+      panel: "hsl(283 43% 6%)",
+      mode: "Dark",
+    },
+    {
+      id: "forest",
+      label: "Forest",
+      desc: "Natural green with calm white panels",
+      color: "hsl(154 60% 31%)",
+      surface: "hsl(0 0% 100%)",
+      panel: "hsl(150 40% 16%)",
+      mode: "Light",
+    },
+    {
+      id: "monochrome",
+      label: "Monochrome",
+      desc: "Focused black, white, and gray",
+      color: "hsl(0 0% 12%)",
+      surface: "hsl(0 0% 100%)",
+      panel: "hsl(0 0% 14%)",
+      mode: "Light",
+    },
   ];
 
   useEffect(() => {
@@ -157,12 +205,16 @@ export default function Settings() {
               <p className="text-xs text-muted-foreground">Shown in the sidebar, mobile header, and browser tab.</p>
             </div>
             <div className="space-y-1.5">
-              <Label>Theme</Label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <Label>Workspace Theme</Label>
+              <p className="text-xs text-muted-foreground mb-3">
+                Choose a complete visual style for this location. Themes change surfaces, navigation, typography, spacing, borders, shadows, and controls—not just the accent color.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" role="radiogroup" aria-label="Workspace theme">
                 {themes.map((t) => (
                   <div
                     key={t.id}
                     role="radio"
+                    aria-label={`${t.label} theme`}
                     aria-checked={themeValue === t.id}
                     tabIndex={0}
                     onClick={() => setValue("theme", t.id, { shouldDirty: true })}
@@ -171,9 +223,25 @@ export default function Settings() {
                       themeValue === t.id ? "border-primary bg-primary/10" : "border-border hover:border-primary/40"
                     }`}
                   >
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-4 h-4 rounded-full border border-white/10" style={{ background: t.color }} />
-                      <span className="text-sm font-medium">{t.label}</span>
+                    <div
+                      className="h-14 rounded-md border border-black/10 p-2 mb-3 overflow-hidden"
+                      style={{ background: t.surface }}
+                    >
+                      <div className="flex h-full gap-2">
+                        <div className="w-1/4 rounded-sm" style={{ background: t.panel }} />
+                        <div className="flex-1 space-y-1.5 pt-0.5">
+                          <div className="h-1.5 w-2/5 rounded-full" style={{ background: t.color }} />
+                          <div className="h-1.5 w-4/5 rounded-full opacity-20" style={{ background: t.color }} />
+                          <div className="h-1.5 w-3/5 rounded-full opacity-20" style={{ background: t.color }} />
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-full border border-black/10" style={{ background: t.color }} />
+                        <span className="text-sm font-medium">{t.label}</span>
+                      </div>
+                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.mode}</span>
                     </div>
                     <p className="text-xs text-muted-foreground">{t.desc}</p>
                   </div>
