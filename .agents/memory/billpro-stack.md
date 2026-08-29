@@ -8,6 +8,7 @@ description: Key patterns for the BillPro billing app — hooks, mutations, API 
 - Backend: Express (`artifacts/api-server`), built with esbuild, port 8080
 - DB: PostgreSQL + Drizzle ORM (`lib/db`), schema in `lib/db/src/schema/`
 - API client: Orval-generated hooks in `@workspace/api-client-react` — codegen from OpenAPI spec at `lib/api-spec`
+- Rebuild library project references with `pnpm run typecheck:libs` before app typechecking when generated client exports appear stale.
 
 ## Key Conventions
 - Mutation pattern: `hook.mutate({ data: {...} })` — hooks return T directly (not wrapped)

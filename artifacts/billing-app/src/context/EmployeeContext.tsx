@@ -8,6 +8,10 @@ import {
   signInEmployee,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import {
+  trackEmployeeAuthOutcome,
+  type EmployeeAuthOutcome,
+} from "@/lib/analytics";
 
 export type EmployeeRole = "admin" | "manager" | "staff";
 
@@ -60,6 +64,41 @@ function asActiveEmployee(employee: any): ActiveEmployee {
   };
 }
 
+function getHttpStatus(error: unknown): number | undefined {
+  if (!error || typeof error !== "object") return undefined;
+
+  const status = (error as { status?: unknown }).status;
+  return typeof status === "number" ? status : undefined;
+}
+
+function classifySignInError(error: unknown): EmployeeAuthOutcome {
+  switch (getHttpStatus(error)) {
+    case 400:
+      return "invalid_input";
+    case 401:
+      return "invalid_pin";
+    case 403:
+      return "inactive_account";
+    case 404:
+      return "account_not_found";
+    case 429:
+      return "throttled";
+    default:
+      return "error";
+  }
+}
+
+function classifySetupError(error: unknown): EmployeeAuthOutcome {
+  switch (getHttpStatus(error)) {
+    case 400:
+      return "invalid_input";
+    case 409:
+      return "setup_already_complete";
+    default:
+      return "error";
+  }
+}
+
 export function EmployeeProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient();
   const [activeEmployee, setActiveEmployee] = useState<ActiveEmployee | null>(null);
@@ -103,17 +142,29 @@ export function EmployeeProvider({ children }: { children: ReactNode }) {
   }
 
   async function signIn(employeeId: number, pin: string) {
-    const result = await signInEmployee({ employeeId, pin });
-    queryClient.clear();
-    setActiveEmployee(asActiveEmployee(result.employee));
-    setNeedsSetup(false);
+    try {
+      const result = await signInEmployee({ employeeId, pin });
+      queryClient.clear();
+      setActiveEmployee(asActiveEmployee(result.employee));
+      setNeedsSetup(false);
+      trackEmployeeAuthOutcome("sign_in", "success");
+    } catch (error) {
+      trackEmployeeAuthOutcome("sign_in", classifySignInError(error));
+      throw error;
+    }
   }
 
   async function bootstrap(data: { name: string; email?: string; pin: string }) {
-    const result = await bootstrapAdmin(data);
-    queryClient.clear();
-    setActiveEmployee(asActiveEmployee(result.employee));
-    setNeedsSetup(false);
+    try {
+      const result = await bootstrapAdmin(data);
+      queryClient.clear();
+      setActiveEmployee(asActiveEmployee(result.employee));
+      setNeedsSetup(false);
+      trackEmployeeAuthOutcome("setup", "success");
+    } catch (error) {
+      trackEmployeeAuthOutcome("setup", classifySetupError(error));
+      throw error;
+    }
   }
 
   async function clearEmployee() {

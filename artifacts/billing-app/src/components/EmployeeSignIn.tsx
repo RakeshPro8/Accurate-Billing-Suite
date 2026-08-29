@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useEmployee, ROLE_COLORS, ROLE_LABELS } from "@/context/EmployeeContext";
+import { trackEmployeeAuthOutcome } from "@/lib/analytics";
 
 export function EmployeeSignIn() {
   const { needsSetup, signInEmployees, signIn, bootstrap, refresh } = useEmployee();
@@ -22,6 +23,7 @@ export function EmployeeSignIn() {
       return;
     }
     if (!/^\d{4,8}$/.test(pin)) {
+      trackEmployeeAuthOutcome("sign_in", "invalid_pin");
       setError("Enter a 4-8 digit PIN.");
       return;
     }
@@ -43,10 +45,12 @@ export function EmployeeSignIn() {
       return;
     }
     if (!/^\d{4,8}$/.test(pin)) {
+      trackEmployeeAuthOutcome("setup", "invalid_pin");
       setError("Choose a 4-8 digit PIN.");
       return;
     }
     if (pin !== confirmPin) {
+      trackEmployeeAuthOutcome("setup", "invalid_input");
       setError("PINs do not match.");
       return;
     }
