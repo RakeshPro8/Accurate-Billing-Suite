@@ -2,7 +2,7 @@ import { useState, ReactNode, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import {
   LayoutDashboard, Receipt, FileText, Users, PackageSearch,
-  BarChart3, Settings, Menu, ShieldCheck, UserCircle2, LogIn, Wrench, Cpu, Activity
+  BarChart3, Settings, Menu, ShieldCheck, UserCircle2, LogIn, Wrench, Cpu, Activity, MonitorCog
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -11,6 +11,7 @@ import { EmployeePinDialog } from "@/components/EmployeePinDialog";
 import { useGetSettings } from "@workspace/api-client-react";
 import { ConnectivityStatus } from "@/components/ConnectivityStatus";
 import { StoreSwitcher } from "@/components/StoreSwitcher";
+import { applyUiPreferencesToDocument, readUiPreferences, UI_PREFERENCES_EVENT, type UiPreferences } from "@/lib/ui-preferences";
 
 const navItems: Array<{ href: string; label: string; icon: typeof LayoutDashboard; roles?: string[] }> = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -24,6 +25,7 @@ const navItems: Array<{ href: string; label: string; icon: typeof LayoutDashboar
   { href: "/reports", label: "Reports", icon: BarChart3 },
   { href: "/audit-logs", label: "Audit Trail", icon: Activity, roles: ["manager", "admin"] },
   { href: "/settings", label: "Settings", icon: Settings, roles: ["admin"] },
+  { href: "/ui-lab", label: "UI Lab", icon: MonitorCog, roles: ["admin"] },
 ];
 
 function NavLinks({ className = "", onItemClick }: { className?: string; onItemClick?: () => void }) {
@@ -90,15 +92,24 @@ function EmployeeBadge({ onOpen }: { onOpen: () => void }) {
 
 export function AppLayout({ children }: { children: ReactNode }) {
   const [pinDialogOpen, setPinDialogOpen] = useState(false);
+  const [uiPreferences, setUiPreferences] = useState<UiPreferences>(() => readUiPreferences());
   const { data: settings } = useGetSettings();
   const appName = settings?.appName || "Mobilinq";
   const logoUrl = settings?.logoUrl || "/logo.jpg";
-  const theme = settings?.theme || "terminal";
 
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
+    const onPreferencesChange = (event: Event) => {
+      const next = (event as CustomEvent<UiPreferences>).detail;
+      if (next) setUiPreferences(next);
+    };
+    window.addEventListener(UI_PREFERENCES_EVENT, onPreferencesChange);
+    return () => window.removeEventListener(UI_PREFERENCES_EVENT, onPreferencesChange);
+  }, []);
+
+  useEffect(() => {
+    applyUiPreferencesToDocument(uiPreferences, settings?.theme || "terminal");
     document.title = appName;
-  }, [theme, appName]);
+  }, [uiPreferences, settings?.theme, appName]);
 
   return (
     <div className="min-h-screen bg-background flex w-full">

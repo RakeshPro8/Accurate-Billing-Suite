@@ -26,6 +26,7 @@ import RepairsList from "@/pages/RepairsList";
 import RepairForm from "@/pages/RepairForm";
 import RepairDetail from "@/pages/RepairDetail";
 import AuditLogs from "@/pages/AuditLogs";
+import UiLab from "@/pages/UiLab";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -69,6 +70,7 @@ function Router() {
         <Route path="/reports" component={Reports} />
         <Route path="/audit-logs">{() => activeEmployee?.role === "staff" ? <AccessDenied /> : <AuditLogs />}</Route>
         <Route path="/settings">{() => isAdmin ? <Settings /> : <AccessDenied />}</Route>
+        <Route path="/ui-lab">{() => isAdmin ? <UiLab /> : <AccessDenied />}</Route>
 
         <Route component={NotFound} />
       </Switch>
