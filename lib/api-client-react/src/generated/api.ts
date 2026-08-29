@@ -20,11 +20,14 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AuditEventInput,
+  AuditLog,
   AuthSession,
   AuthSetupStatus,
   AuthenticatedSession,
   BootstrapAdminInput,
   CategoryRevenue,
+  CurrentStore,
   Customer,
   CustomerInput,
   CustomerUpdate,
@@ -33,6 +36,7 @@ import type {
   Employee,
   EmployeeInput,
   EmployeeUpdate,
+  GetAuditLogsParams,
   GetCustomersParams,
   GetMonthlyReportParams,
   GetProductsParams,
@@ -50,6 +54,7 @@ import type {
   Quotation,
   QuotationInput,
   QuotationUpdate,
+  RecordAuditEvent201,
   Repair,
   RepairInput,
   RepairPart,
@@ -64,10 +69,16 @@ import type {
   Service,
   ServiceInput,
   ServiceUpdate,
+  SetCurrentStoreInput,
   Settings,
   SettingsUpdate,
   SignInEmployee,
   SignInInput,
+  Store,
+  StoreInput,
+  StoreUpdate,
+  SyncReplayInput,
+  SyncReplayResponse,
   TopItem,
   WeeklyReport
 } from './api.schemas';
@@ -175,6 +186,635 @@ export function useHealthCheck<TData = Awaited<ReturnType<typeof healthCheck>>, 
 
 
 
+
+export const getGetStoresUrl = () => {
+
+
+
+
+  return `/api/stores`
+}
+
+/**
+ * @summary List active and inactive stores
+ */
+export const getStores = async ( options?: Parameters<typeof customFetch>[1]): Promise<Store[]> => {
+
+  return customFetch<Store[]>(getGetStoresUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStoresQueryKey = () => {
+    return [
+    `/api/stores`
+    ] as const;
+    }
+
+
+export const getGetStoresQueryOptions = <TData = Awaited<ReturnType<typeof getStores>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStores>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStoresQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStores>>> = ({ signal }) => getStores({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStores>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStoresQueryResult = NonNullable<Awaited<ReturnType<typeof getStores>>>
+export type GetStoresQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List active and inactive stores
+ */
+
+export function useGetStores<TData = Awaited<ReturnType<typeof getStores>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStores>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStoresQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateStoreUrl = () => {
+
+
+
+
+  return `/api/stores`
+}
+
+/**
+ * @summary Create a store location
+ */
+export const createStore = async (storeInput: StoreInput, options?: Parameters<typeof customFetch>[1]): Promise<Store> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return customFetch<Store>(getCreateStoreUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(storeInput)
+  }
+);}
+
+
+
+
+
+export const getCreateStoreMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStore>>, TError,CreateStoreMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createStore>>, TError,CreateStoreMutationVariables, TContext> => {
+
+const mutationKey = ['createStore'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createStore>>, CreateStoreMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createStore(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateStoreMutationResult = NonNullable<Awaited<ReturnType<typeof createStore>>>
+    export type CreateStoreMutationBody = BodyType<StoreInput>
+    export type CreateStoreMutationError = ErrorType<unknown>
+    export type CreateStoreMutationVariables = {data: BodyType<StoreInput>}
+
+    /**
+ * @summary Create a store location
+ */
+export const useCreateStore = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStore>>, TError,CreateStoreMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createStore>>,
+        TError,
+        CreateStoreMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateStoreMutationOptions(options));
+    }
+
+export const getUpdateStoreUrl = (id: number,) => {
+
+
+
+
+  return `/api/stores/${id}`
+}
+
+/**
+ * @summary Update a store location
+ */
+export const updateStore = async (id: number,
+    storeUpdate: StoreUpdate, options?: Parameters<typeof customFetch>[1]): Promise<Store> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return customFetch<Store>(getUpdateStoreUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(storeUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateStoreMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStore>>, TError,UpdateStoreMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateStore>>, TError,UpdateStoreMutationVariables, TContext> => {
+
+const mutationKey = ['updateStore'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateStore>>, UpdateStoreMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateStore(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateStoreMutationResult = NonNullable<Awaited<ReturnType<typeof updateStore>>>
+    export type UpdateStoreMutationBody = BodyType<StoreUpdate>
+    export type UpdateStoreMutationError = ErrorType<unknown>
+    export type UpdateStoreMutationVariables = {id: number;data: BodyType<StoreUpdate>}
+
+    /**
+ * @summary Update a store location
+ */
+export const useUpdateStore = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateStore>>, TError,UpdateStoreMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateStore>>,
+        TError,
+        UpdateStoreMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateStoreMutationOptions(options));
+    }
+
+export const getGetCurrentStoreUrl = () => {
+
+
+
+
+  return `/api/stores/current`
+}
+
+/**
+ * @summary Get the store selected for this employee session
+ */
+export const getCurrentStore = async ( options?: Parameters<typeof customFetch>[1]): Promise<CurrentStore> => {
+
+  return customFetch<CurrentStore>(getGetCurrentStoreUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCurrentStoreQueryKey = () => {
+    return [
+    `/api/stores/current`
+    ] as const;
+    }
+
+
+export const getGetCurrentStoreQueryOptions = <TData = Awaited<ReturnType<typeof getCurrentStore>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCurrentStore>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCurrentStoreQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCurrentStore>>> = ({ signal }) => getCurrentStore({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCurrentStore>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCurrentStoreQueryResult = NonNullable<Awaited<ReturnType<typeof getCurrentStore>>>
+export type GetCurrentStoreQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the store selected for this employee session
+ */
+
+export function useGetCurrentStore<TData = Awaited<ReturnType<typeof getCurrentStore>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCurrentStore>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCurrentStoreQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSetCurrentStoreUrl = () => {
+
+
+
+
+  return `/api/stores/current`
+}
+
+/**
+ * @summary Select the current store for this session
+ */
+export const setCurrentStore = async (setCurrentStoreInput: SetCurrentStoreInput, options?: Parameters<typeof customFetch>[1]): Promise<CurrentStore> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return customFetch<CurrentStore>(getSetCurrentStoreUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(setCurrentStoreInput)
+  }
+);}
+
+
+
+
+
+export const getSetCurrentStoreMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setCurrentStore>>, TError,SetCurrentStoreMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setCurrentStore>>, TError,SetCurrentStoreMutationVariables, TContext> => {
+
+const mutationKey = ['setCurrentStore'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setCurrentStore>>, SetCurrentStoreMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  setCurrentStore(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetCurrentStoreMutationResult = NonNullable<Awaited<ReturnType<typeof setCurrentStore>>>
+    export type SetCurrentStoreMutationBody = BodyType<SetCurrentStoreInput>
+    export type SetCurrentStoreMutationError = ErrorType<unknown>
+    export type SetCurrentStoreMutationVariables = {data: BodyType<SetCurrentStoreInput>}
+
+    /**
+ * @summary Select the current store for this session
+ */
+export const useSetCurrentStore = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setCurrentStore>>, TError,SetCurrentStoreMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setCurrentStore>>,
+        TError,
+        SetCurrentStoreMutationVariables,
+        TContext
+      > => {
+      return useMutation(getSetCurrentStoreMutationOptions(options));
+    }
+
+export const getGetAuditLogsUrl = (params?: GetAuditLogsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/audit-logs?${stringifiedParams}` : `/api/audit-logs`
+}
+
+/**
+ * @summary List a privacy-safe audit trail
+ */
+export const getAuditLogs = async (params?: GetAuditLogsParams, options?: Parameters<typeof customFetch>[1]): Promise<AuditLog[]> => {
+
+  return customFetch<AuditLog[]>(getGetAuditLogsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAuditLogsQueryKey = (params?: GetAuditLogsParams,) => {
+    return [
+    `/api/audit-logs`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetAuditLogsQueryOptions = <TData = Awaited<ReturnType<typeof getAuditLogs>>, TError = ErrorType<unknown>>(params?: GetAuditLogsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuditLogs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAuditLogsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAuditLogs>>> = ({ signal }) => getAuditLogs(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAuditLogs>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAuditLogsQueryResult = NonNullable<Awaited<ReturnType<typeof getAuditLogs>>>
+export type GetAuditLogsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List a privacy-safe audit trail
+ */
+
+export function useGetAuditLogs<TData = Awaited<ReturnType<typeof getAuditLogs>>, TError = ErrorType<unknown>>(
+ params?: GetAuditLogsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAuditLogs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAuditLogsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRecordAuditEventUrl = () => {
+
+
+
+
+  return `/api/audit-logs`
+}
+
+/**
+ * @summary Record a safe client event such as printing
+ */
+export const recordAuditEvent = async (auditEventInput: AuditEventInput, options?: Parameters<typeof customFetch>[1]): Promise<RecordAuditEvent201> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return customFetch<RecordAuditEvent201>(getRecordAuditEventUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(auditEventInput)
+  }
+);}
+
+
+
+
+
+export const getRecordAuditEventMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordAuditEvent>>, TError,RecordAuditEventMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof recordAuditEvent>>, TError,RecordAuditEventMutationVariables, TContext> => {
+
+const mutationKey = ['recordAuditEvent'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof recordAuditEvent>>, RecordAuditEventMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  recordAuditEvent(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RecordAuditEventMutationResult = NonNullable<Awaited<ReturnType<typeof recordAuditEvent>>>
+    export type RecordAuditEventMutationBody = BodyType<AuditEventInput>
+    export type RecordAuditEventMutationError = ErrorType<unknown>
+    export type RecordAuditEventMutationVariables = {data: BodyType<AuditEventInput>}
+
+    /**
+ * @summary Record a safe client event such as printing
+ */
+export const useRecordAuditEvent = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordAuditEvent>>, TError,RecordAuditEventMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof recordAuditEvent>>,
+        TError,
+        RecordAuditEventMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRecordAuditEventMutationOptions(options));
+    }
+
+export const getReplayOfflineOperationsUrl = () => {
+
+
+
+
+  return `/api/sync/replay`
+}
+
+/**
+ * @summary Replay approved offline operations with server authority
+ */
+export const replayOfflineOperations = async (syncReplayInput: SyncReplayInput, options?: Parameters<typeof customFetch>[1]): Promise<SyncReplayResponse> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return customFetch<SyncReplayResponse>(getReplayOfflineOperationsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(syncReplayInput)
+  }
+);}
+
+
+
+
+
+export const getReplayOfflineOperationsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof replayOfflineOperations>>, TError,ReplayOfflineOperationsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof replayOfflineOperations>>, TError,ReplayOfflineOperationsMutationVariables, TContext> => {
+
+const mutationKey = ['replayOfflineOperations'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof replayOfflineOperations>>, ReplayOfflineOperationsMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  replayOfflineOperations(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReplayOfflineOperationsMutationResult = NonNullable<Awaited<ReturnType<typeof replayOfflineOperations>>>
+    export type ReplayOfflineOperationsMutationBody = BodyType<SyncReplayInput>
+    export type ReplayOfflineOperationsMutationError = ErrorType<void>
+    export type ReplayOfflineOperationsMutationVariables = {data: BodyType<SyncReplayInput>}
+
+    /**
+ * @summary Replay approved offline operations with server authority
+ */
+export const useReplayOfflineOperations = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof replayOfflineOperations>>, TError,ReplayOfflineOperationsMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof replayOfflineOperations>>,
+        TError,
+        ReplayOfflineOperationsMutationVariables,
+        TContext
+      > => {
+      return useMutation(getReplayOfflineOperationsMutationOptions(options));
+    }
 
 export const getGetAuthSetupStatusUrl = () => {
 

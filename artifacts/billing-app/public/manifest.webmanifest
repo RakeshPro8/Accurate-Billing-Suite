@@ -1,0 +1,12 @@
+{
+  "name": "Mobilinq Operations",
+  "short_name": "Mobilinq",
+  "description": "Store billing, repairs, and operations",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#09090b",
+  "theme_color": "#00e5c8",
+  "icons": [
+    { "src": "./favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

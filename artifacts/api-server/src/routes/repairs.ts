@@ -5,6 +5,7 @@ import {
   productsTable, employeesTable, settingsTable, customersTable,
 } from "@workspace/db";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
+import { getCurrentStoreId } from "../lib/stores";
 import nodemailer from "nodemailer";
 
 const router = Router();
@@ -75,6 +76,7 @@ async function recalculateTotals(repairId: number) {
 router.get("/", async (req, res) => {
   try {
     const { status, customerId, technicianId, dateFrom, dateTo } = req.query as Record<string, string>;
+    const currentStoreId = await getCurrentStoreId(req);
     let q = db.select().from(repairsTable).$dynamic();
     const conds: ReturnType<typeof eq>[] = [];
     if (status) conds.push(eq(repairsTable.status, status));
@@ -82,6 +84,7 @@ router.get("/", async (req, res) => {
     if (technicianId) conds.push(eq(repairsTable.technicianId, Number(technicianId)));
     if (dateFrom) conds.push(gte(repairsTable.createdAt, new Date(dateFrom)));
     if (dateTo) conds.push(lte(repairsTable.createdAt, new Date(dateTo)));
+    if (currentStoreId) conds.push(eq(repairsTable.storeId, currentStoreId));
     if (conds.length) q = q.where(and(...conds));
     const repairs = await q.orderBy(sql`${repairsTable.createdAt} desc`);
     const result = await Promise.all(repairs.map(enrichRepair));
@@ -147,7 +150,8 @@ router.post("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
-    const [repair] = await db.select().from(repairsTable).where(eq(repairsTable.id, id));
+    const storeId = await getCurrentStoreId(req);
+    const [repair] = await db.select().from(repairsTable).where(and(eq(repairsTable.id, id), storeId ? eq(repairsTable.storeId, storeId) : undefined));
     if (!repair) return res.status(404).json({ error: "Not found" });
     return res.json(await enrichRepair(repair));
   } catch (e) {

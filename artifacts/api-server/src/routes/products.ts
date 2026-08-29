@@ -1,7 +1,8 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { productsTable } from "@workspace/db";
-import { eq, ilike, or, sql } from "drizzle-orm";
+import { and, eq, ilike, or, sql } from "drizzle-orm";
+import { getCurrentStoreId } from "../lib/stores";
 
 const router = Router();
 
@@ -10,6 +11,8 @@ router.get("/", async (req, res) => {
     const { category, search } = req.query as { category?: string; search?: string };
     let query = db.select().from(productsTable).$dynamic();
     const conditions = [];
+    const storeId = await getCurrentStoreId(req);
+    if (storeId) conditions.push(eq(productsTable.storeId, storeId));
     if (category) conditions.push(eq(productsTable.category, category));
     if (search) conditions.push(or(ilike(productsTable.name, `%${search}%`), ilike(productsTable.sku, `%${search}%`))!);
     if (conditions.length > 0) query = query.where(sql`${conditions.reduce((acc, c, i) => i === 0 ? c : sql`${acc} AND ${c}`)}`);
@@ -37,6 +40,7 @@ router.post("/", async (req, res) => {
       cost: body.cost ? String(body.cost) : null,
       stock: body.stock ?? 0,
       unit: body.unit || "pcs",
+      storeId: await getCurrentStoreId(req),
     }).returning();
     return res.status(201).json({ ...product, price: parseFloat(product.price), cost: product.cost ? parseFloat(product.cost) : null, createdAt: product.createdAt.toISOString() });
   } catch (e) {
@@ -46,7 +50,9 @@ router.post("/", async (req, res) => {
 
 router.get("/:id", async (req, res) => {
   try {
-    const [product] = await db.select().from(productsTable).where(eq(productsTable.id, Number(req.params.id)));
+    const storeId = await getCurrentStoreId(req);
+    const id = Number(req.params.id);
+    const [product] = await db.select().from(productsTable).where(storeId ? and(eq(productsTable.id, id), eq(productsTable.storeId, storeId)) : eq(productsTable.id, id));
     if (!product) return res.status(404).json({ error: "Not found" });
     return res.json({ ...product, price: parseFloat(product.price), cost: product.cost ? parseFloat(product.cost) : null, createdAt: product.createdAt.toISOString() });
   } catch (e) {

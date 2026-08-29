@@ -14,6 +14,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ReceiptPrint } from "@/components/ReceiptPrint";
+import { recordAuditEvent } from "@/lib/audit-client";
 import {
   ArrowLeft, Printer, Download, ChevronDown, Check, Edit, FileText, Receipt
 } from "lucide-react";
@@ -42,10 +43,12 @@ export default function SaleDetail() {
   }
 
   function handlePrintInvoice() {
+    recordAuditEvent("print", "sale", id);
     window.print();
   }
 
   function handlePrintReceipt() {
+    recordAuditEvent("print", "sale", id);
     const style = document.createElement("style");
     style.id = "__receipt-page-size";
     style.textContent = "@page { size: 80mm auto; margin: 3mm 3mm 6mm; }";
@@ -100,6 +103,8 @@ export default function SaleDetail() {
     invoiceFooter: settings?.invoiceFooter ?? undefined,
     gstRate: settings?.gstRate ?? 0,
     qstRate: settings?.qstRate ?? 0,
+    taxName: settings?.taxName ?? "Tax",
+    taxEnabled: settings?.taxEnabled !== false,
     currency: settings?.currency ?? "USD",
   };
 
@@ -252,7 +257,7 @@ export default function SaleDetail() {
                   <div className="flex justify-between text-muted-foreground"><span>Discount</span><span>-{formatCurrency(sale.discount ?? 0)}</span></div>
                 )}
                 {(sale.taxRate ?? 0) > 0 && (
-                  <div className="flex justify-between text-muted-foreground"><span>Tax ({sale.taxRate ?? 0}%)</span><span>{formatCurrency(sale.tax ?? 0)}</span></div>
+                  <div className="flex justify-between text-muted-foreground"><span>{settings?.taxName ?? "Tax"} ({sale.taxRate ?? 0}%)</span><span>{formatCurrency(sale.tax ?? 0)}</span></div>
                 )}
                 <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2 text-[#0d4d47]">
                   <span>TOTAL</span>

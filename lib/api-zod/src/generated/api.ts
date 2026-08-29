@@ -17,6 +17,197 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
+ * @summary List active and inactive stores
+ */
+export const GetStoresResponseItem = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "address": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "active": zod.boolean(),
+  "isDefault": zod.boolean(),
+  "createdAt": zod.coerce.date()
+})
+export const GetStoresResponse = zod.array(GetStoresResponseItem)
+
+
+/**
+ * @summary Create a store location
+ */
+export const createStoreBodyNameMax = 160;
+
+
+
+export const CreateStoreBody = zod.object({
+  "name": zod.string().min(1).max(createStoreBodyNameMax),
+  "address": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "email": zod.string().email().nullish(),
+  "isDefault": zod.boolean().optional()
+})
+
+export const CreateStoreResponse = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "address": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "active": zod.boolean(),
+  "isDefault": zod.boolean(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update a store location
+ */
+export const UpdateStoreParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const updateStoreBodyOneNameMax = 160;
+
+
+
+export const UpdateStoreBody = zod.object({
+  "name": zod.string().min(1).max(updateStoreBodyOneNameMax),
+  "address": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "email": zod.string().email().nullish(),
+  "isDefault": zod.boolean().optional()
+}).and(zod.object({
+  "active": zod.boolean().optional()
+}))
+
+export const UpdateStoreResponse = zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "address": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "active": zod.boolean(),
+  "isDefault": zod.boolean(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Get the store selected for this employee session
+ */
+export const GetCurrentStoreResponse = zod.object({
+  "storeId": zod.number().int().nullable(),
+  "store": zod.union([zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "address": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "active": zod.boolean(),
+  "isDefault": zod.boolean(),
+  "createdAt": zod.coerce.date()
+}),zod.null()]).optional()
+})
+
+
+/**
+ * @summary Select the current store for this session
+ */
+export const SetCurrentStoreBody = zod.object({
+  "storeId": zod.number().int().nullable()
+})
+
+export const SetCurrentStoreResponse = zod.object({
+  "storeId": zod.number().int().nullable(),
+  "store": zod.union([zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "address": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "email": zod.string().nullish(),
+  "active": zod.boolean(),
+  "isDefault": zod.boolean(),
+  "createdAt": zod.coerce.date()
+}),zod.null()]).optional()
+})
+
+
+/**
+ * @summary List a privacy-safe audit trail
+ */
+export const getAuditLogsQueryLimitDefault = 100;
+export const getAuditLogsQueryLimitMax = 500;
+
+
+
+export const GetAuditLogsQueryParams = zod.object({
+  "action": zod.coerce.string().optional(),
+  "entityType": zod.coerce.string().optional(),
+  "storeId": zod.coerce.number().int().optional(),
+  "dateFrom": zod.date().optional(),
+  "dateTo": zod.date().optional(),
+  "limit": zod.coerce.number().int().min(1).max(getAuditLogsQueryLimitMax).default(getAuditLogsQueryLimitDefault)
+})
+
+export const GetAuditLogsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "employeeId": zod.number().int().nullish(),
+  "employeeName": zod.string().nullish(),
+  "storeId": zod.number().int().nullish(),
+  "action": zod.string(),
+  "entityType": zod.string(),
+  "entityId": zod.string().nullish(),
+  "details": zod.record(zod.string(), zod.unknown()).nullish(),
+  "createdAt": zod.coerce.date()
+})
+export const GetAuditLogsResponse = zod.array(GetAuditLogsResponseItem)
+
+
+/**
+ * @summary Record a safe client event such as printing
+ */
+export const RecordAuditEventBody = zod.object({
+  "action": zod.enum(['print', 'payment', 'status_change']),
+  "entityType": zod.enum(['sale', 'quotation', 'repair', 'backup']),
+  "entityId": zod.string().optional()
+})
+
+export const RecordAuditEventResponse = zod.object({
+  "recorded": zod.boolean().optional()
+})
+
+
+/**
+ * @summary Replay approved offline operations with server authority
+ */
+export const replayOfflineOperationsBodyOperationsItemOperationIdMin = 8;
+export const replayOfflineOperationsBodyOperationsItemOperationIdMax = 100;
+
+export const replayOfflineOperationsBodyOperationsMax = 25;
+
+
+
+export const ReplayOfflineOperationsBody = zod.object({
+  "operations": zod.array(zod.object({
+  "operationId": zod.string().min(replayOfflineOperationsBodyOperationsItemOperationIdMin).max(replayOfflineOperationsBodyOperationsItemOperationIdMax),
+  "action": zod.enum(['create_sale', 'create_customer', 'create_repair', 'repair_status', 'repair_photo']),
+  "url": zod.string(),
+  "body": zod.record(zod.string(), zod.unknown()),
+  "expectedVersion": zod.string().optional()
+})).max(replayOfflineOperationsBodyOperationsMax)
+})
+
+export const ReplayOfflineOperationsResponse = zod.object({
+  "results": zod.array(zod.object({
+  "operationId": zod.string(),
+  "status": zod.enum(['completed', 'pending', 'conflict', 'error']),
+  "data": zod.record(zod.string(), zod.unknown()).optional(),
+  "message": zod.string().optional()
+}))
+})
+
+
+/**
  * @summary Check whether the first admin account must be created
  */
 export const GetAuthSetupStatusResponse = zod.object({
@@ -1132,6 +1323,8 @@ export const GetSettingsResponse = zod.object({
   "theme": zod.string(),
   "currency": zod.string(),
   "taxRate": zod.number(),
+  "taxName": zod.string(),
+  "taxEnabled": zod.boolean(),
   "gstRate": zod.number().nullish(),
   "qstRate": zod.number().nullish(),
   "invoicePrefix": zod.string().optional(),
@@ -1140,7 +1333,9 @@ export const GetSettingsResponse = zod.object({
   "thankYouMessage": zod.string().nullish(),
   "smtpHost": zod.string().nullish(),
   "smtpPort": zod.number().int().nullish(),
-  "smtpUser": zod.string().nullish()
+  "smtpUser": zod.string().nullish(),
+  "smtpConfigured": zod.boolean().optional(),
+  "defaultStoreId": zod.number().int().nullish()
 })
 
 
@@ -1157,6 +1352,8 @@ export const UpdateSettingsBody = zod.object({
   "theme": zod.string().optional(),
   "currency": zod.string().optional(),
   "taxRate": zod.number().optional(),
+  "taxName": zod.string().optional(),
+  "taxEnabled": zod.boolean().optional(),
   "gstRate": zod.number().optional(),
   "qstRate": zod.number().optional(),
   "invoicePrefix": zod.string().optional(),
@@ -1166,7 +1363,8 @@ export const UpdateSettingsBody = zod.object({
   "smtpHost": zod.string().optional(),
   "smtpPort": zod.number().int().optional(),
   "smtpUser": zod.string().optional(),
-  "smtpPass": zod.string().optional()
+  "smtpPass": zod.string().optional(),
+  "defaultStoreId": zod.number().int().nullish()
 })
 
 export const UpdateSettingsResponse = zod.object({
@@ -1180,6 +1378,8 @@ export const UpdateSettingsResponse = zod.object({
   "theme": zod.string(),
   "currency": zod.string(),
   "taxRate": zod.number(),
+  "taxName": zod.string(),
+  "taxEnabled": zod.boolean(),
   "gstRate": zod.number().nullish(),
   "qstRate": zod.number().nullish(),
   "invoicePrefix": zod.string().optional(),
@@ -1188,7 +1388,9 @@ export const UpdateSettingsResponse = zod.object({
   "thankYouMessage": zod.string().nullish(),
   "smtpHost": zod.string().nullish(),
   "smtpPort": zod.number().int().nullish(),
-  "smtpUser": zod.string().nullish()
+  "smtpUser": zod.string().nullish(),
+  "smtpConfigured": zod.boolean().optional(),
+  "defaultStoreId": zod.number().int().nullish()
 })
 
 

@@ -87,5 +87,7 @@ export function requireRole(minRole: "staff" | "manager" | "admin") {
 declare module "express-session" {
   interface SessionData {
     employeeId?: number;
+    storeId?: number;
+    storeScopeAll?: boolean;
   }
 }

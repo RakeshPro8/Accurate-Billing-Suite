@@ -2,6 +2,9 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { quotationsTable, quotationLineItemsTable, salesTable, saleLineItemsTable, settingsTable } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
+import { calculateTotals, getTaxConfig, assertMoney } from "../lib/tax";
+import { getCurrentStoreId } from "../lib/stores";
+import { logAudit } from "../lib/audit";
 
 const router = Router();
 
@@ -27,13 +30,6 @@ function parseItem(i: typeof quotationLineItemsTable.$inferSelect) {
   };
 }
 
-function calcTotals(items: Array<{ quantity: number; unitPrice: number; discount: number }>, taxRate: number, discount: number) {
-  const subtotal = items.reduce((sum, i) => sum + i.quantity * i.unitPrice - (i.discount || 0), 0);
-  const taxable = subtotal - (discount || 0);
-  const tax = taxable * (taxRate / 100);
-  return { subtotal, tax, total: taxable + tax };
-}
-
 async function getNextQuoteNumber() {
   const [settings] = await db.select().from(settingsTable).limit(1);
   const prefix = settings?.quotePrefix ?? "QUO-";
@@ -45,7 +41,11 @@ router.get("/", async (req, res) => {
   try {
     const { status } = req.query as Record<string, string>;
     let q = db.select().from(quotationsTable).$dynamic();
-    if (status) q = q.where(eq(quotationsTable.status, status));
+    const currentStoreId = await getCurrentStoreId(req);
+    const conditions = [];
+    if (status) conditions.push(eq(quotationsTable.status, status));
+    if (currentStoreId) conditions.push(eq(quotationsTable.storeId, currentStoreId));
+    if (conditions.length) q = q.where(and(...conditions));
     const quotes = await q.orderBy(sql`${quotationsTable.createdAt} desc`);
     const items = await db.select().from(quotationLineItemsTable);
     return res.json(quotes.map(quo => ({
@@ -61,9 +61,8 @@ router.post("/", async (req, res) => {
   try {
     const body = req.body;
     const items = body.items || [];
-    const taxRate = body.taxRate ?? 0;
-    const discount = body.discount ?? 0;
-    const { subtotal, tax, total } = calcTotals(items, taxRate, discount);
+    const discount = assertMoney(body.discount ?? 0, "Discount");
+    const { subtotal, taxRate, tax, total } = calculateTotals(items, await getTaxConfig(), discount);
     const quoteNumber = await getNextQuoteNumber();
     const [quote] = await db.insert(quotationsTable).values({
       quoteNumber,
@@ -78,6 +77,7 @@ router.post("/", async (req, res) => {
       total: String(total),
       notes: body.notes || null,
       validUntil: body.validUntil || null,
+      storeId: await getCurrentStoreId(req),
     }).returning();
     const lineItems = await Promise.all(items.map(async (item: any) => {
       const lineTotal = item.quantity * item.unitPrice - (item.discount || 0);
@@ -95,6 +95,7 @@ router.post("/", async (req, res) => {
       }).returning();
       return li;
     }));
+    await logAudit(req, "create", "quotation", quote.id, { quoteNumber: quote.quoteNumber, total });
     return res.status(201).json({ ...parseQuote(quote), items: lineItems.map(parseItem) });
   } catch (e) {
     return res.status(500).json({ error: String(e) });
@@ -104,7 +105,8 @@ router.post("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
-    const [quote] = await db.select().from(quotationsTable).where(eq(quotationsTable.id, id));
+    const storeId = await getCurrentStoreId(req);
+    const [quote] = await db.select().from(quotationsTable).where(and(eq(quotationsTable.id, id), storeId ? eq(quotationsTable.storeId, storeId) : undefined));
     if (!quote) return res.status(404).json({ error: "Not found" });
     const items = await db.select().from(quotationLineItemsTable).where(eq(quotationLineItemsTable.quotationId, id));
     return res.json({ ...parseQuote(quote), items: items.map(parseItem) });
@@ -125,9 +127,8 @@ router.patch("/:id", async (req, res) => {
     if (body.notes !== undefined) updates.notes = body.notes;
     if (body.validUntil !== undefined) updates.validUntil = body.validUntil;
     if (body.items !== undefined) {
-      const taxRate = body.taxRate ?? 0;
-      const discount = body.discount ?? 0;
-      const { subtotal, tax, total } = calcTotals(body.items, taxRate, discount);
+      const discount = assertMoney(body.discount ?? 0, "Discount");
+      const { subtotal, taxRate, tax, total } = calculateTotals(body.items, await getTaxConfig(), discount);
       updates.subtotal = String(subtotal);
       updates.taxRate = String(taxRate);
       updates.tax = String(tax);
@@ -153,6 +154,7 @@ router.patch("/:id", async (req, res) => {
     const [quote] = await db.update(quotationsTable).set(updates).where(eq(quotationsTable.id, id)).returning();
     if (!quote) return res.status(404).json({ error: "Not found" });
     const items = await db.select().from(quotationLineItemsTable).where(eq(quotationLineItemsTable.quotationId, id));
+    await logAudit(req, "update", "quotation", quote.id, { fields: Object.keys(updates) });
     return res.json({ ...parseQuote(quote), items: items.map(parseItem) });
   } catch (e) {
     return res.status(500).json({ error: String(e) });
@@ -209,6 +211,7 @@ router.post("/:id/convert", async (req, res) => {
       return li;
     }));
     await db.update(quotationsTable).set({ status: "converted" }).where(eq(quotationsTable.id, id));
+    await logAudit(req, "convert", "quotation", quote.id, { saleId: sale.id });
     return res.status(201).json({
       ...sale,
       subtotal: parseFloat(sale.subtotal),

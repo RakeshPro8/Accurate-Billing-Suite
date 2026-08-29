@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Save, Wrench } from "lucide-react";
+import { queueOfflineOperation } from "@/lib/offline-store";
 
 const STATUS_OPTIONS = ["intake", "diagnostic", "waiting_parts", "in_progress", "ready_qa", "completed", "picked_up", "cancelled"];
 const PRIORITY_OPTIONS = ["low", "normal", "high", "urgent"];
@@ -112,7 +113,18 @@ export default function RepairForm() {
           toast({ title: "Repair created", description: repair.ticketNumber });
           navigate(`/repairs/${repair.id}`);
         },
-        onError: () => toast({ title: "Error", description: "Failed to create repair.", variant: "destructive" }),
+        onError: async () => {
+          if (!navigator.onLine) {
+            await queueOfflineOperation({
+              operationId: crypto.randomUUID(), action: "create_repair", method: "POST",
+              url: `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/sync/replay`, body: payload,
+            });
+            toast({ title: "Repair queued for sync", description: "The server will allocate the ticket number when connection returns." });
+            navigate("/repairs");
+            return;
+          }
+          toast({ title: "Error", description: "Failed to create repair.", variant: "destructive" });
+        },
       });
     }
   }

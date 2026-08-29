@@ -1,13 +1,15 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
 import { customersTable, salesTable } from "@workspace/db";
-import { eq, ilike, or, sql, sum, count } from "drizzle-orm";
+import { and, eq, ilike, or, sql, sum, count } from "drizzle-orm";
+import { getCurrentStoreId } from "../lib/stores";
 
 const router = Router();
 
 router.get("/", async (req, res) => {
   try {
     const { search } = req.query as { search?: string };
+    const storeId = await getCurrentStoreId(req);
     let baseQuery = db.select({
       id: customersTable.id,
       name: customersTable.name,
@@ -23,15 +25,14 @@ router.get("/", async (req, res) => {
       .groupBy(customersTable.id)
       .$dynamic();
 
-    if (search) {
-      baseQuery = baseQuery.where(
-        or(
+    const conditions = [];
+    if (search) conditions.push(or(
           ilike(customersTable.name, `%${search}%`),
           ilike(customersTable.email, `%${search}%`),
           ilike(customersTable.phone, `%${search}%`)
-        )!
-      );
-    }
+        )!);
+    if (storeId) conditions.push(eq(customersTable.storeId, storeId));
+    if (conditions.length) baseQuery = baseQuery.where(and(...conditions));
 
     const customers = await baseQuery.orderBy(customersTable.name);
     return res.json(customers.map(c => ({
@@ -54,6 +55,7 @@ router.post("/", async (req, res) => {
       phone: body.phone || null,
       address: body.address || null,
       notes: body.notes || null,
+      storeId: await getCurrentStoreId(req),
     }).returning();
     return res.status(201).json({ ...customer, totalSpent: 0, totalOrders: 0, createdAt: customer.createdAt.toISOString() });
   } catch (e) {
@@ -64,7 +66,8 @@ router.post("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
-    const [customer] = await db.select().from(customersTable).where(eq(customersTable.id, id));
+    const storeId = await getCurrentStoreId(req);
+    const [customer] = await db.select().from(customersTable).where(and(eq(customersTable.id, id), storeId ? eq(customersTable.storeId, storeId) : undefined));
     if (!customer) return res.status(404).json({ error: "Not found" });
     const [stats] = await db.select({
       totalSpent: sql<number>`coalesce(sum(${salesTable.total}::numeric), 0)`,

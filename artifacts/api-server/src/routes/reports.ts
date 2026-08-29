@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { salesTable, saleLineItemsTable, customersTable, productsTable, servicesTable, quotationsTable } from "@workspace/db";
 import { eq, gte, lte, and, sql } from "drizzle-orm";
+import { getCurrentStoreId } from "../lib/stores";
 
 const router = Router();
 
@@ -28,26 +29,31 @@ router.get("/dashboard", async (_req, res) => {
     const lastWeekStart = new Date(weekStart); lastWeekStart.setDate(weekStart.getDate() - 7);
     const lastWeekEnd   = new Date(weekStart); lastWeekEnd.setMilliseconds(-1);
 
+    const storeId = await getCurrentStoreId(_req);
+    const storeFilter = storeId ? eq(salesTable.storeId, storeId) : undefined;
     const [mtdStats] = await db.select({
       revenue: sql<number>`coalesce(sum(total::numeric), 0)`,
       count:   sql<number>`count(*)`,
-    }).from(salesTable).where(and(gte(salesTable.createdAt, mtdStart), eq(salesTable.status, "paid")));
+    }).from(salesTable).where(and(gte(salesTable.createdAt, mtdStart), eq(salesTable.status, "paid"), storeFilter));
 
     const [weekStats] = await db.select({
       revenue: sql<number>`coalesce(sum(total::numeric), 0)`,
-    }).from(salesTable).where(and(gte(salesTable.createdAt, weekStart), eq(salesTable.status, "paid")));
+    }).from(salesTable).where(and(gte(salesTable.createdAt, weekStart), eq(salesTable.status, "paid"), storeFilter));
 
     const [lastWeekStats] = await db.select({
       revenue: sql<number>`coalesce(sum(total::numeric), 0)`,
     }).from(salesTable).where(and(
       gte(salesTable.createdAt, lastWeekStart),
       lte(salesTable.createdAt, lastWeekEnd),
-      eq(salesTable.status, "paid")
+      eq(salesTable.status, "paid"),
+      storeFilter
     ));
 
-    const [{ count: totalCustomers }]  = await db.select({ count: sql<number>`count(*)` }).from(customersTable);
-    const [{ count: pendingInvoices }] = await db.select({ count: sql<number>`count(*)` }).from(salesTable).where(eq(salesTable.status, "invoice"));
-    const [{ count: openQuotations }]  = await db.select({ count: sql<number>`count(*)` }).from(quotationsTable).where(eq(quotationsTable.status, "draft"));
+    const customerFilter = storeId ? eq(customersTable.storeId, storeId) : undefined;
+    const quoteFilter = storeId ? eq(quotationsTable.storeId, storeId) : undefined;
+    const [{ count: totalCustomers }]  = await db.select({ count: sql<number>`count(*)` }).from(customersTable).where(customerFilter);
+    const [{ count: pendingInvoices }] = await db.select({ count: sql<number>`count(*)` }).from(salesTable).where(and(eq(salesTable.status, "invoice"), storeFilter));
+    const [{ count: openQuotations }]  = await db.select({ count: sql<number>`count(*)` }).from(quotationsTable).where(and(eq(quotationsTable.status, "draft"), quoteFilter));
 
     const thirtyDaysAgo = new Date(now); thirtyDaysAgo.setDate(now.getDate() - 29);
     const dailySales = await db.select({
@@ -55,7 +61,7 @@ router.get("/dashboard", async (_req, res) => {
       revenue:    sql<number>`coalesce(sum(total::numeric), 0)`,
       salesCount: sql<number>`count(*)`,
     }).from(salesTable)
-      .where(gte(salesTable.createdAt, thirtyDaysAgo))
+      .where(and(gte(salesTable.createdAt, thirtyDaysAgo), storeFilter))
       .groupBy(sql`date_trunc('day', created_at)`)
       .orderBy(sql`date_trunc('day', created_at)`);
 
@@ -86,11 +92,13 @@ router.get("/weekly", async (req, res) => {
     const weekStart = startOfWeek(base);
     const weekEnd   = endOfWeek(new Date(weekStart));
 
+    const storeId = await getCurrentStoreId(req);
+    const storeFilter = storeId ? eq(salesTable.storeId, storeId) : undefined;
     const sales = await db.select().from(salesTable)
-      .where(and(gte(salesTable.createdAt, weekStart), lte(salesTable.createdAt, weekEnd)));
+      .where(and(gte(salesTable.createdAt, weekStart), lte(salesTable.createdAt, weekEnd), storeFilter));
 
     const [{ newCustomers }] = await db.select({ newCustomers: sql<number>`count(*)` }).from(customersTable)
-      .where(and(gte(customersTable.createdAt, weekStart), lte(customersTable.createdAt, weekEnd)));
+      .where(and(gte(customersTable.createdAt, weekStart), lte(customersTable.createdAt, weekEnd), storeId ? eq(customersTable.storeId, storeId) : undefined));
 
     const paidSales = sales.filter(s => s.status === "paid");
     const totalRevenue = paidSales.reduce((sum, s) => sum + parseFloat(s.total), 0);
@@ -136,11 +144,13 @@ router.get("/monthly", async (req, res) => {
     const start = startOfMonth(year, month);
     const end   = endOfMonth(year, month);
 
+    const storeId = await getCurrentStoreId(req);
+    const storeFilter = storeId ? eq(salesTable.storeId, storeId) : undefined;
     const sales = await db.select().from(salesTable)
-      .where(and(gte(salesTable.createdAt, start), lte(salesTable.createdAt, end)));
+      .where(and(gte(salesTable.createdAt, start), lte(salesTable.createdAt, end), storeFilter));
 
     const [{ newCustomers }] = await db.select({ newCustomers: sql<number>`count(*)` }).from(customersTable)
-      .where(and(gte(customersTable.createdAt, start), lte(customersTable.createdAt, end)));
+      .where(and(gte(customersTable.createdAt, start), lte(customersTable.createdAt, end), storeId ? eq(customersTable.storeId, storeId) : undefined));
 
     const paidSales = sales.filter(s => s.status === "paid");
     const totalRevenue = paidSales.reduce((sum, s) => sum + parseFloat(s.total), 0);
@@ -176,11 +186,14 @@ router.get("/monthly", async (req, res) => {
   }
 });
 
-router.get("/top-products", async (_req, res) => {
+router.get("/top-products", async (req, res) => {
   try {
+    const storeId = await getCurrentStoreId(req);
+    const scopedSales = await db.select({ id: salesTable.id }).from(salesTable).where(storeId ? eq(salesTable.storeId, storeId) : undefined);
+    const saleIds = new Set(scopedSales.map((sale) => sale.id));
     const items = await db.select().from(saleLineItemsTable);
     const map: Record<string, { name: string; type: string; totalRevenue: number; totalQty: number }> = {};
-    items.forEach(i => {
+    items.filter((item) => saleIds.has(item.saleId)).forEach(i => {
       if (!map[i.name]) map[i.name] = { name: i.name, type: i.type, totalRevenue: 0, totalQty: 0 };
       map[i.name].totalRevenue += parseFloat(i.total);
       map[i.name].totalQty    += parseFloat(i.quantity);
@@ -191,8 +204,11 @@ router.get("/top-products", async (_req, res) => {
   }
 });
 
-router.get("/revenue-by-category", async (_req, res) => {
+router.get("/revenue-by-category", async (req, res) => {
   try {
+    const storeId = await getCurrentStoreId(req);
+    const scopedSales = await db.select({ id: salesTable.id }).from(salesTable).where(storeId ? eq(salesTable.storeId, storeId) : undefined);
+    const saleIds = new Set(scopedSales.map((sale) => sale.id));
     const items    = await db.select().from(saleLineItemsTable);
     const products = await db.select({ id: productsTable.id, category: productsTable.category }).from(productsTable);
     const services = await db.select({ id: servicesTable.id, category: servicesTable.category }).from(servicesTable);
@@ -200,7 +216,7 @@ router.get("/revenue-by-category", async (_req, res) => {
     const sMap = Object.fromEntries(services.map(s => [s.id, s.category]));
 
     const catMap: Record<string, number> = {};
-    items.forEach(i => {
+    items.filter((item) => saleIds.has(item.saleId)).forEach(i => {
       const cat = i.productId ? (pMap[i.productId] || "Accessories")
                 : i.serviceId ? (sMap[i.serviceId] || "Repairs")
                 : i.type === "service" ? "Repairs" : "Accessories";

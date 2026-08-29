@@ -1,0 +1,24 @@
+kind = "mobile"
+previewPath = "/mobilinq-mobile/"
+title = "Mobilinq Mobile"
+description = "A Mobilinq mobile companion for managers and employees: secure HTTPS PIN sign-in against the shared Express API, current-store context, connectivity and sync status, remote repair status updates, and sales/repair monitoring using the existing terminal visual language."
+version = "1.0.0"
+id = "artifacts/mobilinq-mobile"
+router = "expo-domain"
+
+[[services]]
+name = "expo"
+ensurePreviewReachable = "/status"
+paths = [ "/mobilinq-mobile/" ]
+localPort = 22252
+
+[services.development]
+run = "pnpm --filter @workspace/mobilinq-mobile run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/mobilinq-mobile", "run", "build" ]
+run = [ "pnpm", "--filter", "@workspace/mobilinq-mobile", "run", "serve" ]
+
+[services.env]
+PORT = "22252"
+BASE_PATH = "/mobilinq-mobile/"

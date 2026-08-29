@@ -3,6 +3,7 @@ import { useLocation, useParams } from "wouter";
 import {
   useGetQuotation, useCreateQuotation, useUpdateQuotation,
   useGetProducts, useGetServices, useGetCustomers,
+  useGetSettings,
   getGetQuotationQueryKey, getGetQuotationsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -40,6 +41,7 @@ export default function QuotationForm() {
   const { data: products } = useGetProducts();
   const { data: services } = useGetServices();
   const { data: customers } = useGetCustomers();
+  const { data: settings } = useGetSettings();
   const createQuotation = useCreateQuotation();
   const updateQuotation = useUpdateQuotation();
 
@@ -48,6 +50,8 @@ export default function QuotationForm() {
   const [customerId, setCustomerId] = useState<number | undefined>();
   const [notes, setNotes] = useState("");
   const [taxRate, setTaxRate] = useState(0);
+  const [taxName, setTaxName] = useState("Tax");
+  const [taxEnabled, setTaxEnabled] = useState(true);
   const [discount, setDiscount] = useState(0);
   const [expiresAt, setExpiresAt] = useState(() => {
     const d = new Date(); d.setDate(d.getDate() + 30);
@@ -55,6 +59,14 @@ export default function QuotationForm() {
   });
   const [items, setItems] = useState<LineItemForm[]>([{ type: "custom", name: "", description: "", quantity: 1, unitPrice: 0, discount: 0 }]);
   const [productSearch, setProductSearch] = useState("");
+
+  useEffect(() => {
+    if (settings && !isEdit) {
+      setTaxRate(settings.taxRate ?? 0);
+      setTaxName(settings.taxName ?? "Tax");
+      setTaxEnabled(settings.taxEnabled !== false);
+    }
+  }, [settings, isEdit]);
 
   useEffect(() => {
     if (quotation) {
@@ -239,7 +251,7 @@ export default function QuotationForm() {
           <div className="mt-4 border-t pt-3 space-y-1 text-sm ml-auto max-w-xs">
             <div className="flex justify-between text-muted-foreground"><span>Subtotal</span><span>{formatCurrency(subtotal)}</span></div>
             {discount > 0 && <div className="flex justify-between text-muted-foreground"><span>Discount</span><span>-{formatCurrency(discount)}</span></div>}
-            {taxRate > 0 && <div className="flex justify-between text-muted-foreground"><span>Tax ({taxRate}%)</span><span>{formatCurrency(tax)}</span></div>}
+            {taxEnabled && taxRate > 0 && <div className="flex justify-between text-muted-foreground"><span>{taxName} ({taxRate}%)</span><span>{formatCurrency(tax)}</span></div>}
             <div className="flex justify-between font-bold text-base border-t pt-1"><span>Total</span><span>{formatCurrency(total)}</span></div>
           </div>
         </CardContent>

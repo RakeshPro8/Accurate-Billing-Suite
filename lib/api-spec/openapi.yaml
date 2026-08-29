@@ -29,6 +29,12 @@ tags:
     description: App settings
   - name: repairs
     description: Repair tickets and work orders
+  - name: stores
+    description: Location context and administration
+  - name: audit
+    description: Privacy-safe manager audit trail
+  - name: sync
+    description: Offline operation replay and reconciliation
 
 paths:
   /healthz:
@@ -43,6 +49,155 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /stores:
+    get:
+      operationId: getStores
+      tags: [stores]
+      summary: List active and inactive stores
+      responses:
+        "200":
+          description: Store locations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Store"
+    post:
+      operationId: createStore
+      tags: [stores]
+      summary: Create a store location
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StoreInput"
+      responses:
+        "201":
+          description: Store created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Store"
+
+  /stores/{id}:
+    patch:
+      operationId: updateStore
+      tags: [stores]
+      summary: Update a store location
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StoreUpdate"
+      responses:
+        "200":
+          description: Store updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Store"
+
+  /stores/current:
+    get:
+      operationId: getCurrentStore
+      tags: [stores]
+      summary: Get the store selected for this employee session
+      responses:
+        "200":
+          description: Current store context
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentStore"
+    patch:
+      operationId: setCurrentStore
+      tags: [stores]
+      summary: Select the current store for this session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetCurrentStoreInput"
+      responses:
+        "200":
+          description: Store selected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CurrentStore"
+
+  /audit-logs:
+    get:
+      operationId: getAuditLogs
+      tags: [audit]
+      summary: List a privacy-safe audit trail
+      parameters:
+        - { name: action, in: query, schema: { type: string } }
+        - { name: entityType, in: query, schema: { type: string } }
+        - { name: storeId, in: query, schema: { type: integer } }
+        - { name: dateFrom, in: query, schema: { type: string, format: date-time } }
+        - { name: dateTo, in: query, schema: { type: string, format: date-time } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 500, default: 100 } }
+      responses:
+        "200":
+          description: Audit events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AuditLog"
+    post:
+      operationId: recordAuditEvent
+      tags: [audit]
+      summary: Record a safe client event such as printing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuditEventInput"
+      responses:
+        "201":
+          description: Event recorded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  recorded: { type: boolean }
+
+  /sync/replay:
+    post:
+      operationId: replayOfflineOperations
+      tags: [sync]
+      summary: Replay approved offline operations with server authority
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SyncReplayInput"
+      responses:
+        "200":
+          description: Operation outcomes
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncReplayResponse"
+        "409":
+          description: One or more operations conflicts with current server state
 
   # ─── Employee authentication ─────────────────────────────
   /auth/setup-status:
@@ -1542,7 +1697,7 @@ components:
     # ── Settings ──
     Settings:
       type: object
-      required: [id, appName, businessName, currency, taxRate, theme]
+      required: [id, appName, businessName, currency, taxRate, taxName, taxEnabled, theme]
       properties:
         id:               { type: integer }
         appName:          { type: string }
@@ -1554,6 +1709,8 @@ components:
         theme:            { type: string }
         currency:         { type: string }
         taxRate:          { type: number }
+        taxName:          { type: string }
+        taxEnabled:       { type: boolean }
         gstRate:          { type: ["number", "null"] }
         qstRate:          { type: ["number", "null"] }
         invoicePrefix:    { type: string }
@@ -1563,6 +1720,8 @@ components:
         smtpHost:         { type: ["string", "null"] }
         smtpPort:         { type: ["integer", "null"] }
         smtpUser:         { type: ["string", "null"] }
+        smtpConfigured:   { type: boolean }
+        defaultStoreId:   { type: ["integer", "null"] }
 
     SettingsUpdate:
       type: object
@@ -1576,6 +1735,8 @@ components:
         theme:            { type: string }
         currency:         { type: string }
         taxRate:          { type: number }
+        taxName:          { type: string }
+        taxEnabled:       { type: boolean }
         gstRate:          { type: number }
         qstRate:          { type: number }
         invoicePrefix:    { type: string }
@@ -1586,6 +1747,114 @@ components:
         smtpPort:         { type: integer }
         smtpUser:         { type: string }
         smtpPass:         { type: string }
+        defaultStoreId:   { type: ["integer", "null"] }
+
+    Store:
+      type: object
+      required: [id, name, active, isDefault, createdAt]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        address: { type: ["string", "null"] }
+        phone: { type: ["string", "null"] }
+        email: { type: ["string", "null"] }
+        active: { type: boolean }
+        isDefault: { type: boolean }
+        createdAt: { type: string, format: date-time }
+
+    StoreInput:
+      type: object
+      required: [name]
+      additionalProperties: false
+      properties:
+        name: { type: string, minLength: 1, maxLength: 160 }
+        address: { type: ["string", "null"] }
+        phone: { type: ["string", "null"] }
+        email: { type: ["string", "null"], format: email }
+        isDefault: { type: boolean }
+
+    StoreUpdate:
+      allOf:
+        - $ref: "#/components/schemas/StoreInput"
+      required: []
+      properties:
+        active: { type: boolean }
+
+    CurrentStore:
+      type: object
+      required: [storeId]
+      properties:
+        storeId: { type: ["integer", "null"] }
+        store:
+          oneOf:
+            - $ref: "#/components/schemas/Store"
+            - type: "null"
+
+    SetCurrentStoreInput:
+      type: object
+      required: [storeId]
+      additionalProperties: false
+      properties:
+        storeId: { type: ["integer", "null"] }
+
+    AuditLog:
+      type: object
+      required: [id, action, entityType, createdAt]
+      properties:
+        id: { type: integer }
+        employeeId: { type: ["integer", "null"] }
+        employeeName: { type: ["string", "null"] }
+        storeId: { type: ["integer", "null"] }
+        action: { type: string }
+        entityType: { type: string }
+        entityId: { type: ["string", "null"] }
+        details: { type: ["object", "null"], additionalProperties: true }
+        createdAt: { type: string, format: date-time }
+
+    AuditEventInput:
+      type: object
+      required: [action, entityType]
+      additionalProperties: false
+      properties:
+        action: { type: string, enum: [print, payment, status_change] }
+        entityType: { type: string, enum: [sale, quotation, repair, backup] }
+        entityId: { type: string }
+
+    SyncOperation:
+      type: object
+      required: [operationId, action, url, body]
+      additionalProperties: false
+      properties:
+        operationId: { type: string, minLength: 8, maxLength: 100 }
+        action: { type: string, enum: [create_sale, create_customer, create_repair, repair_status, repair_photo] }
+        url: { type: string }
+        body: { type: object, additionalProperties: true }
+        expectedVersion: { type: string }
+
+    SyncReplayInput:
+      type: object
+      required: [operations]
+      properties:
+        operations:
+          type: array
+          maxItems: 25
+          items:
+            $ref: "#/components/schemas/SyncOperation"
+
+    SyncReplayResponse:
+      type: object
+      required: [results]
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+            required: [operationId, status]
+            properties:
+              operationId: { type: string }
+              status: { type: string, enum: [completed, pending, conflict, error] }
+              data: { type: object, additionalProperties: true }
+              message: { type: string }
 
     # ── Repair ──
     Repair:

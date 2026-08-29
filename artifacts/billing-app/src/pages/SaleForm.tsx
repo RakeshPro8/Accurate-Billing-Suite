@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useLocation, useParams } from "wouter";
-import { useGetSale, useCreateSale, useUpdateSale, useGetProducts, useGetServices, useGetCustomers, getGetSaleQueryKey, getGetSalesQueryKey } from "@workspace/api-client-react";
+import { useGetSale, useCreateSale, useUpdateSale, useGetProducts, useGetServices, useGetCustomers, useGetSettings, getGetSaleQueryKey, getGetSalesQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatCurrency } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useEmployee, ROLE_COLORS, ROLE_LABELS } from "@/context/EmployeeContext";
 import { ArrowLeft, Plus, Trash2, Search, ShieldCheck, Star, AlertTriangle } from "lucide-react";
+import { queueOfflineOperation } from "@/lib/offline-store";
 
 interface LineItemForm {
   type: "product" | "service" | "custom";
@@ -41,6 +42,7 @@ export default function SaleForm({ isQuote = false }: { isQuote?: boolean }) {
   const { data: products } = useGetProducts();
   const { data: services } = useGetServices();
   const { data: customers } = useGetCustomers();
+  const { data: settings } = useGetSettings();
   const createSale = useCreateSale();
   const updateSale = useUpdateSale();
 
@@ -51,11 +53,21 @@ export default function SaleForm({ isQuote = false }: { isQuote?: boolean }) {
   const [notes, setNotes] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("Cash");
   const [taxRate, setTaxRate] = useState(0);
+  const [taxName, setTaxName] = useState("Tax");
+  const [taxEnabled, setTaxEnabled] = useState(true);
   const [discount, setDiscount] = useState(0);
   const [dueDate, setDueDate] = useState("");
   const [saveStatus, setSaveStatus] = useState<"draft" | "invoice">("invoice");
   const [items, setItems] = useState<LineItemForm[]>([{ type: "custom", name: "", description: "", quantity: 1, unitPrice: 0, discount: 0 }]);
   const [productSearch, setProductSearch] = useState("");
+
+  useEffect(() => {
+    if (settings && !isEdit) {
+      setTaxRate(settings.taxRate ?? 0);
+      setTaxName(settings.taxName ?? "Tax");
+      setTaxEnabled(settings.taxEnabled !== false);
+    }
+  }, [settings, isEdit]);
 
   useEffect(() => {
     if (sale) {
@@ -156,7 +168,18 @@ export default function SaleForm({ isQuote = false }: { isQuote?: boolean }) {
       toast({ title: isEdit ? "Invoice updated" : "Invoice created", description: s.invoiceNumber });
       navigate(`/sales/${s.id}`);
     };
-    const onError = (e: any) => toast({ title: e?.message ?? "Error saving", variant: "destructive" });
+    const onError = async (e: any) => {
+      if (!isEdit && !navigator.onLine) {
+        await queueOfflineOperation({
+          operationId: crypto.randomUUID(), action: "create_sale", method: "POST",
+          url: `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/sync/replay`, body: payload,
+        });
+        toast({ title: "Sale queued for sync", description: "It will be numbered and priced by the server when connection returns." });
+        navigate("/sales");
+        return;
+      }
+      toast({ title: e?.message ?? "Error saving", variant: "destructive" });
+    };
     if (isEdit) updateSale.mutate({ id: id!, data: payload }, { onSuccess, onError });
     else createSale.mutate({ data: payload }, { onSuccess, onError });
   }
@@ -292,7 +315,7 @@ export default function SaleForm({ isQuote = false }: { isQuote?: boolean }) {
               <button key={`p-${p.id}`} type="button" onClick={() => addItem({ type: "product", id: p.id, name: p.name, price: p.price, description: p.description ?? "" })}
                 className="text-left p-2 rounded border hover:border-primary hover:bg-primary/5 transition-colors text-xs">
                 <div className="font-medium truncate">{p.name}</div>
-                <div className="text-primary font-semibold">{formatCurrency(p.price)}</div>
+            <div className="text-primary font-semibold">{formatCurrency(p.price)}</div>
               </button>
             ))}
             {filteredServices?.map(s => (
@@ -340,7 +363,7 @@ export default function SaleForm({ isQuote = false }: { isQuote?: boolean }) {
           <div className="mt-4 border-t pt-3 space-y-1 text-sm ml-auto max-w-xs">
             <div className="flex justify-between text-muted-foreground"><span>Subtotal</span><span>{formatCurrency(subtotal)}</span></div>
             {discount > 0 && <div className="flex justify-between text-muted-foreground"><span>Discount</span><span>-{formatCurrency(discount)}</span></div>}
-            {taxRate > 0 && <div className="flex justify-between text-muted-foreground"><span>Tax ({taxRate}%)</span><span>{formatCurrency(tax)}</span></div>}
+            {taxEnabled && taxRate > 0 && <div className="flex justify-between text-muted-foreground"><span>{taxName} ({taxRate}%)</span><span>{formatCurrency(tax)}</span></div>}
             <div className="flex justify-between font-bold text-base border-t pt-1"><span>Total</span><span>{formatCurrency(total)}</span></div>
           </div>
         </CardContent>

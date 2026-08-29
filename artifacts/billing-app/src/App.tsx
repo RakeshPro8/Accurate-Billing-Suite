@@ -25,6 +25,7 @@ import Employees from "@/pages/Employees";
 import RepairsList from "@/pages/RepairsList";
 import RepairForm from "@/pages/RepairForm";
 import RepairDetail from "@/pages/RepairDetail";
+import AuditLogs from "@/pages/AuditLogs";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -66,6 +67,7 @@ function Router() {
         <Route path="/repairs/:id" component={RepairDetail} />
         <Route path="/device-diagram" component={DeviceDiagram} />
         <Route path="/reports" component={Reports} />
+        <Route path="/audit-logs">{() => activeEmployee?.role === "staff" ? <AccessDenied /> : <AuditLogs />}</Route>
         <Route path="/settings">{() => isAdmin ? <Settings /> : <AccessDenied />}</Route>
 
         <Route component={NotFound} />

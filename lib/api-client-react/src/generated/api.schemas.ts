@@ -483,6 +483,8 @@ export interface Settings {
   theme: string;
   currency: string;
   taxRate: number;
+  taxName: string;
+  taxEnabled: boolean;
   /** @nullable */
   gstRate?: number | null;
   /** @nullable */
@@ -499,6 +501,9 @@ export interface Settings {
   smtpPort?: number | null;
   /** @nullable */
   smtpUser?: string | null;
+  smtpConfigured?: boolean;
+  /** @nullable */
+  defaultStoreId?: number | null;
 }
 
 export interface SettingsUpdate {
@@ -511,6 +516,8 @@ export interface SettingsUpdate {
   theme?: string;
   currency?: string;
   taxRate?: number;
+  taxName?: string;
+  taxEnabled?: boolean;
   gstRate?: number;
   qstRate?: number;
   invoicePrefix?: string;
@@ -521,6 +528,152 @@ export interface SettingsUpdate {
   smtpPort?: number;
   smtpUser?: string;
   smtpPass?: string;
+  /** @nullable */
+  defaultStoreId?: number | null;
+}
+
+export interface Store {
+  id: number;
+  name: string;
+  /** @nullable */
+  address?: string | null;
+  /** @nullable */
+  phone?: string | null;
+  /** @nullable */
+  email?: string | null;
+  active: boolean;
+  isDefault: boolean;
+  createdAt: string;
+}
+
+export interface StoreInput {
+  /**
+     * @minLength 1
+     * @maxLength 160
+     */
+  name: string;
+  /** @nullable */
+  address?: string | null;
+  /** @nullable */
+  phone?: string | null;
+  /** @nullable */
+  email?: string | null;
+  isDefault?: boolean;
+}
+
+export type StoreUpdate = StoreInput & {
+  active?: boolean;
+};
+
+export interface CurrentStore {
+  /** @nullable */
+  storeId: number | null;
+  store?: Store | null;
+}
+
+export interface SetCurrentStoreInput {
+  /** @nullable */
+  storeId: number | null;
+}
+
+/**
+ * @nullable
+ */
+export type AuditLogDetails = { [key: string]: unknown } | null;
+
+export interface AuditLog {
+  id: number;
+  /** @nullable */
+  employeeId?: number | null;
+  /** @nullable */
+  employeeName?: string | null;
+  /** @nullable */
+  storeId?: number | null;
+  action: string;
+  entityType: string;
+  /** @nullable */
+  entityId?: string | null;
+  /** @nullable */
+  details?: AuditLogDetails;
+  createdAt: string;
+}
+
+export type AuditEventInputAction = typeof AuditEventInputAction[keyof typeof AuditEventInputAction];
+
+
+export const AuditEventInputAction = {
+  print: 'print',
+  payment: 'payment',
+  status_change: 'status_change',
+} as const;
+
+export type AuditEventInputEntityType = typeof AuditEventInputEntityType[keyof typeof AuditEventInputEntityType];
+
+
+export const AuditEventInputEntityType = {
+  sale: 'sale',
+  quotation: 'quotation',
+  repair: 'repair',
+  backup: 'backup',
+} as const;
+
+export interface AuditEventInput {
+  action: AuditEventInputAction;
+  entityType: AuditEventInputEntityType;
+  entityId?: string;
+}
+
+export type SyncOperationAction = typeof SyncOperationAction[keyof typeof SyncOperationAction];
+
+
+export const SyncOperationAction = {
+  create_sale: 'create_sale',
+  create_customer: 'create_customer',
+  create_repair: 'create_repair',
+  repair_status: 'repair_status',
+  repair_photo: 'repair_photo',
+} as const;
+
+export type SyncOperationBody = { [key: string]: unknown };
+
+export interface SyncOperation {
+  /**
+     * @minLength 8
+     * @maxLength 100
+     */
+  operationId: string;
+  action: SyncOperationAction;
+  url: string;
+  body: SyncOperationBody;
+  expectedVersion?: string;
+}
+
+export interface SyncReplayInput {
+  /** @maxItems 25 */
+  operations: SyncOperation[];
+}
+
+export type SyncReplayResponseResultsItemStatus = typeof SyncReplayResponseResultsItemStatus[keyof typeof SyncReplayResponseResultsItemStatus];
+
+
+export const SyncReplayResponseResultsItemStatus = {
+  completed: 'completed',
+  pending: 'pending',
+  conflict: 'conflict',
+  error: 'error',
+} as const;
+
+export type SyncReplayResponseResultsItemData = { [key: string]: unknown };
+
+export type SyncReplayResponseResultsItem = {
+  operationId: string;
+  status: SyncReplayResponseResultsItemStatus;
+  data?: SyncReplayResponseResultsItemData;
+  message?: string;
+};
+
+export interface SyncReplayResponse {
+  results: SyncReplayResponseResultsItem[];
 }
 
 export interface RepairPhoto {
@@ -659,6 +812,23 @@ export interface RepairPartInput {
   unitPrice: number;
   cost?: number;
 }
+
+export type GetAuditLogsParams = {
+action?: string;
+entityType?: string;
+storeId?: number;
+dateFrom?: string;
+dateTo?: string;
+/**
+ * @minimum 1
+ * @maximum 500
+ */
+limit?: number;
+};
+
+export type RecordAuditEvent201 = {
+  recorded?: boolean;
+};
 
 export type GetProductsParams = {
 category?: string;

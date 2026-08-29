@@ -2,13 +2,15 @@ import { useState, ReactNode, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import {
   LayoutDashboard, Receipt, FileText, Users, PackageSearch,
-  BarChart3, Settings, Menu, ShieldCheck, UserCircle2, LogIn, Wrench, Cpu
+  BarChart3, Settings, Menu, ShieldCheck, UserCircle2, LogIn, Wrench, Cpu, Activity
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useEmployee, ROLE_COLORS, ROLE_LABELS } from "@/context/EmployeeContext";
 import { EmployeePinDialog } from "@/components/EmployeePinDialog";
 import { useGetSettings } from "@workspace/api-client-react";
+import { ConnectivityStatus } from "@/components/ConnectivityStatus";
+import { StoreSwitcher } from "@/components/StoreSwitcher";
 
 const navItems: Array<{ href: string; label: string; icon: typeof LayoutDashboard; roles?: string[] }> = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -20,6 +22,7 @@ const navItems: Array<{ href: string; label: string; icon: typeof LayoutDashboar
   { href: "/device-diagram", label: "Device Diagram", icon: Cpu },
   { href: "/employees", label: "Employees", icon: ShieldCheck, roles: ["admin"] },
   { href: "/reports", label: "Reports", icon: BarChart3 },
+  { href: "/audit-logs", label: "Audit Trail", icon: Activity, roles: ["manager", "admin"] },
   { href: "/settings", label: "Settings", icon: Settings, roles: ["admin"] },
 ];
 
@@ -142,6 +145,8 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </div>
 
           <div className="flex items-center gap-3 ml-auto">
+            <StoreSwitcher />
+            <ConnectivityStatus />
             <EmployeeBadge onOpen={() => setPinDialogOpen(true)} />
           </div>
         </header>

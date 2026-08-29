@@ -21,6 +21,8 @@ export interface Settings {
   theme: string;
   currency: string;
   taxRate: number;
+  taxName: string;
+  taxEnabled: boolean;
   /** @nullable */
   gstRate?: number | null;
   /** @nullable */
@@ -37,4 +39,7 @@ export interface Settings {
   smtpPort?: number | null;
   /** @nullable */
   smtpUser?: string | null;
+  smtpConfigured?: boolean;
+  /** @nullable */
+  defaultStoreId?: number | null;
 }

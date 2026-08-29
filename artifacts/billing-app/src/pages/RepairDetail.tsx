@@ -20,6 +20,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useEmployee } from "@/context/EmployeeContext";
+import { queueOfflineOperation } from "@/lib/offline-store";
+import { recordAuditEvent } from "@/lib/audit-client";
 import {
   ArrowLeft, Edit, Printer, Camera, Trash2, Plus, Package, CheckCircle, User, Phone, Mail,
   Wrench, FileText, Download, Send, Lock,
@@ -75,6 +77,16 @@ export default function RepairDetail() {
   const isCompleted = r.status === "completed" || r.status === "picked_up";
 
   async function handleStatusChange(newStatus: string) {
+    if (!navigator.onLine) {
+      await queueOfflineOperation({
+        operationId: crypto.randomUUID(), action: "repair_status", method: "POST",
+        url: `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/sync/replay`,
+        body: { repairId: id, status: newStatus, notes: statusNote },
+        expectedVersion: r.updatedAt,
+      });
+      toast({ title: "Status queued for sync", description: "Customer notifications stay server-side and will not run while offline." });
+      return;
+    }
     updateStatus.mutate({ id, data: { status: newStatus, notes: statusNote, notify: notifyCustomer && !!r.customerEmail } }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetRepairQueryKey(id) });
@@ -91,6 +103,17 @@ export default function RepairDetail() {
     if (!file) return;
     try {
       const resized = await resizeImage(file, 1200, 1200, 0.8);
+      if (!navigator.onLine) {
+        await queueOfflineOperation({
+          operationId: crypto.randomUUID(), action: "repair_photo", method: "POST",
+          url: `${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/sync/replay`,
+          body: { repairId: id, dataUrl: resized, caption: photoCaption },
+        });
+        setPhotoCaption("");
+        setShowPhotoDialog(false);
+        toast({ title: "Photo queued for sync", description: "The attachment will upload when connection returns." });
+        return;
+      }
       addPhoto.mutate({ id, data: { dataUrl: resized, caption: photoCaption } }, {
         onSuccess: () => {
           queryClient.invalidateQueries({ queryKey: getGetRepairQueryKey(id) });
@@ -138,6 +161,7 @@ export default function RepairDetail() {
   }
 
   function handlePrint() {
+    recordAuditEvent("print", "repair", id);
     window.print();
   }
 

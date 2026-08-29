@@ -42,6 +42,8 @@ interface BusinessInfo {
   gstRate?: number;
   qstRate?: number;
   currency?: string;
+  taxName?: string;
+  taxEnabled?: boolean;
 }
 
 interface ReceiptPrintProps {
@@ -165,7 +167,7 @@ export function ReceiptPrint({ data, business, qrValue }: ReceiptPrintProps) {
           </>
         ) : (
           data.taxRate > 0 && (
-            <Row label={`Tax (${data.taxRate}%)`} value={formatCurrency(genericTax)} />
+            <Row label={`${business.taxName ?? "Tax"} (${data.taxRate}%)`} value={formatCurrency(genericTax)} />
           )
         )}
       </div>

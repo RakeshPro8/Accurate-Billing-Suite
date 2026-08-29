@@ -3,6 +3,9 @@ import { db } from "@workspace/db";
 import { salesTable, saleLineItemsTable, settingsTable } from "@workspace/db";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
 import nodemailer from "nodemailer";
+import { calculateTotals, getTaxConfig, assertMoney } from "../lib/tax";
+import { getCurrentStoreId } from "../lib/stores";
+import { logAudit } from "../lib/audit";
 
 const router = Router();
 
@@ -35,18 +38,6 @@ async function getNextInvoiceNumber() {
   return `${prefix}${String(Number(count) + 1).padStart(4, "0")}`;
 }
 
-function calcTotals(items: Array<{ quantity: number; unitPrice: number; discount: number }>, taxRate: number, discount: number) {
-  const subtotal = items.reduce((sum, i) => {
-    const lineTotal = i.quantity * i.unitPrice - (i.discount || 0);
-    return sum + lineTotal;
-  }, 0);
-  const totalDiscount = discount || 0;
-  const taxable = subtotal - totalDiscount;
-  const tax = taxable * (taxRate / 100);
-  const total = taxable + tax;
-  return { subtotal, tax, total };
-}
-
 router.get("/", async (req, res) => {
   try {
     const { status, customerId, dateFrom, dateTo, employeeId } = req.query as Record<string, string>;
@@ -57,6 +48,8 @@ router.get("/", async (req, res) => {
     if (employeeId) conds.push(eq(salesTable.employeeId, Number(employeeId)));
     if (dateFrom) conds.push(gte(salesTable.createdAt, new Date(dateFrom)));
     if (dateTo) conds.push(lte(salesTable.createdAt, new Date(dateTo)));
+    const currentStoreId = await getCurrentStoreId(req);
+    if (currentStoreId) conds.push(eq(salesTable.storeId, currentStoreId));
     if (conds.length) q = q.where(and(...conds));
     const sales = await q.orderBy(sql`${salesTable.createdAt} desc`);
     const items = await db.select().from(saleLineItemsTable);
@@ -73,8 +66,8 @@ router.post("/", async (req, res) => {
   try {
     const body = req.body;
     const items = body.items || [];
-    const taxRate = body.taxRate ?? 0;
-    const discount = body.discount ?? 0;
+    const discount = assertMoney(body.discount ?? 0, "Discount");
+    const taxConfig = await getTaxConfig();
 
     if (discount > 0) {
       const subtotalBeforeDiscount = items.reduce((s: number, i: any) => s + (i.quantity * i.unitPrice), 0);
@@ -89,8 +82,9 @@ router.post("/", async (req, res) => {
       }
     }
 
-    const { subtotal, tax, total } = calcTotals(items, taxRate, discount);
+    const { subtotal, taxRate, tax, total } = calculateTotals(items, taxConfig, discount);
     const invoiceNumber = await getNextInvoiceNumber();
+    const storeId = await getCurrentStoreId(req);
 
     const [sale] = await db.insert(salesTable).values({
       invoiceNumber,
@@ -99,6 +93,7 @@ router.post("/", async (req, res) => {
       customerEmail: body.customerEmail || null,
       employeeId: req.employee!.id,
       employeeName: req.employee!.name,
+      storeId,
       status: body.status || "invoice",
       subtotal: String(subtotal),
       taxRate: String(taxRate),
@@ -111,6 +106,8 @@ router.post("/", async (req, res) => {
       paidAt: body.paidAt || null,
     }).returning();
     const lineItems = await Promise.all(items.map(async (item: any) => {
+      assertMoney(item.quantity, "Quantity");
+      assertMoney(item.unitPrice, "Unit price");
       const lineTotal = item.quantity * item.unitPrice - (item.discount || 0);
       const [li] = await db.insert(saleLineItemsTable).values({
         saleId: sale.id,
@@ -126,6 +123,7 @@ router.post("/", async (req, res) => {
       }).returning();
       return li;
     }));
+    await logAudit(req, "create", "sale", sale.id, { invoiceNumber: sale.invoiceNumber, total });
     return res.status(201).json({ ...parseSale(sale), items: lineItems.map(parseItem) });
   } catch (e) {
     return res.status(500).json({ error: String(e) });
@@ -135,7 +133,8 @@ router.post("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
-    const [sale] = await db.select().from(salesTable).where(eq(salesTable.id, id));
+    const storeId = await getCurrentStoreId(req);
+    const [sale] = await db.select().from(salesTable).where(and(eq(salesTable.id, id), storeId ? eq(salesTable.storeId, storeId) : undefined));
     if (!sale) return res.status(404).json({ error: "Not found" });
     const items = await db.select().from(saleLineItemsTable).where(eq(saleLineItemsTable.saleId, id));
     return res.json({ ...parseSale(sale), items: items.map(parseItem) });
@@ -158,9 +157,8 @@ router.patch("/:id", async (req, res) => {
     if (body.dueDate !== undefined) updates.dueDate = body.dueDate;
     if (body.paidAt !== undefined) updates.paidAt = body.paidAt;
     if (body.items !== undefined) {
-      const taxRate = body.taxRate ?? 0;
-      const discount = body.discount ?? 0;
-      const { subtotal, tax, total } = calcTotals(body.items, taxRate, discount);
+      const discount = assertMoney(body.discount ?? 0, "Discount");
+      const { subtotal, taxRate, tax, total } = calculateTotals(body.items, await getTaxConfig(), discount);
       updates.subtotal = String(subtotal);
       updates.taxRate = String(taxRate);
       updates.tax = String(tax);
@@ -186,6 +184,7 @@ router.patch("/:id", async (req, res) => {
     const [sale] = await db.update(salesTable).set(updates).where(eq(salesTable.id, id)).returning();
     if (!sale) return res.status(404).json({ error: "Not found" });
     const items = await db.select().from(saleLineItemsTable).where(eq(saleLineItemsTable.saleId, id));
+    await logAudit(req, "update", "sale", sale.id, { fields: Object.keys(updates) });
     return res.json({ ...parseSale(sale), items: items.map(parseItem) });
   } catch (e) {
     return res.status(500).json({ error: String(e) });

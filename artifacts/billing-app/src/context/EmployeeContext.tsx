@@ -6,7 +6,10 @@ import {
   getSignInEmployees,
   logoutEmployee,
   signInEmployee,
+  setOfflineCacheScope,
+  clearOfflineCache,
 } from "@workspace/api-client-react";
+import { clearOfflineData, setOfflineScope } from "@/lib/offline-store";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   trackEmployeeAuthOutcome,
@@ -90,7 +93,11 @@ export function EmployeeProvider({ children }: { children: ReactNode }) {
     try {
       const session = await getAuthSession();
       if (session.authenticated && session.employee) {
-        setActiveEmployee(asActiveEmployee(session.employee));
+        const employee = asActiveEmployee(session.employee);
+        const storeId = Number(localStorage.getItem(`mobilinq.storeId:${employee.id}`)) || null;
+        setActiveEmployee(employee);
+        setOfflineScope({ employeeId: employee.id, storeId });
+        setOfflineCacheScope(`${employee.id}:${storeId ?? "all"}`);
         setNeedsSetup(false);
       } else {
         setActiveEmployee(null);
@@ -114,6 +121,9 @@ export function EmployeeProvider({ children }: { children: ReactNode }) {
       const result = await signInEmployee({ employeeId, pin });
       queryClient.clear();
       setActiveEmployee(asActiveEmployee(result.employee));
+      const storeId = Number(localStorage.getItem("mobilinq.storeId")) || null;
+      setOfflineScope({ employeeId: result.employee.id, storeId });
+      setOfflineCacheScope(`${result.employee.id}:${storeId ?? "all"}`);
       setNeedsSetup(false);
       trackEmployeeAuthOutcome("sign_in", "success");
     } catch (error) {
@@ -127,6 +137,8 @@ export function EmployeeProvider({ children }: { children: ReactNode }) {
       const result = await bootstrapAdmin(data);
       queryClient.clear();
       setActiveEmployee(asActiveEmployee(result.employee));
+      setOfflineScope({ employeeId: result.employee.id, storeId: null });
+      setOfflineCacheScope(`${result.employee.id}:all`);
       setNeedsSetup(false);
       trackEmployeeAuthOutcome("setup", "success");
     } catch (error) {
@@ -140,6 +152,10 @@ export function EmployeeProvider({ children }: { children: ReactNode }) {
       await logoutEmployee();
     } finally {
       queryClient.clear();
+      await clearOfflineData();
+      await clearOfflineCache();
+      setOfflineScope(null);
+      setOfflineCacheScope(null);
       setActiveEmployee(null);
       await loadPublicState().catch(() => {});
     }
@@ -148,6 +164,10 @@ export function EmployeeProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     void refresh();
     const handleExpired = () => {
+      void clearOfflineData();
+      void clearOfflineCache();
+      setOfflineScope(null);
+      setOfflineCacheScope(null);
       setActiveEmployee(null);
       void loadPublicState().catch(() => {});
     };

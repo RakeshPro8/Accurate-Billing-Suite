@@ -16,6 +16,8 @@ export interface SettingsUpdate {
   theme?: string;
   currency?: string;
   taxRate?: number;
+  taxName?: string;
+  taxEnabled?: boolean;
   gstRate?: number;
   qstRate?: number;
   invoicePrefix?: string;
@@ -26,4 +28,6 @@ export interface SettingsUpdate {
   smtpPort?: number;
   smtpUser?: string;
   smtpPass?: string;
+  /** @nullable */
+  defaultStoreId?: number | null;
 }

@@ -15,6 +15,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ReceiptPrint } from "@/components/ReceiptPrint";
+import { recordAuditEvent } from "@/lib/audit-client";
 import { ArrowLeft, Printer, Download, ChevronDown, Check, Edit, FileText, RefreshCw, Receipt } from "lucide-react";
 
 export default function QuotationDetail() {
@@ -70,10 +71,12 @@ export default function QuotationDetail() {
   }
 
   function handlePrintQuote() {
+    recordAuditEvent("print", "quotation", id);
     window.print();
   }
 
   function handlePrintReceipt() {
+    recordAuditEvent("print", "quotation", id);
     const style = document.createElement("style");
     style.id = "__receipt-page-size";
     style.textContent = "@page { size: 80mm auto; margin: 3mm 3mm 6mm; }";
@@ -128,6 +131,8 @@ export default function QuotationDetail() {
     invoiceFooter: settings?.invoiceFooter ?? undefined,
     gstRate: settings?.gstRate ?? 0,
     qstRate: settings?.qstRate ?? 0,
+    taxName: settings?.taxName ?? "Tax",
+    taxEnabled: settings?.taxEnabled !== false,
     currency: settings?.currency ?? "USD",
   };
 
@@ -262,7 +267,7 @@ export default function QuotationDetail() {
                   <div className="flex justify-between text-muted-foreground"><span>Discount</span><span>-{formatCurrency(quote.discount ?? 0)}</span></div>
                 )}
                 {(quote.taxRate ?? 0) > 0 && (
-                  <div className="flex justify-between text-muted-foreground"><span>Tax ({quote.taxRate}%)</span><span>{formatCurrency(quote.tax ?? 0)}</span></div>
+                  <div className="flex justify-between text-muted-foreground"><span>{settings?.taxName ?? "Tax"} ({quote.taxRate}%)</span><span>{formatCurrency(quote.tax ?? 0)}</span></div>
                 )}
                 <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2 text-[#1e3a5f]">
                   <span>TOTAL</span><span>{formatCurrency(quote.total)}</span>

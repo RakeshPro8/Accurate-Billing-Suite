@@ -17,6 +17,67 @@ const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 
 let _baseUrl: string | null = null;
 let _authTokenGetter: AuthTokenGetter | null = null;
+let _sessionCookie: string | null = null;
+let _offlineScope: string | null = null;
+type OfflineCacheEntry = { key: string; data: unknown; cachedAt: string };
+const offlineCacheName = "mobilinq-api-cache-v1";
+const offlineSafePaths = ["/products", "/services", "/customers", "/sales", "/quotations", "/repairs", "/settings", "/stores"];
+
+function isOfflineSafeGet(url: string, method: string) {
+  if (method !== "GET" || !_offlineScope || typeof window === "undefined" || typeof indexedDB === "undefined") return false;
+  try {
+    const path = new URL(url, window.location.origin).pathname.replace(/^.*\/api/, "");
+    return offlineSafePaths.some((safe) => path === safe || path.startsWith(`${safe}/`));
+  } catch { return false; }
+}
+
+async function readOfflineCache<T>(url: string): Promise<T | null> {
+  if (!isOfflineSafeGet(url, "GET")) return null;
+  return new Promise((resolve) => {
+    try {
+      const request = indexedDB.open(offlineCacheName, 1);
+      request.onupgradeneeded = () => request.result.createObjectStore("responses", { keyPath: "key" });
+      request.onsuccess = () => {
+        const cacheKey = `${_offlineScope}:${url}`;
+        const get = request.result.transaction("responses", "readonly").objectStore("responses").get(cacheKey);
+        get.onsuccess = () => resolve((get.result as OfflineCacheEntry | undefined)?.data as T ?? null);
+        get.onerror = () => resolve(null);
+      };
+      request.onerror = () => resolve(null);
+    } catch { resolve(null); }
+  });
+}
+
+async function writeOfflineCache(url: string, data: unknown) {
+  if (!isOfflineSafeGet(url, "GET")) return;
+  try {
+    const request = indexedDB.open(offlineCacheName, 1);
+    request.onupgradeneeded = () => request.result.createObjectStore("responses", { keyPath: "key" });
+    request.onsuccess = () => {
+      const tx = request.result.transaction("responses", "readwrite");
+      tx.objectStore("responses").put({ key: `${_offlineScope}:${url}`, data, cachedAt: new Date().toISOString() });
+    };
+  } catch { /* cache is best effort */ }
+}
+
+export function setOfflineCacheScope(scope: string | null): void {
+  _offlineScope = scope;
+}
+
+export async function clearOfflineCache(): Promise<void> {
+  if (typeof indexedDB === "undefined") return;
+  await new Promise<void>((resolve) => {
+    const request = indexedDB.open(offlineCacheName, 1);
+    request.onupgradeneeded = () => request.result.createObjectStore("responses", { keyPath: "key" });
+    request.onsuccess = () => {
+      const tx = request.result.transaction("responses", "readwrite");
+      tx.objectStore("responses").clear();
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => resolve();
+    };
+    request.onerror = () => resolve();
+  });
+}
 
 /**
  * Set a base URL that is prepended to every relative request URL
@@ -42,6 +103,11 @@ export function setBaseUrl(url: string | null): void {
  */
 export function setAuthTokenGetter(getter: AuthTokenGetter | null): void {
   _authTokenGetter = getter;
+}
+
+/** Clear the in-memory native session cookie when an Expo employee signs out. */
+export function clearSessionCookie(): void {
+  _sessionCookie = null;
 }
 
 function isRequest(input: RequestInfo | URL): input is Request {
@@ -336,6 +402,9 @@ export async function customFetch<T = unknown>(
   }
 
   const headers = mergeHeaders(isRequest(input) ? input.headers : undefined, headersInit);
+  if (typeof window === "undefined" && _sessionCookie && !headers.has("cookie")) {
+    headers.set("cookie", _sessionCookie);
+  }
 
   if (
     typeof init.body === "string" &&
@@ -360,7 +429,14 @@ export async function customFetch<T = unknown>(
 
   const requestInfo = { method, url: resolveUrl(input) };
 
-  const response = await fetch(input, { ...init, method, headers, credentials: "include" });
+  let response: Response;
+  try {
+    response = await fetch(input, { ...init, method, headers, credentials: "include" });
+  } catch (error) {
+    const cached = await readOfflineCache<T>(requestInfo.url);
+    if (cached !== null) return cached;
+    throw error;
+  }
 
   if (!response.ok) {
     const errorData = await parseErrorBody(response, method);
@@ -374,5 +450,12 @@ export async function customFetch<T = unknown>(
     throw new ApiError(response, errorData, requestInfo);
   }
 
-  return (await parseSuccessBody(response, responseType, requestInfo)) as T;
+  if (typeof window === "undefined") {
+    const setCookie = response.headers.get("set-cookie");
+    if (setCookie) _sessionCookie = setCookie.split(";", 1)[0];
+  }
+
+  const parsed = (await parseSuccessBody(response, responseType, requestInfo)) as T;
+  if (responseType !== "blob") void writeOfflineCache(requestInfo.url, parsed);
+  return parsed;
 }

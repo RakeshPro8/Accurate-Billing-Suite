@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, Mail, Percent, ImageIcon, Trash2, Upload, Type, Palette } from "lucide-react";
+import { StoreAdmin } from "@/components/StoreAdmin";
+import { Building2, Mail, Percent, ImageIcon, Trash2, Upload, Type, Palette, Download, ShieldCheck } from "lucide-react";
 
 export default function Settings() {
   const { data: settings, isLoading } = useGetSettings();
@@ -18,9 +19,11 @@ export default function Settings() {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
+  const [backupLoading, setBackupLoading] = useState(false);
 
   const { register, handleSubmit, reset, setValue, watch } = useForm<any>();
   const themeValue = watch("theme") || "terminal";
+  const taxEnabled = watch("taxEnabled") !== false;
 
   const themes = [
     {
@@ -116,6 +119,26 @@ export default function Settings() {
       },
       onError: () => toast({ title: "Error", description: "Failed to save settings.", variant: "destructive" }),
     });
+  }
+
+  async function downloadBackup() {
+    setBackupLoading(true);
+    try {
+      const response = await fetch(`${import.meta.env.BASE_URL.replace(/\/$/, "")}/api/backup`, { credentials: "include" });
+      if (!response.ok) throw new Error("Backup download failed");
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `mobilinq-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast({ title: "Backup downloaded", description: "The versioned redacted operational export is ready." });
+    } catch {
+      toast({ title: "Backup unavailable", description: "Stay online and try again.", variant: "destructive" });
+    } finally {
+      setBackupLoading(false);
+    }
   }
 
   if (isLoading) return (
@@ -295,8 +318,16 @@ export default function Settings() {
               </div>
               <div className="space-y-1.5">
                 <Label>Default Tax Rate (%)</Label>
-                <Input {...register("taxRate", { valueAsNumber: true })} type="number" step="0.01" placeholder="0" />
+                <Input {...register("taxRate", { valueAsNumber: true, min: 0, max: 100 })} type="number" step="0.01" min="0" max="100" placeholder="0" disabled={!taxEnabled} />
               </div>
+              <div className="space-y-1.5">
+                <Label>Tax display name</Label>
+                <Input {...register("taxName")} placeholder="Tax, GST, VAT…" />
+              </div>
+              <label className="flex items-center gap-2 text-sm col-span-2">
+                <input {...register("taxEnabled")} type="checkbox" className="h-4 w-4 accent-primary" />
+                <span>Apply tax to new sales and quotations</span>
+              </label>
               <div className="space-y-1.5">
                 <Label>GST Rate (%) <span className="text-muted-foreground text-xs">e.g. 5 for Canada federal</span></Label>
                 <Input {...register("gstRate", { valueAsNumber: true })} type="number" step="0.001" placeholder="0" />
@@ -306,7 +337,7 @@ export default function Settings() {
                 <Input {...register("qstRate", { valueAsNumber: true })} type="number" step="0.0001" placeholder="0" />
               </div>
               <p className="text-xs text-muted-foreground col-span-2">
-                GST &amp; QST rates are shown as a separate line breakdown on printed thermal receipts. Leave at 0 if not applicable.
+                {taxEnabled ? "The server applies this rate to new sales and quotations; saved invoices keep their original totals." : "Tax is disabled for new transactions. Existing GST/QST records remain unchanged."}
               </p>
               <div className="space-y-1.5">
                 <Label>Invoice Prefix</Label>
@@ -327,6 +358,27 @@ export default function Settings() {
             </div>
           </CardContent>
         </Card>
+
+        <Card className="border-primary/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-primary" /> Backup &amp; recovery
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-muted-foreground">
+              Download a versioned, redacted JSON backup of operational data: catalog, customers, sales, quotations, repairs (without unlock codes), stores, tax/business settings, and audit metadata.
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Never included: employee PINs or hashes, sessions, SMTP passwords, device passwords, repair photos, or other credentials. Backups are for operators; restore is intentionally approval-gated and not available in the browser.
+            </p>
+            <Button type="button" variant="outline" className="gap-2" onClick={downloadBackup} disabled={backupLoading}>
+              <Download className="h-4 w-4" /> {backupLoading ? "Preparing backup…" : "Download redacted backup"}
+            </Button>
+          </CardContent>
+        </Card>
+
+        <StoreAdmin />
 
         {/* SMTP */}
         <Card>
