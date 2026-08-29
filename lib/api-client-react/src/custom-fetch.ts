@@ -364,6 +364,13 @@ export async function customFetch<T = unknown>(
 
   if (!response.ok) {
     const errorData = await parseErrorBody(response, method);
+    if (
+      response.status === 401 &&
+      typeof window !== "undefined" &&
+      !requestInfo.url.includes("/auth/")
+    ) {
+      window.dispatchEvent(new CustomEvent("mobilinq:auth-expired"));
+    }
     throw new ApiError(response, errorData, requestInfo);
   }
 

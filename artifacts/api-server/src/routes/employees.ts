@@ -18,6 +18,14 @@ function parseEmployee(e: typeof employeesTable.$inferSelect) {
   };
 }
 
+function validName(value: unknown): value is string {
+  return typeof value === "string" && value.trim().length >= 1 && value.trim().length <= 120;
+}
+
+function validPin(value: unknown): value is string {
+  return typeof value === "string" && /^\d{4,8}$/.test(value);
+}
+
 router.get("/", async (_req, res) => {
   try {
     const employees = await db.select().from(employeesTable).orderBy(employeesTable.name);
@@ -29,17 +37,23 @@ router.get("/", async (_req, res) => {
 
 router.post("/", async (req, res) => {
   try {
-    const { name, email, pin, role, maxDiscountPct, active } = req.body;
-    if (!name || !pin || pin.length < 4 || pin.length > 8) {
+    const { name, email, pin, role, maxDiscountPct, active } = req.body ?? {};
+    if (!validName(name) || !validPin(pin)) {
       return res.status(400).json({ error: "Name and a 4-8 digit PIN are required." });
     }
     const validRoles = ["admin", "manager", "staff"];
     if (role && !validRoles.includes(role)) {
       return res.status(400).json({ error: "Role must be admin, manager, or staff." });
     }
+    if (email !== undefined && email !== null && (typeof email !== "string" || email.length > 254)) {
+      return res.status(400).json({ error: "Email is invalid." });
+    }
+    if (maxDiscountPct !== undefined && (!Number.isFinite(Number(maxDiscountPct)) || Number(maxDiscountPct) < 0 || Number(maxDiscountPct) > 100)) {
+      return res.status(400).json({ error: "Discount limit must be between 0 and 100." });
+    }
     const pinHash = await hashPin(pin);
     const [emp] = await db.insert(employeesTable).values({
-      name,
+      name: name.trim(),
       email: email || null,
       pin: null,
       pinHash,
@@ -56,12 +70,18 @@ router.post("/", async (req, res) => {
 router.patch("/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
-    const { name, email, pin, role, maxDiscountPct, active } = req.body;
+    const { name, email, pin, role, maxDiscountPct, active } = req.body ?? {};
     const updates: Record<string, unknown> = {};
-    if (name !== undefined) updates.name = name;
-    if (email !== undefined) updates.email = email;
+    if (name !== undefined) {
+      if (!validName(name)) return res.status(400).json({ error: "Name is required." });
+      updates.name = name.trim();
+    }
+    if (email !== undefined) {
+      if (email !== null && (typeof email !== "string" || email.length > 254)) return res.status(400).json({ error: "Email is invalid." });
+      updates.email = email;
+    }
     if (pin !== undefined) {
-      if (pin.length < 4 || pin.length > 8) return res.status(400).json({ error: "PIN must be 4-8 digits." });
+      if (!validPin(pin)) return res.status(400).json({ error: "PIN must be 4-8 digits." });
       updates.pin = null;
       updates.pinHash = await hashPin(pin);
     }
@@ -70,8 +90,14 @@ router.patch("/:id", async (req, res) => {
       if (!validRoles.includes(role)) return res.status(400).json({ error: "Invalid role." });
       updates.role = role;
     }
-    if (maxDiscountPct !== undefined) updates.maxDiscountPct = String(maxDiscountPct);
-    if (active !== undefined) updates.active = active;
+    if (maxDiscountPct !== undefined) {
+      if (!Number.isFinite(Number(maxDiscountPct)) || Number(maxDiscountPct) < 0 || Number(maxDiscountPct) > 100) return res.status(400).json({ error: "Discount limit must be between 0 and 100." });
+      updates.maxDiscountPct = String(maxDiscountPct);
+    }
+    if (active !== undefined) {
+      if (typeof active !== "boolean") return res.status(400).json({ error: "Active must be a boolean." });
+      updates.active = active;
+    }
     const [emp] = await db.update(employeesTable).set(updates).where(eq(employeesTable.id, id)).returning();
     if (!emp) return res.status(404).json({ error: "Employee not found." });
     return res.json(parseEmployee(emp));
@@ -85,23 +111,6 @@ router.delete("/:id", async (req, res) => {
     const id = Number(req.params.id);
     await db.delete(employeesTable).where(eq(employeesTable.id, id));
     return res.status(204).send();
-  } catch (e) {
-    return res.status(500).json({ error: String(e) });
-  }
-});
-
-router.post("/verify-pin", async (req, res) => {
-  try {
-    const { employeeId, pin } = req.body;
-    if (!employeeId || !pin) return res.status(400).json({ error: "employeeId and pin are required." });
-    const [emp] = await db.select().from(employeesTable).where(eq(employeesTable.id, Number(employeeId)));
-    if (!emp) return res.status(404).json({ error: "Employee not found." });
-    if (!emp.active) return res.status(403).json({ error: "Employee account is inactive." });
-    if (emp.pin !== String(pin)) return res.status(401).json({ error: "Incorrect PIN." });
-    return res.json({
-      verified: true,
-      employee: parseEmployee(emp),
-    });
   } catch (e) {
     return res.status(500).json({ error: String(e) });
   }

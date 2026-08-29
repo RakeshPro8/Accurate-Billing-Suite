@@ -9,6 +9,10 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Employee PIN authentication and sessions
+  - name: employees
+    description: Employee administration
   - name: products
     description: Product inventory
   - name: services
@@ -39,6 +43,177 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ─── Employee authentication ─────────────────────────────
+  /auth/setup-status:
+    get:
+      operationId: getAuthSetupStatus
+      tags: [auth]
+      summary: Check whether the first admin account must be created
+      responses:
+        "200":
+          description: Setup status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSetupStatus"
+
+  /auth/employees:
+    get:
+      operationId: getSignInEmployees
+      tags: [auth]
+      summary: List active employees available for PIN sign-in
+      responses:
+        "200":
+          description: Minimal active employee profiles; credentials are never returned
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SignInEmployee"
+
+  /auth/bootstrap:
+    post:
+      operationId: bootstrapAdmin
+      tags: [auth]
+      summary: Create the first admin account and sign it in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BootstrapAdminInput"
+      responses:
+        "201":
+          description: Initial admin created and session established
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthenticatedSession"
+        "409":
+          description: Setup was already completed
+
+  /auth/sign-in:
+    post:
+      operationId: signInEmployee
+      tags: [auth]
+      summary: Verify an employee PIN and establish a server session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SignInInput"
+      responses:
+        "200":
+          description: Signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthenticatedSession"
+        "401":
+          description: Incorrect PIN
+        "403":
+          description: Employee is inactive
+        "429":
+          description: Sign-in attempts temporarily throttled
+
+  /auth/session:
+    get:
+      operationId: getAuthSession
+      tags: [auth]
+      summary: Inspect the current server session
+      responses:
+        "200":
+          description: Current session, without credential fields
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthSession"
+
+  /auth/logout:
+    post:
+      operationId: logoutEmployee
+      tags: [auth]
+      summary: End the current server session
+      responses:
+        "200":
+          description: Session ended
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogoutResponse"
+
+  /employees:
+    get:
+      operationId: getEmployees
+      tags: [employees]
+      summary: List employees (admin only)
+      responses:
+        "200":
+          description: Employees without PIN or hash fields
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Employee"
+    post:
+      operationId: createEmployee
+      tags: [employees]
+      summary: Create an employee (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmployeeInput"
+      responses:
+        "201":
+          description: Created employee
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Employee"
+
+  /employees/{id}:
+    patch:
+      operationId: updateEmployee
+      tags: [employees]
+      summary: Update an employee (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EmployeeUpdate"
+      responses:
+        "200":
+          description: Updated employee
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Employee"
+    delete:
+      operationId: deleteEmployee
+      tags: [employees]
+      summary: Remove an employee (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Removed
 
   # ─── Products ───────────────────────────────────────────
   /products:
@@ -890,6 +1065,107 @@ components:
         status:
           type: string
       required: [status]
+
+    # ── Employee authentication ──
+    AuthSetupStatus:
+      type: object
+      required: [needsSetup]
+      properties:
+        needsSetup: { type: boolean }
+
+    SignInEmployee:
+      type: object
+      required: [id, name, role, maxDiscountPct]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        role: { type: string, enum: [admin, manager, staff] }
+        maxDiscountPct: { type: number }
+
+    Employee:
+      type: object
+      required: [id, name, role, maxDiscountPct, active, createdAt]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: ["string", "null"] }
+        role: { type: string, enum: [admin, manager, staff] }
+        maxDiscountPct: { type: number }
+        active: { type: boolean }
+        createdAt: { type: string }
+
+    AuthenticatedEmployee:
+      type: object
+      required: [id, name, role, maxDiscountPct, active]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        email: { type: ["string", "null"] }
+        role: { type: string, enum: [admin, manager, staff] }
+        maxDiscountPct: { type: number }
+        active: { type: boolean }
+
+    BootstrapAdminInput:
+      type: object
+      required: [name, pin]
+      additionalProperties: false
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        email: { type: string, format: email, maxLength: 254 }
+        pin: { type: string, pattern: "^[0-9]{4,8}$" }
+
+    SignInInput:
+      type: object
+      required: [employeeId, pin]
+      additionalProperties: false
+      properties:
+        employeeId: { type: integer, minimum: 1 }
+        pin: { type: string, pattern: "^[0-9]{4,8}$" }
+
+    AuthenticatedSession:
+      type: object
+      required: [authenticated, employee]
+      properties:
+        authenticated: { type: boolean, enum: [true] }
+        employee:
+          $ref: "#/components/schemas/AuthenticatedEmployee"
+
+    AuthSession:
+      oneOf:
+        - $ref: "#/components/schemas/AuthenticatedSession"
+        - type: object
+          required: [authenticated]
+          properties:
+            authenticated: { type: boolean, enum: [false] }
+
+    LogoutResponse:
+      type: object
+      required: [loggedOut]
+      properties:
+        loggedOut: { type: boolean }
+
+    EmployeeInput:
+      type: object
+      required: [name, pin, role, maxDiscountPct]
+      additionalProperties: false
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        email: { type: string, format: email, maxLength: 254 }
+        pin: { type: string, pattern: "^[0-9]{4,8}$" }
+        role: { type: string, enum: [admin, manager, staff] }
+        maxDiscountPct: { type: number, minimum: 0, maximum: 100 }
+        active: { type: boolean }
+
+    EmployeeUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        email: { type: ["string", "null"], format: email, maxLength: 254 }
+        pin: { type: string, pattern: "^[0-9]{4,8}$" }
+        role: { type: string, enum: [admin, manager, staff] }
+        maxDiscountPct: { type: number, minimum: 0, maximum: 100 }
+        active: { type: boolean }
 
     # ── Product ──
     Product:

@@ -36,19 +36,31 @@ export async function getEmployeeById(id: number): Promise<AuthedEmployee | null
 }
 
 export async function loadEmployee(req: Request, res: Response, next: NextFunction) {
-  const employeeId = req.session?.employeeId;
-  if (employeeId) {
-    const emp = await getEmployeeById(employeeId);
-    if (emp && emp.active) {
-      req.employee = emp;
+  try {
+    const employeeId = req.session?.employeeId;
+    if (!employeeId) {
+      next();
+      return;
     }
+
+    const emp = await getEmployeeById(employeeId);
+    if (emp?.active) {
+      req.employee = emp;
+      next();
+      return;
+    }
+
+    // A session is not valid just because it contains an employee ID. Resolve
+    // the employee on every request so deactivation/removal takes effect
+    // immediately, then discard the stale session.
+    req.session.destroy(() => next());
+  } catch (error) {
+    next(error);
   }
-  next();
 }
 
 export function requireAuth(req: Request, res: Response, next: NextFunction) {
-  const employeeId = req.session?.employeeId;
-  if (!employeeId) {
+  if (!req.employee) {
     res.status(401).json({ error: "Not authenticated. Please sign in." });
     return;
   }
@@ -58,15 +70,10 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
 export function requireRole(minRole: "staff" | "manager" | "admin") {
   const hierarchy: Record<string, number> = { staff: 1, manager: 2, admin: 3 };
   const minLevel = hierarchy[minRole] ?? 1;
-  return async (req: Request, res: Response, next: NextFunction) => {
-    const employeeId = req.session?.employeeId;
-    if (!employeeId) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const emp = req.employee;
+    if (!emp) {
       res.status(401).json({ error: "Not authenticated." });
-      return;
-    }
-    const emp = await getEmployeeById(employeeId);
-    if (!emp || !emp.active) {
-      res.status(401).json({ error: "Session invalid or employee inactive." });
       return;
     }
     if ((hierarchy[emp.role] ?? 0) < minLevel) {

@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { requireAuth, loadEmployee } from "../lib/auth";
+import { requireAuth, loadEmployee, requireRole } from "../lib/auth";
 import healthRouter from "./health";
 import authRouter from "./auth";
 import backupRouter from "./backup";
@@ -20,19 +20,19 @@ const router: IRouter = Router();
 router.use(healthRouter);
 router.use("/auth", authRouter);
 
-router.use(requireAuth);
 router.use(loadEmployee);
+router.use(requireAuth);
 router.use("/products", productsRouter);
 router.use("/services", servicesRouter);
 router.use("/customers", customersRouter);
 router.use("/sales", salesRouter);
 router.use("/quotations", quotationsRouter);
 router.use("/reports", reportsRouter);
-router.use("/settings", settingsRouter);
-router.use("/employees", employeesRouter);
+router.use("/settings", requireRole("admin"), settingsRouter);
+router.use("/employees", requireRole("admin"), employeesRouter);
 router.use("/repairs", repairsRouter);
-router.use("/stores", storesRouter);
+router.use("/stores", requireRole("admin"), storesRouter);
 router.use("/audit-logs", auditLogsRouter);
-router.use(backupRouter);
+router.use(requireRole("admin"), backupRouter);
 
 export default router;

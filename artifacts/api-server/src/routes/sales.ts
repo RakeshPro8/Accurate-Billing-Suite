@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { salesTable, saleLineItemsTable, settingsTable, employeesTable } from "@workspace/db";
+import { salesTable, saleLineItemsTable, settingsTable } from "@workspace/db";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
 import nodemailer from "nodemailer";
 
@@ -76,18 +76,15 @@ router.post("/", async (req, res) => {
     const taxRate = body.taxRate ?? 0;
     const discount = body.discount ?? 0;
 
-    if (body.employeeId && discount > 0) {
-      const [emp] = await db.select().from(employeesTable).where(eq(employeesTable.id, Number(body.employeeId)));
-      if (emp) {
-        const subtotal = items.reduce((s: number, i: any) => s + (i.quantity * i.unitPrice), 0);
-        if (subtotal > 0) {
-          const discountPct = (discount / subtotal) * 100;
-          const maxAllowed = parseFloat(emp.maxDiscountPct);
-          if (discountPct > maxAllowed) {
-            return res.status(403).json({
-              error: `Discount exceeds your authorization. Max allowed: ${maxAllowed.toFixed(1)}% for your role.`
-            });
-          }
+    if (discount > 0) {
+      const subtotalBeforeDiscount = items.reduce((s: number, i: any) => s + (i.quantity * i.unitPrice), 0);
+      if (subtotalBeforeDiscount > 0) {
+        const discountPct = (discount / subtotalBeforeDiscount) * 100;
+        const maxAllowed = req.employee?.maxDiscountPct ?? 0;
+        if (discountPct > maxAllowed) {
+          return res.status(403).json({
+            error: `Discount exceeds your authorization. Max allowed: ${maxAllowed.toFixed(1)}% for your role.`
+          });
         }
       }
     }
@@ -95,19 +92,13 @@ router.post("/", async (req, res) => {
     const { subtotal, tax, total } = calcTotals(items, taxRate, discount);
     const invoiceNumber = await getNextInvoiceNumber();
 
-    let employeeName: string | null = null;
-    if (body.employeeId) {
-      const [emp] = await db.select({ name: employeesTable.name }).from(employeesTable).where(eq(employeesTable.id, Number(body.employeeId)));
-      employeeName = emp?.name ?? null;
-    }
-
     const [sale] = await db.insert(salesTable).values({
       invoiceNumber,
       customerId: body.customerId || null,
       customerName: body.customerName || null,
       customerEmail: body.customerEmail || null,
-      employeeId: body.employeeId || null,
-      employeeName,
+      employeeId: req.employee!.id,
+      employeeName: req.employee!.name,
       status: body.status || "invoice",
       subtotal: String(subtotal),
       taxRate: String(taxRate),
@@ -166,16 +157,6 @@ router.patch("/:id", async (req, res) => {
     if (body.paymentMethod !== undefined) updates.paymentMethod = body.paymentMethod;
     if (body.dueDate !== undefined) updates.dueDate = body.dueDate;
     if (body.paidAt !== undefined) updates.paidAt = body.paidAt;
-    if (body.employeeId !== undefined) {
-      updates.employeeId = body.employeeId;
-      if (body.employeeId) {
-        const [emp] = await db.select({ name: employeesTable.name }).from(employeesTable).where(eq(employeesTable.id, Number(body.employeeId)));
-        updates.employeeName = emp?.name ?? null;
-      } else {
-        updates.employeeName = null;
-      }
-    }
-
     if (body.items !== undefined) {
       const taxRate = body.taxRate ?? 0;
       const discount = body.discount ?? 0;

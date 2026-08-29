@@ -29,6 +29,9 @@ async function apiFetch(path: string, options?: RequestInit) {
     headers: { "Content-Type": "application/json", ...(options?.headers ?? {}) },
   });
   if (!res.ok) {
+    if (res.status === 401 && !path.startsWith("/auth/")) {
+      window.dispatchEvent(new CustomEvent("mobilinq:auth-expired"));
+    }
     const body = await res.json().catch(() => ({}));
     throw new Error(body.error ?? `HTTP ${res.status}`);
   }
@@ -67,12 +70,5 @@ export function useDeleteEmployee() {
   return useMutation({
     mutationFn: (id: number) => apiFetch(`/employees/${id}`, { method: "DELETE" }),
     onSuccess: () => qc.invalidateQueries({ queryKey: EMPLOYEES_KEY }),
-  });
-}
-
-export function useVerifyPin() {
-  return useMutation({
-    mutationFn: ({ employeeId, pin }: { employeeId: number; pin: string }) =>
-      apiFetch("/employees/verify-pin", { method: "POST", body: JSON.stringify({ employeeId, pin }) }),
   });
 }

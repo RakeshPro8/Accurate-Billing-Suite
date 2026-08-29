@@ -10,7 +10,7 @@ import { useEmployee, ROLE_COLORS, ROLE_LABELS } from "@/context/EmployeeContext
 import { EmployeePinDialog } from "@/components/EmployeePinDialog";
 import { useGetSettings } from "@workspace/api-client-react";
 
-const navItems = [
+const navItems: Array<{ href: string; label: string; icon: typeof LayoutDashboard; roles?: string[] }> = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/sales", label: "Sales", icon: Receipt },
   { href: "/quotations", label: "Quotations", icon: FileText },
@@ -18,17 +18,18 @@ const navItems = [
   { href: "/products", label: "Products & Services", icon: PackageSearch },
   { href: "/repairs", label: "Repairs", icon: Wrench },
   { href: "/device-diagram", label: "Device Diagram", icon: Cpu },
-  { href: "/employees", label: "Employees", icon: ShieldCheck },
+  { href: "/employees", label: "Employees", icon: ShieldCheck, roles: ["admin"] },
   { href: "/reports", label: "Reports", icon: BarChart3 },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/settings", label: "Settings", icon: Settings, roles: ["admin"] },
 ];
 
 function NavLinks({ className = "", onItemClick }: { className?: string; onItemClick?: () => void }) {
   const [location] = useLocation();
+  const { activeEmployee } = useEmployee();
 
   return (
     <nav className={`space-y-0.5 ${className}`}>
-      {navItems.map((item) => {
+      {navItems.filter((item) => !item.roles || item.roles.includes(activeEmployee?.role ?? "")).map((item) => {
         const isActive = location === item.href || (item.href !== "/" && location.startsWith(item.href));
         const Icon = item.icon;
         return (

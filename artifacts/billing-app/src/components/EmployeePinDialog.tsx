@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEmployee, ROLE_COLORS, ROLE_LABELS } from "@/context/EmployeeContext";
-import { useEmployees, useVerifyPin } from "@/lib/employees-api";
 import { ShieldCheck, LogOut, User } from "lucide-react";
 
 interface Props {
@@ -14,9 +13,7 @@ interface Props {
 }
 
 export function EmployeePinDialog({ open, onClose }: Props) {
-  const { activeEmployee, refresh, clearEmployee } = useEmployee();
-  const { data: employees } = useEmployees();
-  const verifyPin = useVerifyPin();
+  const { activeEmployee, signInEmployees, signIn, clearEmployee } = useEmployee();
 
   const [selectedId, setSelectedId] = useState<string>("");
   const [pin, setPin] = useState("");
@@ -51,16 +48,12 @@ export function EmployeePinDialog({ open, onClose }: Props) {
       setError("Enter your PIN (4-8 digits).");
       return;
     }
-    verifyPin.mutate({ employeeId: Number(selectedId), pin }, {
-      onSuccess: async () => {
-        await refresh();
+    signIn(Number(selectedId), pin).then(() => {
         handleClose();
-      },
-      onError: (e: any) => setError(e.message ?? "Incorrect PIN."),
-    });
+      }).catch((e: any) => setError(e.message ?? "Incorrect PIN."));
   }
 
-  const activeEmployees = employees?.filter(e => e.active) ?? [];
+  const activeEmployees = signInEmployees;
 
   return (
     <Dialog open={open} onOpenChange={v => { if (!v) handleClose(); }}>
@@ -122,7 +115,7 @@ export function EmployeePinDialog({ open, onClose }: Props) {
           <div className="space-y-4">
             <button type="button" onClick={() => setStep("select")} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1">
               <User className="h-3 w-3" />
-              {employees?.find(e => e.id === Number(selectedId))?.name} — change
+              {signInEmployees.find(e => e.id === Number(selectedId))?.name} — change
             </button>
             <div className="space-y-1.5">
               <Label>PIN</Label>
@@ -140,8 +133,8 @@ export function EmployeePinDialog({ open, onClose }: Props) {
             </div>
             {error && <p className="text-xs text-destructive">{error}</p>}
             <div className="flex gap-2">
-              <Button onClick={handleVerify} disabled={verifyPin.isPending} className="flex-1">
-                {verifyPin.isPending ? "Verifying..." : "Sign In"}
+              <Button onClick={handleVerify} className="flex-1">
+                Sign In
               </Button>
               <Button variant="outline" onClick={() => setStep("select")}>Back</Button>
             </div>

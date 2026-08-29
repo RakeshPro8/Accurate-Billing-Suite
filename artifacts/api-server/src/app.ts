@@ -15,6 +15,10 @@ if (!sessionSecret) {
 
 const PostgresStore = connectPgSimple(session);
 
+if (process.env["NODE_ENV"] === "production") {
+  app.set("trust proxy", 1);
+}
+
 app.use(
   pinoHttp({
     logger,
@@ -34,8 +38,20 @@ app.use(
     },
   }),
 );
+const configuredOrigins = (process.env["CORS_ORIGIN"] ?? process.env["APP_ORIGIN"] ?? "")
+  .split(",")
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
 app.use(cors({
-  origin: true,
+  origin: (origin, callback) => {
+    // Same-origin browser requests do not include an Origin header.
+    if (!origin || configuredOrigins.length === 0 || configuredOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+    callback(new Error("Origin is not allowed."));
+  },
   credentials: true,
 }));
 app.use(express.json());
@@ -52,9 +68,9 @@ app.use(
     name: "mobilinq.sid",
     cookie: {
       httpOnly: true,
-      secure: process.env["NODE_ENV"] === "production",
-      sameSite: "lax",
-      maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
+      secure: process.env["SESSION_COOKIE_SECURE"] === "true" || process.env["NODE_ENV"] === "production",
+      sameSite: (process.env["SESSION_COOKIE_SAMESITE"] as "lax" | "strict" | "none" | undefined) ?? "lax",
+      maxAge: Number(process.env["SESSION_MAX_AGE_MS"] ?? 1000 * 60 * 60 * 24 * 7),
     },
   }),
 );

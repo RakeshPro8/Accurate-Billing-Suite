@@ -3,7 +3,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { EmployeeProvider } from "@/context/EmployeeContext";
+import { EmployeeProvider, useEmployee } from "@/context/EmployeeContext";
+import { EmployeeSignIn } from "@/components/EmployeeSignIn";
 import NotFound from "@/pages/not-found";
 
 import Dashboard from "@/pages/Dashboard";
@@ -35,6 +36,8 @@ const queryClient = new QueryClient({
 });
 
 function Router() {
+  const { activeEmployee } = useEmployee();
+  const isAdmin = activeEmployee?.role === "admin";
   return (
     <AppLayout>
       <Switch>
@@ -56,19 +59,31 @@ function Router() {
         <Route path="/customers/:id" component={CustomerDetail} />
 
         <Route path="/products" component={Products} />
-        <Route path="/employees" component={Employees} />
+        <Route path="/employees">{() => isAdmin ? <Employees /> : <AccessDenied />}</Route>
         <Route path="/repairs" component={RepairsList} />
         <Route path="/repairs/new" component={RepairForm} />
         <Route path="/repairs/:id/edit">{(params) => <RepairForm key={params.id} />}</Route>
         <Route path="/repairs/:id" component={RepairDetail} />
         <Route path="/device-diagram" component={DeviceDiagram} />
         <Route path="/reports" component={Reports} />
-        <Route path="/settings" component={Settings} />
+        <Route path="/settings">{() => isAdmin ? <Settings /> : <AccessDenied />}</Route>
 
         <Route component={NotFound} />
       </Switch>
     </AppLayout>
   );
+}
+
+function AccessDenied() {
+  return <div className="py-20 text-center text-muted-foreground">You do not have permission to view this page.</div>;
+}
+
+function AuthBoundary() {
+  const { activeEmployee, isLoading } = useEmployee();
+  if (isLoading) {
+    return <div className="min-h-screen bg-background flex items-center justify-center text-sm text-muted-foreground">Loading secure session…</div>;
+  }
+  return activeEmployee ? <Router /> : <EmployeeSignIn />;
 }
 
 function App() {
@@ -77,7 +92,7 @@ function App() {
       <TooltipProvider>
         <EmployeeProvider>
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <Router />
+            <AuthBoundary />
           </WouterRouter>
         </EmployeeProvider>
         <Toaster />
