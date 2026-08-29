@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db, repairsTable, repairPhotosTable, repairPartsTable, productsTable, employeesTable, settingsTable, customersTable } from "@workspace/db";
 import { eq, and, gte, lte, sql } from "drizzle-orm";
-import { z } from "zod/v4";
+import { z } from "zod";
 import nodemailer from "nodemailer";
 import { requireCurrentStoreId } from "../lib/stores";
 import { HttpError, escapeHtml, validateRequest } from "../lib/http";

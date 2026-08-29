@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useEmployee } from "@/context/EmployeeContext";
 import { setOfflineScope } from "@/lib/offline-store";
 
-interface Store { id: number; name: string; active: boolean; }
+interface Store { id: number; name: string; active: boolean; isDefault?: boolean; }
 export function StoreSwitcher() {
   const { activeEmployee } = useEmployee();
   const [stores, setStores] = useState<Store[]>([]);
@@ -17,7 +17,24 @@ export function StoreSwitcher() {
     setStoreId(saved ?? "all");
     void fetch(apiUrl("/stores"), { credentials: "include" })
       .then((response) => response.ok ? response.json() : [])
-      .then((value: Store[]) => setStores(value.filter((store) => store.active)))
+      .then(async (value: Store[]) => {
+        const activeStores = value.filter((store) => store.active);
+        setStores(activeStores);
+        const savedIsValid = saved && saved !== "all" && activeStores.some((store) => String(store.id) === saved);
+        if (!savedIsValid && activeStores.length > 0) {
+          const preferred = activeStores.find((store) => store.isDefault) ?? activeStores[0];
+          const response = await fetch(apiUrl("/stores/current"), {
+            method: "PATCH", credentials: "include", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ storeId: preferred.id }),
+          });
+          if (response.ok) {
+            localStorage.setItem(`mobilinq.storeId:${activeEmployee.id}`, String(preferred.id));
+            setStoreId(String(preferred.id));
+            setOfflineScope({ employeeId: activeEmployee.id, storeId: preferred.id });
+            window.dispatchEvent(new CustomEvent("mobilinq:store-changed", { detail: preferred.id }));
+          }
+        }
+      })
       .catch(() => setStores([]));
   }, [activeEmployee?.id]);
 

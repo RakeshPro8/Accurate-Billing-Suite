@@ -12,6 +12,11 @@ export interface SaleInput {
   customerName?: string;
   customerEmail?: string;
   status?: string;
+  /**
+     * @minLength 8
+     * @maxLength 100
+     */
+  idempotencyKey?: string;
   taxRate?: number;
   discount?: number;
   notes?: string;

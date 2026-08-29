@@ -717,16 +717,35 @@ export const DeleteCustomerResponse = zod.void()
 
 
 /**
- * @summary List all sales
+ * @summary Search and paginate sales
  */
+export const getSalesQuerySearchMax = 120;
+
+export const getSalesQueryPageDefault = 1;
+
+export const getSalesQueryLimitDefault = 25;
+export const getSalesQueryLimitMax = 100;
+
+export const getSalesQueryDirectionDefault = `desc`;
+
 export const GetSalesQueryParams = zod.object({
+  "search": zod.coerce.string().max(getSalesQuerySearchMax).optional(),
   "status": zod.coerce.string().optional(),
   "customerId": zod.coerce.number().int().optional(),
+  "employeeId": zod.coerce.number().int().optional(),
+  "storeId": zod.coerce.number().int().optional(),
   "dateFrom": zod.coerce.string().optional(),
-  "dateTo": zod.coerce.string().optional()
+  "dateTo": zod.coerce.string().optional(),
+  "paymentMethod": zod.coerce.string().optional(),
+  "outstanding": zod.coerce.boolean().optional(),
+  "page": zod.coerce.number().int().min(1).default(getSalesQueryPageDefault),
+  "limit": zod.coerce.number().int().min(1).max(getSalesQueryLimitMax).default(getSalesQueryLimitDefault),
+  "sort": zod.enum(['createdAt', 'invoiceNumber', 'customerName', 'total', 'status']).optional(),
+  "direction": zod.enum(['asc', 'desc']).default(getSalesQueryDirectionDefault)
 })
 
-export const GetSalesResponseItem = zod.object({
+export const GetSalesResponse = zod.object({
+  "items": zod.array(zod.object({
   "id": zod.number().int(),
   "invoiceNumber": zod.string(),
   "customerId": zod.number().int().nullish(),
@@ -742,6 +761,33 @@ export const GetSalesResponseItem = zod.object({
   "paymentMethod": zod.string().nullish(),
   "dueDate": zod.string().nullish(),
   "paidAt": zod.string().nullish(),
+  "employeeId": zod.number().int().nullish(),
+  "employeeName": zod.string().nullish(),
+  "storeId": zod.number().int().nullish(),
+  "balance": zod.number().optional(),
+  "payments": zod.array(zod.object({
+  "id": zod.number().int(),
+  "saleId": zod.number().int(),
+  "amount": zod.number(),
+  "method": zod.string(),
+  "reference": zod.string().nullish(),
+  "kind": zod.string(),
+  "note": zod.string().nullish(),
+  "employeeId": zod.number().int().nullish(),
+  "employeeName": zod.string().nullish(),
+  "createdAt": zod.string()
+})).optional(),
+  "events": zod.array(zod.object({
+  "id": zod.number().int(),
+  "saleId": zod.number().int(),
+  "action": zod.string(),
+  "fromStatus": zod.string().nullish(),
+  "toStatus": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "employeeId": zod.number().int().nullish(),
+  "employeeName": zod.string().nullish(),
+  "createdAt": zod.string()
+})).optional(),
   "items": zod.array(zod.object({
   "id": zod.number().int(),
   "type": zod.string(),
@@ -755,18 +801,35 @@ export const GetSalesResponseItem = zod.object({
   "total": zod.number()
 })).optional(),
   "createdAt": zod.string()
+})),
+  "pagination": zod.object({
+  "page": zod.number().int(),
+  "limit": zod.number().int(),
+  "total": zod.number().int(),
+  "totalPages": zod.number().int()
+}),
+  "summary": zod.object({
+  "count": zod.number().int(),
+  "total": zod.number(),
+  "outstanding": zod.number()
 })
-export const GetSalesResponse = zod.array(GetSalesResponseItem)
+})
 
 
 /**
  * @summary Create a sale / invoice
  */
+export const createSaleBodyIdempotencyKeyMin = 8;
+export const createSaleBodyIdempotencyKeyMax = 100;
+
+
+
 export const CreateSaleBody = zod.object({
   "customerId": zod.number().int().optional(),
   "customerName": zod.string().optional(),
   "customerEmail": zod.string().optional(),
   "status": zod.string().optional(),
+  "idempotencyKey": zod.string().min(createSaleBodyIdempotencyKeyMin).max(createSaleBodyIdempotencyKeyMax).optional(),
   "taxRate": zod.number().optional(),
   "discount": zod.number().optional(),
   "notes": zod.string().optional(),
@@ -800,6 +863,33 @@ export const CreateSaleResponse = zod.object({
   "paymentMethod": zod.string().nullish(),
   "dueDate": zod.string().nullish(),
   "paidAt": zod.string().nullish(),
+  "employeeId": zod.number().int().nullish(),
+  "employeeName": zod.string().nullish(),
+  "storeId": zod.number().int().nullish(),
+  "balance": zod.number().optional(),
+  "payments": zod.array(zod.object({
+  "id": zod.number().int(),
+  "saleId": zod.number().int(),
+  "amount": zod.number(),
+  "method": zod.string(),
+  "reference": zod.string().nullish(),
+  "kind": zod.string(),
+  "note": zod.string().nullish(),
+  "employeeId": zod.number().int().nullish(),
+  "employeeName": zod.string().nullish(),
+  "createdAt": zod.string()
+})).optional(),
+  "events": zod.array(zod.object({
+  "id": zod.number().int(),
+  "saleId": zod.number().int(),
+  "action": zod.string(),
+  "fromStatus": zod.string().nullish(),
+  "toStatus": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "employeeId": zod.number().int().nullish(),
+  "employeeName": zod.string().nullish(),
+  "createdAt": zod.string()
+})).optional(),
   "items": zod.array(zod.object({
   "id": zod.number().int(),
   "type": zod.string(),
@@ -839,6 +929,33 @@ export const GetSaleResponse = zod.object({
   "paymentMethod": zod.string().nullish(),
   "dueDate": zod.string().nullish(),
   "paidAt": zod.string().nullish(),
+  "employeeId": zod.number().int().nullish(),
+  "employeeName": zod.string().nullish(),
+  "storeId": zod.number().int().nullish(),
+  "balance": zod.number().optional(),
+  "payments": zod.array(zod.object({
+  "id": zod.number().int(),
+  "saleId": zod.number().int(),
+  "amount": zod.number(),
+  "method": zod.string(),
+  "reference": zod.string().nullish(),
+  "kind": zod.string(),
+  "note": zod.string().nullish(),
+  "employeeId": zod.number().int().nullish(),
+  "employeeName": zod.string().nullish(),
+  "createdAt": zod.string()
+})).optional(),
+  "events": zod.array(zod.object({
+  "id": zod.number().int(),
+  "saleId": zod.number().int(),
+  "action": zod.string(),
+  "fromStatus": zod.string().nullish(),
+  "toStatus": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "employeeId": zod.number().int().nullish(),
+  "employeeName": zod.string().nullish(),
+  "createdAt": zod.string()
+})).optional(),
   "items": zod.array(zod.object({
   "id": zod.number().int(),
   "type": zod.string(),
@@ -901,6 +1018,33 @@ export const UpdateSaleResponse = zod.object({
   "paymentMethod": zod.string().nullish(),
   "dueDate": zod.string().nullish(),
   "paidAt": zod.string().nullish(),
+  "employeeId": zod.number().int().nullish(),
+  "employeeName": zod.string().nullish(),
+  "storeId": zod.number().int().nullish(),
+  "balance": zod.number().optional(),
+  "payments": zod.array(zod.object({
+  "id": zod.number().int(),
+  "saleId": zod.number().int(),
+  "amount": zod.number(),
+  "method": zod.string(),
+  "reference": zod.string().nullish(),
+  "kind": zod.string(),
+  "note": zod.string().nullish(),
+  "employeeId": zod.number().int().nullish(),
+  "employeeName": zod.string().nullish(),
+  "createdAt": zod.string()
+})).optional(),
+  "events": zod.array(zod.object({
+  "id": zod.number().int(),
+  "saleId": zod.number().int(),
+  "action": zod.string(),
+  "fromStatus": zod.string().nullish(),
+  "toStatus": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "employeeId": zod.number().int().nullish(),
+  "employeeName": zod.string().nullish(),
+  "createdAt": zod.string()
+})).optional(),
   "items": zod.array(zod.object({
   "id": zod.number().int(),
   "type": zod.string(),
@@ -942,6 +1086,348 @@ export const SendSaleEmailBody = zod.object({
 
 export const SendSaleEmailResponse = zod.object({
   "message": zod.string()
+})
+
+
+/**
+ * @summary Record a payment against a sale
+ */
+export const RecordSalePaymentParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const recordSalePaymentHeaderIdempotencyKeyMin = 8;
+export const recordSalePaymentHeaderIdempotencyKeyMax = 100;
+
+
+
+export const RecordSalePaymentHeader = zod.object({
+  "Idempotency-Key": zod.string().min(recordSalePaymentHeaderIdempotencyKeyMin).max(recordSalePaymentHeaderIdempotencyKeyMax)
+})
+
+export const recordSalePaymentBodyAmountMin = 0.01;
+
+export const recordSalePaymentBodyMethodMax = 80;
+
+export const recordSalePaymentBodyReferenceMax = 160;
+
+export const recordSalePaymentBodyNoteMax = 500;
+
+
+
+export const RecordSalePaymentBody = zod.object({
+  "amount": zod.number().min(recordSalePaymentBodyAmountMin),
+  "method": zod.string().min(1).max(recordSalePaymentBodyMethodMax),
+  "reference": zod.string().max(recordSalePaymentBodyReferenceMax).optional(),
+  "note": zod.string().max(recordSalePaymentBodyNoteMax).optional()
+})
+
+export const RecordSalePaymentResponse = zod.object({
+  "id": zod.number().int(),
+  "invoiceNumber": zod.string(),
+  "customerId": zod.number().int().nullish(),
+  "customerName": zod.string().nullish(),
+  "customerEmail": zod.string().nullish(),
+  "status": zod.string(),
+  "subtotal": zod.number(),
+  "taxRate": zod.number().optional(),
+  "tax": zod.number(),
+  "discount": zod.number().optional(),
+  "total": zod.number(),
+  "notes": zod.string().nullish(),
+  "paymentMethod": zod.string().nullish(),
+  "dueDate": zod.string().nullish(),
+  "paidAt": zod.string().nullish(),
+  "employeeId": zod.number().int().nullish(),
+  "employeeName": zod.string().nullish(),
+  "storeId": zod.number().int().nullish(),
+  "balance": zod.number().optional(),
+  "payments": zod.array(zod.object({
+  "id": zod.number().int(),
+  "saleId": zod.number().int(),
+  "amount": zod.number(),
+  "method": zod.string(),
+  "reference": zod.string().nullish(),
+  "kind": zod.string(),
+  "note": zod.string().nullish(),
+  "employeeId": zod.number().int().nullish(),
+  "employeeName": zod.string().nullish(),
+  "createdAt": zod.string()
+})).optional(),
+  "events": zod.array(zod.object({
+  "id": zod.number().int(),
+  "saleId": zod.number().int(),
+  "action": zod.string(),
+  "fromStatus": zod.string().nullish(),
+  "toStatus": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "employeeId": zod.number().int().nullish(),
+  "employeeName": zod.string().nullish(),
+  "createdAt": zod.string()
+})).optional(),
+  "items": zod.array(zod.object({
+  "id": zod.number().int(),
+  "type": zod.string(),
+  "productId": zod.number().int().nullish(),
+  "serviceId": zod.number().int().nullish(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "quantity": zod.number(),
+  "unitPrice": zod.number(),
+  "discount": zod.number().optional(),
+  "total": zod.number()
+})).optional(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Void a sale and restore tracked stock
+ */
+export const VoidSaleParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const voidSaleHeaderIdempotencyKeyMin = 8;
+export const voidSaleHeaderIdempotencyKeyMax = 100;
+
+
+
+export const VoidSaleHeader = zod.object({
+  "Idempotency-Key": zod.string().min(voidSaleHeaderIdempotencyKeyMin).max(voidSaleHeaderIdempotencyKeyMax)
+})
+
+export const voidSaleBodyNoteMax = 500;
+
+
+
+export const VoidSaleBody = zod.object({
+  "note": zod.string().max(voidSaleBodyNoteMax).optional()
+})
+
+export const VoidSaleResponse = zod.object({
+  "id": zod.number().int(),
+  "invoiceNumber": zod.string(),
+  "customerId": zod.number().int().nullish(),
+  "customerName": zod.string().nullish(),
+  "customerEmail": zod.string().nullish(),
+  "status": zod.string(),
+  "subtotal": zod.number(),
+  "taxRate": zod.number().optional(),
+  "tax": zod.number(),
+  "discount": zod.number().optional(),
+  "total": zod.number(),
+  "notes": zod.string().nullish(),
+  "paymentMethod": zod.string().nullish(),
+  "dueDate": zod.string().nullish(),
+  "paidAt": zod.string().nullish(),
+  "employeeId": zod.number().int().nullish(),
+  "employeeName": zod.string().nullish(),
+  "storeId": zod.number().int().nullish(),
+  "balance": zod.number().optional(),
+  "payments": zod.array(zod.object({
+  "id": zod.number().int(),
+  "saleId": zod.number().int(),
+  "amount": zod.number(),
+  "method": zod.string(),
+  "reference": zod.string().nullish(),
+  "kind": zod.string(),
+  "note": zod.string().nullish(),
+  "employeeId": zod.number().int().nullish(),
+  "employeeName": zod.string().nullish(),
+  "createdAt": zod.string()
+})).optional(),
+  "events": zod.array(zod.object({
+  "id": zod.number().int(),
+  "saleId": zod.number().int(),
+  "action": zod.string(),
+  "fromStatus": zod.string().nullish(),
+  "toStatus": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "employeeId": zod.number().int().nullish(),
+  "employeeName": zod.string().nullish(),
+  "createdAt": zod.string()
+})).optional(),
+  "items": zod.array(zod.object({
+  "id": zod.number().int(),
+  "type": zod.string(),
+  "productId": zod.number().int().nullish(),
+  "serviceId": zod.number().int().nullish(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "quantity": zod.number(),
+  "unitPrice": zod.number(),
+  "discount": zod.number().optional(),
+  "total": zod.number()
+})).optional(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Refund part or all of a sale
+ */
+export const RefundSaleParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const refundSaleHeaderIdempotencyKeyMin = 8;
+export const refundSaleHeaderIdempotencyKeyMax = 100;
+
+
+
+export const RefundSaleHeader = zod.object({
+  "Idempotency-Key": zod.string().min(refundSaleHeaderIdempotencyKeyMin).max(refundSaleHeaderIdempotencyKeyMax)
+})
+
+export const refundSaleBodyAmountMin = 0.01;
+
+export const refundSaleBodyMethodMax = 80;
+
+export const refundSaleBodyReferenceMax = 160;
+
+export const refundSaleBodyNoteMax = 500;
+
+
+
+export const RefundSaleBody = zod.object({
+  "amount": zod.number().min(refundSaleBodyAmountMin),
+  "method": zod.string().min(1).max(refundSaleBodyMethodMax),
+  "reference": zod.string().max(refundSaleBodyReferenceMax).optional(),
+  "note": zod.string().max(refundSaleBodyNoteMax).optional()
+})
+
+export const RefundSaleResponse = zod.object({
+  "id": zod.number().int(),
+  "invoiceNumber": zod.string(),
+  "customerId": zod.number().int().nullish(),
+  "customerName": zod.string().nullish(),
+  "customerEmail": zod.string().nullish(),
+  "status": zod.string(),
+  "subtotal": zod.number(),
+  "taxRate": zod.number().optional(),
+  "tax": zod.number(),
+  "discount": zod.number().optional(),
+  "total": zod.number(),
+  "notes": zod.string().nullish(),
+  "paymentMethod": zod.string().nullish(),
+  "dueDate": zod.string().nullish(),
+  "paidAt": zod.string().nullish(),
+  "employeeId": zod.number().int().nullish(),
+  "employeeName": zod.string().nullish(),
+  "storeId": zod.number().int().nullish(),
+  "balance": zod.number().optional(),
+  "payments": zod.array(zod.object({
+  "id": zod.number().int(),
+  "saleId": zod.number().int(),
+  "amount": zod.number(),
+  "method": zod.string(),
+  "reference": zod.string().nullish(),
+  "kind": zod.string(),
+  "note": zod.string().nullish(),
+  "employeeId": zod.number().int().nullish(),
+  "employeeName": zod.string().nullish(),
+  "createdAt": zod.string()
+})).optional(),
+  "events": zod.array(zod.object({
+  "id": zod.number().int(),
+  "saleId": zod.number().int(),
+  "action": zod.string(),
+  "fromStatus": zod.string().nullish(),
+  "toStatus": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "employeeId": zod.number().int().nullish(),
+  "employeeName": zod.string().nullish(),
+  "createdAt": zod.string()
+})).optional(),
+  "items": zod.array(zod.object({
+  "id": zod.number().int(),
+  "type": zod.string(),
+  "productId": zod.number().int().nullish(),
+  "serviceId": zod.number().int().nullish(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "quantity": zod.number(),
+  "unitPrice": zod.number(),
+  "discount": zod.number().optional(),
+  "total": zod.number()
+})).optional(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Duplicate a sale as a new draft
+ */
+export const DuplicateSaleParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const duplicateSaleHeaderIdempotencyKeyMin = 8;
+export const duplicateSaleHeaderIdempotencyKeyMax = 100;
+
+
+
+export const DuplicateSaleHeader = zod.object({
+  "Idempotency-Key": zod.string().min(duplicateSaleHeaderIdempotencyKeyMin).max(duplicateSaleHeaderIdempotencyKeyMax)
+})
+
+export const DuplicateSaleResponse = zod.object({
+  "id": zod.number().int(),
+  "invoiceNumber": zod.string(),
+  "customerId": zod.number().int().nullish(),
+  "customerName": zod.string().nullish(),
+  "customerEmail": zod.string().nullish(),
+  "status": zod.string(),
+  "subtotal": zod.number(),
+  "taxRate": zod.number().optional(),
+  "tax": zod.number(),
+  "discount": zod.number().optional(),
+  "total": zod.number(),
+  "notes": zod.string().nullish(),
+  "paymentMethod": zod.string().nullish(),
+  "dueDate": zod.string().nullish(),
+  "paidAt": zod.string().nullish(),
+  "employeeId": zod.number().int().nullish(),
+  "employeeName": zod.string().nullish(),
+  "storeId": zod.number().int().nullish(),
+  "balance": zod.number().optional(),
+  "payments": zod.array(zod.object({
+  "id": zod.number().int(),
+  "saleId": zod.number().int(),
+  "amount": zod.number(),
+  "method": zod.string(),
+  "reference": zod.string().nullish(),
+  "kind": zod.string(),
+  "note": zod.string().nullish(),
+  "employeeId": zod.number().int().nullish(),
+  "employeeName": zod.string().nullish(),
+  "createdAt": zod.string()
+})).optional(),
+  "events": zod.array(zod.object({
+  "id": zod.number().int(),
+  "saleId": zod.number().int(),
+  "action": zod.string(),
+  "fromStatus": zod.string().nullish(),
+  "toStatus": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "employeeId": zod.number().int().nullish(),
+  "employeeName": zod.string().nullish(),
+  "createdAt": zod.string()
+})).optional(),
+  "items": zod.array(zod.object({
+  "id": zod.number().int(),
+  "type": zod.string(),
+  "productId": zod.number().int().nullish(),
+  "serviceId": zod.number().int().nullish(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "quantity": zod.number(),
+  "unitPrice": zod.number(),
+  "discount": zod.number().optional(),
+  "total": zod.number()
+})).optional(),
+  "createdAt": zod.string()
 })
 
 
@@ -1170,6 +1656,33 @@ export const ConvertQuotationToSaleResponse = zod.object({
   "paymentMethod": zod.string().nullish(),
   "dueDate": zod.string().nullish(),
   "paidAt": zod.string().nullish(),
+  "employeeId": zod.number().int().nullish(),
+  "employeeName": zod.string().nullish(),
+  "storeId": zod.number().int().nullish(),
+  "balance": zod.number().optional(),
+  "payments": zod.array(zod.object({
+  "id": zod.number().int(),
+  "saleId": zod.number().int(),
+  "amount": zod.number(),
+  "method": zod.string(),
+  "reference": zod.string().nullish(),
+  "kind": zod.string(),
+  "note": zod.string().nullish(),
+  "employeeId": zod.number().int().nullish(),
+  "employeeName": zod.string().nullish(),
+  "createdAt": zod.string()
+})).optional(),
+  "events": zod.array(zod.object({
+  "id": zod.number().int(),
+  "saleId": zod.number().int(),
+  "action": zod.string(),
+  "fromStatus": zod.string().nullish(),
+  "toStatus": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "employeeId": zod.number().int().nullish(),
+  "employeeName": zod.string().nullish(),
+  "createdAt": zod.string()
+})).optional(),
   "items": zod.array(zod.object({
   "id": zod.number().int(),
   "type": zod.string(),
@@ -1269,6 +1782,33 @@ export const GetMonthlyReportResponse = zod.object({
   "paymentMethod": zod.string().nullish(),
   "dueDate": zod.string().nullish(),
   "paidAt": zod.string().nullish(),
+  "employeeId": zod.number().int().nullish(),
+  "employeeName": zod.string().nullish(),
+  "storeId": zod.number().int().nullish(),
+  "balance": zod.number().optional(),
+  "payments": zod.array(zod.object({
+  "id": zod.number().int(),
+  "saleId": zod.number().int(),
+  "amount": zod.number(),
+  "method": zod.string(),
+  "reference": zod.string().nullish(),
+  "kind": zod.string(),
+  "note": zod.string().nullish(),
+  "employeeId": zod.number().int().nullish(),
+  "employeeName": zod.string().nullish(),
+  "createdAt": zod.string()
+})).optional(),
+  "events": zod.array(zod.object({
+  "id": zod.number().int(),
+  "saleId": zod.number().int(),
+  "action": zod.string(),
+  "fromStatus": zod.string().nullish(),
+  "toStatus": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "employeeId": zod.number().int().nullish(),
+  "employeeName": zod.string().nullish(),
+  "createdAt": zod.string()
+})).optional(),
   "items": zod.array(zod.object({
   "id": zod.number().int(),
   "type": zod.string(),

@@ -14,9 +14,10 @@ export default function CustomerDetail() {
   const { data: customer, isLoading } = useGetCustomer(id, {
     query: { enabled: !!id, queryKey: getGetCustomerQueryKey(id) }
   });
-  const { data: sales } = useGetSales({ customerId: id }, {
+  const { data: salesPage } = useGetSales({ customerId: id }, {
     query: { enabled: !!id, queryKey: getGetSalesQueryKey({ customerId: id }) }
   });
+  const sales = salesPage?.items ?? [];
 
   if (isLoading) return <div className="space-y-4">{Array.from({length:3}).map((_,i)=><Skeleton key={i} className="h-24 w-full"/>)}</div>;
   if (!customer) return <div className="text-center py-16 text-muted-foreground">Customer not found.</div>;

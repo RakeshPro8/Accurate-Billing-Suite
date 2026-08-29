@@ -1,7 +1,8 @@
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import {
-  useGetSale, useUpdateSale, getGetSaleQueryKey, getGetSalesQueryKey,
+  useGetSale, useUpdateSale, useRecordSalePayment, useVoidSale, useRefundSale,
+  useDuplicateSale, useSendSaleEmail, getGetSaleQueryKey, getGetSalesQueryKey,
   useGetSettings,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -16,8 +17,16 @@ import {
 import { ReceiptPrint } from "@/components/ReceiptPrint";
 import { recordAuditEvent } from "@/lib/audit-client";
 import {
-  ArrowLeft, Printer, Download, ChevronDown, Check, Edit, FileText, Receipt
+  ArrowLeft, Printer, Download, Edit, FileText, Receipt, Mail, Copy, RotateCcw,
+  DollarSign, Clock, AlertTriangle
 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function SaleDetail() {
   const params = useParams<{ id: string }>();
@@ -26,10 +35,27 @@ export default function SaleDetail() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const invoiceRef = useRef<HTMLDivElement>(null);
+  const paymentKey = useRef(crypto.randomUUID());
+  const refundKey = useRef(crypto.randomUUID());
+  const voidKey = useRef(crypto.randomUUID());
+  const duplicateKey = useRef(crypto.randomUUID());
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("Cash");
+  const [paymentReference, setPaymentReference] = useState("");
+  const [refundAmount, setRefundAmount] = useState("");
+  const [refundMethod, setRefundMethod] = useState("Cash");
+  const [note, setNote] = useState("");
+  const [voidOpen, setVoidOpen] = useState(false);
+  const [refundOpen, setRefundOpen] = useState(false);
 
   const { data: sale, isLoading } = useGetSale(id, { query: { queryKey: getGetSaleQueryKey(id) } });
   const { data: settings } = useGetSettings();
   const updateSale = useUpdateSale();
+  const payment = useRecordSalePayment({ request: { headers: { "Idempotency-Key": paymentKey.current } } });
+  const voidMutation = useVoidSale({ request: { headers: { "Idempotency-Key": voidKey.current } } });
+  const refundMutation = useRefundSale({ request: { headers: { "Idempotency-Key": refundKey.current } } });
+  const duplicateMutation = useDuplicateSale({ request: { headers: { "Idempotency-Key": duplicateKey.current } } });
+  const emailMutation = useSendSaleEmail();
 
   function markStatus(status: string) {
     updateSale.mutate({ id, data: { status } as any }, {
@@ -40,6 +66,43 @@ export default function SaleDetail() {
       },
       onError: () => toast({ title: "Error", variant: "destructive" }),
     });
+  }
+
+  function refreshSale() {
+    queryClient.invalidateQueries({ queryKey: getGetSaleQueryKey(id) });
+    queryClient.invalidateQueries({ queryKey: getGetSalesQueryKey() });
+  }
+  function recordPayment() {
+    const amount = Number(paymentAmount);
+    if (!Number.isFinite(amount) || amount <= 0) {
+      toast({ title: "Enter a valid payment amount", variant: "destructive" }); return;
+    }
+    payment.mutate({ id, data: { amount, method: paymentMethod, reference: paymentReference || undefined } }, {
+      onSuccess: () => { refreshSale(); setPaymentAmount(""); setPaymentReference(""); toast({ title: "Payment recorded" }); },
+      onError: (error: any) => toast({ title: error?.message ?? "Payment could not be recorded", variant: "destructive" }),
+    });
+  }
+  function voidInvoice() {
+    voidMutation.mutate({ id, data: { note } }, {
+      onSuccess: () => { setVoidOpen(false); refreshSale(); toast({ title: "Invoice voided", description: "The invoice remains available in the audit trail." }); },
+      onError: (error: any) => toast({ title: error?.message ?? "Invoice could not be voided", variant: "destructive" }),
+    });
+  }
+  function refundInvoice() {
+    const amount = Number(refundAmount);
+    if (!Number.isFinite(amount) || amount <= 0) { toast({ title: "Enter a valid refund amount", variant: "destructive" }); return; }
+    refundMutation.mutate({ id, data: { amount, method: refundMethod, note } }, {
+      onSuccess: () => { setRefundOpen(false); refreshSale(); setRefundAmount(""); setNote(""); toast({ title: "Refund recorded" }); },
+      onError: (error: any) => toast({ title: error?.message ?? "Refund could not be recorded", variant: "destructive" }),
+    });
+  }
+  function duplicateInvoice() {
+    duplicateMutation.mutate({ id }, { onSuccess: (copy) => { toast({ title: "Draft duplicated" }); navigate(`/sales/${copy.id}/edit`); }, onError: (error: any) => toast({ title: error?.message ?? "Could not duplicate invoice", variant: "destructive" }) });
+  }
+  function emailInvoice() {
+    const recipient = sale?.customerEmail;
+    if (!recipient) { toast({ title: "No customer email on this invoice", variant: "destructive" }); return; }
+    emailMutation.mutate({ id, data: { to: recipient } }, { onSuccess: () => toast({ title: "Invoice email sent", description: recipient }), onError: (error: any) => toast({ title: error?.message ?? "Email could not be sent", variant: "destructive" }) });
   }
 
   function handlePrintInvoice() {
@@ -166,20 +229,22 @@ export default function SaleDetail() {
           <Button size="sm" variant="outline" onClick={() => navigate(`/sales/${id}/edit`)} className="gap-1.5">
             <Edit className="h-3.5 w-3.5" /> Edit
           </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button size="sm" className="gap-1.5">Status <ChevronDown className="h-3.5 w-3.5" /></Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {["draft", "invoice", "paid", "cancelled"].map(s => (
-                <DropdownMenuItem key={s} onClick={() => markStatus(s)} className="gap-2 capitalize">
-                  {sale.status === s && <Check className="h-3.5 w-3.5" />}
-                  <span className={sale.status === s ? "font-semibold" : ""}>{s}</span>
-                </DropdownMenuItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {sale.customerEmail && <Button size="sm" variant="outline" onClick={emailInvoice} disabled={emailMutation.isPending} className="gap-1.5"><Mail className="h-3.5 w-3.5" /> {emailMutation.isPending ? "Sending…" : "Email"}</Button>}
+          <Button size="sm" variant="outline" onClick={duplicateInvoice} disabled={duplicateMutation.isPending} className="gap-1.5"><Copy className="h-3.5 w-3.5" /> Duplicate</Button>
+          {sale.status !== "voided" && sale.status !== "refunded" && <Button size="sm" variant="outline" onClick={() => setVoidOpen(true)} className="gap-1.5 text-destructive"><RotateCcw className="h-3.5 w-3.5" /> Void</Button>}
         </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 no-print">
+        <Card className="lg:col-span-2"><CardContent className="p-4">
+          <div className="flex items-center justify-between gap-3 mb-3"><div><p className="font-semibold">Payment collection</p><p className="text-xs text-muted-foreground">Every payment is recorded separately; card details are never stored.</p></div><span className={`text-lg font-bold ${(sale.balance ?? 0) > 0 ? "text-amber-500" : "text-emerald-500"}`}>{(sale.balance ?? 0) > 0 ? `${formatCurrency(sale.balance ?? 0)} due` : "Paid in full"}</span></div>
+          {(sale.balance ?? 0) > 0 && sale.status !== "voided" && sale.status !== "refunded" && <div className="grid grid-cols-2 md:grid-cols-4 gap-2"><div className="col-span-2"><Label className="text-xs">Amount</Label><Input className="h-10" type="number" min="0.01" step="0.01" value={paymentAmount} onChange={e => setPaymentAmount(e.target.value)} placeholder={(sale.balance ?? 0).toFixed(2)} /></div><div><Label className="text-xs">Method</Label><Input className="h-10" value={paymentMethod} onChange={e => setPaymentMethod(e.target.value)} /></div><div className="flex items-end"><Button className="w-full h-10" onClick={recordPayment} disabled={payment.isPending}><DollarSign className="h-4 w-4 mr-1" /> Record</Button></div><div className="col-span-2 md:col-span-4"><Input className="h-9 text-xs" placeholder="Safe processor reference (optional)" value={paymentReference} onChange={e => setPaymentReference(e.target.value)} /></div></div>}
+        </CardContent></Card>
+        <Card><CardContent className="p-4"><p className="font-semibold mb-2">Payment history</p>{sale.payments?.length ? <div className="space-y-2">{sale.payments.map((entry) => <div key={entry.id} className="flex justify-between text-sm"><span><span className={entry.kind === "refund" ? "text-destructive" : "text-emerald-600"}>{entry.kind === "refund" ? "Refund" : "Payment"}</span><span className="text-muted-foreground"> · {entry.method}</span><span className="block text-xs text-muted-foreground">{formatDate(entry.createdAt)}</span></span><strong>{entry.kind === "refund" ? "-" : ""}{formatCurrency(entry.amount)}</strong></div>)}</div> : <p className="text-sm text-muted-foreground">No payments recorded yet.</p>}</CardContent></Card>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 no-print">
+        <Card><CardContent className="p-4"><div className="flex items-center gap-2 mb-3"><Clock className="h-4 w-4 text-muted-foreground" /><p className="font-semibold">Status timeline</p></div>{sale.events?.length ? <div className="space-y-3">{sale.events.map((event) => <div key={event.id} className="border-l-2 border-primary/30 pl-3"><p className="text-sm font-medium capitalize">{event.action.replaceAll("_", " ")}{event.toStatus ? ` · ${event.toStatus}` : ""}</p><p className="text-xs text-muted-foreground">{formatDate(event.createdAt)}{event.employeeName ? ` · ${event.employeeName}` : ""}</p>{event.note && <p className="text-xs mt-1">{event.note}</p>}</div>)}</div> : <p className="text-sm text-muted-foreground">No status events recorded.</p>}</CardContent></Card>
+        <Card><CardContent className="p-4"><p className="font-semibold mb-2">Controlled actions</p><p className="text-xs text-muted-foreground mb-3">Voiding and refunding keep the invoice and audit history. They do not delete the sale.</p><div className="flex flex-wrap gap-2">{sale.status !== "voided" && sale.status !== "refunded" && <Button variant="outline" className="text-destructive" onClick={() => setVoidOpen(true)}><RotateCcw className="h-4 w-4 mr-1.5" /> Void invoice</Button>}{sale.status !== "voided" && (sale.payments?.some(p => p.kind === "payment") ?? false) && <Button variant="outline" onClick={() => setRefundOpen(true)}><DollarSign className="h-4 w-4 mr-1.5" /> Refund</Button>}</div></CardContent></Card>
       </div>
 
       {/* ── A4 Invoice — hidden in receipt mode via CSS ── */}
@@ -297,6 +362,22 @@ export default function SaleDetail() {
           </div>
         </CardContent>
       </Card>
+
+      <AlertDialog open={voidOpen} onOpenChange={setVoidOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader><AlertDialogTitle>Void this invoice?</AlertDialogTitle><AlertDialogDescription>This keeps the invoice and its history for audit purposes. Posted inventory will be restored. This action requires manager permission and cannot be undone here.</AlertDialogDescription></AlertDialogHeader>
+          <Textarea placeholder="Reason (optional)" value={note} onChange={e => setNote(e.target.value)} />
+          <AlertDialogFooter><AlertDialogCancel>Keep invoice</AlertDialogCancel><AlertDialogAction onClick={voidInvoice} disabled={voidMutation.isPending} className="bg-destructive hover:bg-destructive/90">{voidMutation.isPending ? "Voiding…" : "Void invoice"}</AlertDialogAction></AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      <AlertDialog open={refundOpen} onOpenChange={setRefundOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader><AlertDialogTitle>Record a refund</AlertDialogTitle><AlertDialogDescription>Refunds are recorded against captured payments. A full refund restores tracked inventory and marks the invoice refunded.</AlertDialogDescription></AlertDialogHeader>
+          <div className="grid grid-cols-2 gap-3"><div><Label className="text-xs">Amount</Label><Input type="number" min="0.01" step="0.01" value={refundAmount} onChange={e => setRefundAmount(e.target.value)} placeholder={(sale.balance ? Math.max(0, sale.total - sale.balance) : sale.total).toFixed(2)} /></div><div><Label className="text-xs">Method</Label><Input value={refundMethod} onChange={e => setRefundMethod(e.target.value)} /></div></div>
+          <Textarea placeholder="Reason (optional)" value={note} onChange={e => setNote(e.target.value)} />
+          <AlertDialogFooter><AlertDialogCancel>Cancel</AlertDialogCancel><AlertDialogAction onClick={refundInvoice} disabled={refundMutation.isPending}>{refundMutation.isPending ? "Recording…" : "Record refund"}</AlertDialogAction></AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

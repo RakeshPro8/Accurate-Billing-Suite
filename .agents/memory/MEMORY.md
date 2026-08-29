@@ -9,3 +9,4 @@
 - [Workspace Dependency Updates](workspace-dependency-updates.md) — use a workspace-aware lockfile install when package installation would otherwise target the root.
 - [Session Store Build Asset](session-store-build.md) — connect-pg-simple needs table.sql beside the bundled API entry point or login fails after build.
 - [Development Schema Push](development-schema-push.md) — non-interactive Drizzle pushes can stop on legacy naming conflicts; prefer an explicit additive dev change over force-pushing.
+- [Store Scope Bootstrap](store-scope-bootstrap.md) — store-scoped requests need an active location; empty development databases require safe initial-store onboarding rather than relaxing scope checks.

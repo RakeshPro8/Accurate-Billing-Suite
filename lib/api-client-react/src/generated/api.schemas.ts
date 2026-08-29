@@ -296,6 +296,40 @@ export interface LineItemInput {
   discount?: number;
 }
 
+export interface Payment {
+  id: number;
+  saleId: number;
+  amount: number;
+  method: string;
+  /** @nullable */
+  reference?: string | null;
+  kind: string;
+  /** @nullable */
+  note?: string | null;
+  /** @nullable */
+  employeeId?: number | null;
+  /** @nullable */
+  employeeName?: string | null;
+  createdAt: string;
+}
+
+export interface SaleEvent {
+  id: number;
+  saleId: number;
+  action: string;
+  /** @nullable */
+  fromStatus?: string | null;
+  /** @nullable */
+  toStatus?: string | null;
+  /** @nullable */
+  note?: string | null;
+  /** @nullable */
+  employeeId?: number | null;
+  /** @nullable */
+  employeeName?: string | null;
+  createdAt: string;
+}
+
 export interface Sale {
   id: number;
   invoiceNumber: string;
@@ -319,8 +353,36 @@ export interface Sale {
   dueDate?: string | null;
   /** @nullable */
   paidAt?: string | null;
+  /** @nullable */
+  employeeId?: number | null;
+  /** @nullable */
+  employeeName?: string | null;
+  /** @nullable */
+  storeId?: number | null;
+  balance?: number;
+  payments?: Payment[];
+  events?: SaleEvent[];
   items?: LineItem[];
   createdAt: string;
+}
+
+export interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+export interface SalesSummary {
+  count: number;
+  total: number;
+  outstanding: number;
+}
+
+export interface SalePage {
+  items: Sale[];
+  pagination: Pagination;
+  summary: SalesSummary;
 }
 
 export interface SaleInput {
@@ -328,6 +390,11 @@ export interface SaleInput {
   customerName?: string;
   customerEmail?: string;
   status?: string;
+  /**
+     * @minLength 8
+     * @maxLength 100
+     */
+  idempotencyKey?: string;
   taxRate?: number;
   discount?: number;
   notes?: string;
@@ -348,6 +415,39 @@ export interface SaleUpdate {
   dueDate?: string;
   paidAt?: string;
   items?: LineItemInput[];
+}
+
+export interface PaymentInput {
+  /** @minimum 0.01 */
+  amount: number;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  method: string;
+  /** @maxLength 160 */
+  reference?: string;
+  /** @maxLength 500 */
+  note?: string;
+}
+
+export interface RefundInput {
+  /** @minimum 0.01 */
+  amount: number;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  method: string;
+  /** @maxLength 160 */
+  reference?: string;
+  /** @maxLength 500 */
+  note?: string;
+}
+
+export interface StatusNoteInput {
+  /** @maxLength 500 */
+  note?: string;
 }
 
 export interface Quotation {
@@ -955,11 +1055,49 @@ search?: string;
 };
 
 export type GetSalesParams = {
+/**
+ * @maxLength 120
+ */
+search?: string;
 status?: string;
 customerId?: number;
+employeeId?: number;
+storeId?: number;
 dateFrom?: string;
 dateTo?: string;
+paymentMethod?: string;
+outstanding?: boolean;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+sort?: GetSalesSort;
+direction?: GetSalesDirection;
 };
+
+export type GetSalesSort = typeof GetSalesSort[keyof typeof GetSalesSort];
+
+
+export const GetSalesSort = {
+  createdAt: 'createdAt',
+  invoiceNumber: 'invoiceNumber',
+  customerName: 'customerName',
+  total: 'total',
+  status: 'status',
+} as const;
+
+export type GetSalesDirection = typeof GetSalesDirection[keyof typeof GetSalesDirection];
+
+
+export const GetSalesDirection = {
+  asc: 'asc',
+  desc: 'desc',
+} as const;
 
 export type GetQuotationsParams = {
 status?: string;

@@ -636,33 +636,28 @@ paths:
     get:
       operationId: getSales
       tags: [sales]
-      summary: List all sales
+      summary: Search and paginate sales
       parameters:
-        - name: status
-          in: query
-          schema:
-            type: string
-        - name: customerId
-          in: query
-          schema:
-            type: integer
-        - name: dateFrom
-          in: query
-          schema:
-            type: string
-        - name: dateTo
-          in: query
-          schema:
-            type: string
+        - { name: search, in: query, schema: { type: string, maxLength: 120 } }
+        - { name: status, in: query, schema: { type: string } }
+        - { name: customerId, in: query, schema: { type: integer } }
+        - { name: employeeId, in: query, schema: { type: integer } }
+        - { name: storeId, in: query, schema: { type: integer } }
+        - { name: dateFrom, in: query, schema: { type: string } }
+        - { name: dateTo, in: query, schema: { type: string } }
+        - { name: paymentMethod, in: query, schema: { type: string } }
+        - { name: outstanding, in: query, schema: { type: boolean } }
+        - { name: page, in: query, schema: { type: integer, minimum: 1, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 25 } }
+        - { name: sort, in: query, schema: { type: string, enum: [createdAt, invoiceNumber, customerName, total, status] } }
+        - { name: direction, in: query, schema: { type: string, enum: [asc, desc], default: desc } }
       responses:
         "200":
-          description: List of sales
+          description: Paginated sales and summary totals
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Sale"
+                $ref: "#/components/schemas/SalePage"
     post:
       operationId: createSale
       tags: [sales]
@@ -760,6 +755,89 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MessageResponse"
+
+  /sales/{id}/payments:
+    post:
+      operationId: recordSalePayment
+      tags: [sales]
+      summary: Record a payment against a sale
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string, minLength: 8, maxLength: 100 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentInput"
+      responses:
+        "201":
+          description: Payment recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sale"
+        "409": { description: Duplicate or conflicting payment }
+
+  /sales/{id}/void:
+    post:
+      operationId: voidSale
+      tags: [sales]
+      summary: Void a sale and restore tracked stock
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string, minLength: 8, maxLength: 100 } }
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StatusNoteInput"
+      responses:
+        "200":
+          description: Voided sale
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sale"
+
+  /sales/{id}/refund:
+    post:
+      operationId: refundSale
+      tags: [sales]
+      summary: Refund part or all of a sale
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string, minLength: 8, maxLength: 100 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RefundInput"
+      responses:
+        "200":
+          description: Refunded sale
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sale"
+
+  /sales/{id}/duplicate:
+    post:
+      operationId: duplicateSale
+      tags: [sales]
+      summary: Duplicate a sale as a new draft
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+        - { name: Idempotency-Key, in: header, required: true, schema: { type: string, minLength: 8, maxLength: 100 } }
+      responses:
+        "201":
+          description: Draft duplicate
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Sale"
 
   # ─── Quotations ──────────────────────────────────────────
   /quotations:
@@ -1512,11 +1590,77 @@ components:
         paymentMethod:  { type: ["string", "null"] }
         dueDate:        { type: ["string", "null"] }
         paidAt:         { type: ["string", "null"] }
+        employeeId:     { type: ["integer", "null"] }
+        employeeName:   { type: ["string", "null"] }
+        storeId:        { type: ["integer", "null"] }
+        balance:        { type: number }
+        payments:
+          type: array
+          items: { $ref: "#/components/schemas/Payment" }
+        events:
+          type: array
+          items: { $ref: "#/components/schemas/SaleEvent" }
         items:
           type: array
           items:
             $ref: "#/components/schemas/LineItem"
         createdAt:      { type: string }
+
+    SalePage:
+      type: object
+      required: [items, pagination, summary]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Sale" }
+        pagination: { $ref: "#/components/schemas/Pagination" }
+        summary: { $ref: "#/components/schemas/SalesSummary" }
+
+    Pagination:
+      type: object
+      required: [page, limit, total, totalPages]
+      properties:
+        page: { type: integer }
+        limit: { type: integer }
+        total: { type: integer }
+        totalPages: { type: integer }
+
+    SalesSummary:
+      type: object
+      required: [count, total, outstanding]
+      properties:
+        count: { type: integer }
+        total: { type: number }
+        outstanding: { type: number }
+
+    Payment:
+      type: object
+      required: [id, saleId, amount, method, kind, createdAt]
+      properties:
+        id: { type: integer }
+        saleId: { type: integer }
+        amount: { type: number }
+        method: { type: string }
+        reference: { type: ["string", "null"] }
+        kind: { type: string }
+        note: { type: ["string", "null"] }
+        employeeId: { type: ["integer", "null"] }
+        employeeName: { type: ["string", "null"] }
+        createdAt: { type: string }
+
+    SaleEvent:
+      type: object
+      required: [id, saleId, action, createdAt]
+      properties:
+        id: { type: integer }
+        saleId: { type: integer }
+        action: { type: string }
+        fromStatus: { type: ["string", "null"] }
+        toStatus: { type: ["string", "null"] }
+        note: { type: ["string", "null"] }
+        employeeId: { type: ["integer", "null"] }
+        employeeName: { type: ["string", "null"] }
+        createdAt: { type: string }
 
     SaleInput:
       type: object
@@ -1526,6 +1670,7 @@ components:
         customerName:   { type: string }
         customerEmail:  { type: string }
         status:         { type: string }
+        idempotencyKey:  { type: string, minLength: 8, maxLength: 100 }
         taxRate:        { type: number }
         discount:       { type: number }
         notes:          { type: string }
@@ -1553,6 +1698,29 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/LineItemInput"
+
+    PaymentInput:
+      type: object
+      required: [amount, method]
+      properties:
+        amount: { type: number, minimum: 0.01 }
+        method: { type: string, minLength: 1, maxLength: 80 }
+        reference: { type: string, maxLength: 160 }
+        note: { type: string, maxLength: 500 }
+
+    RefundInput:
+      type: object
+      required: [amount, method]
+      properties:
+        amount: { type: number, minimum: 0.01 }
+        method: { type: string, minLength: 1, maxLength: 80 }
+        reference: { type: string, maxLength: 160 }
+        note: { type: string, maxLength: 500 }
+
+    StatusNoteInput:
+      type: object
+      properties:
+        note: { type: string, maxLength: 500 }
 
     # ── Quotation ──
     Quotation:

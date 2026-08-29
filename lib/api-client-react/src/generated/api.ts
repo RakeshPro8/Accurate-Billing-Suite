@@ -49,6 +49,7 @@ import type {
   LogoutResponse,
   MessageResponse,
   MonthlyReport,
+  PaymentInput,
   Product,
   ProductInput,
   ProductUpdate,
@@ -56,6 +57,7 @@ import type {
   QuotationInput,
   QuotationUpdate,
   RecordAuditEvent201,
+  RefundInput,
   Repair,
   RepairInput,
   RepairPart,
@@ -66,6 +68,7 @@ import type {
   RepairUpdate,
   Sale,
   SaleInput,
+  SalePage,
   SaleUpdate,
   Service,
   ServiceInput,
@@ -75,6 +78,7 @@ import type {
   SettingsUpdate,
   SignInEmployee,
   SignInInput,
+  StatusNoteInput,
   Store,
   StoreInput,
   StoreUpdate,
@@ -2684,11 +2688,11 @@ export const getGetSalesUrl = (params?: GetSalesParams,) => {
 }
 
 /**
- * @summary List all sales
+ * @summary Search and paginate sales
  */
-export const getSales = async (params?: GetSalesParams, options?: Parameters<typeof customFetch>[1]): Promise<Sale[]> => {
+export const getSales = async (params?: GetSalesParams, options?: Parameters<typeof customFetch>[1]): Promise<SalePage> => {
 
-  return customFetch<Sale[]>(getGetSalesUrl(params),
+  return customFetch<SalePage>(getGetSalesUrl(params),
   {
     ...options,
     method: 'GET'
@@ -2731,7 +2735,7 @@ export type GetSalesQueryError = ErrorType<unknown>
 
 
 /**
- * @summary List all sales
+ * @summary Search and paginate sales
  */
 
 export function useGetSales<TData = Awaited<ReturnType<typeof getSales>>, TError = ErrorType<unknown>>(
@@ -3135,6 +3139,315 @@ export const useSendSaleEmail = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getSendSaleEmailMutationOptions(options));
+    }
+
+export const getRecordSalePaymentUrl = (id: number,) => {
+
+
+
+
+  return `/api/sales/${id}/payments`
+}
+
+/**
+ * @summary Record a payment against a sale
+ */
+export const recordSalePayment = async (id: number,
+    paymentInput: PaymentInput, options?: Parameters<typeof customFetch>[1]): Promise<Sale> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return customFetch<Sale>(getRecordSalePaymentUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(paymentInput)
+  }
+);}
+
+
+
+
+
+export const getRecordSalePaymentMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordSalePayment>>, TError,RecordSalePaymentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof recordSalePayment>>, TError,RecordSalePaymentMutationVariables, TContext> => {
+
+const mutationKey = ['recordSalePayment'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof recordSalePayment>>, RecordSalePaymentMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  recordSalePayment(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RecordSalePaymentMutationResult = NonNullable<Awaited<ReturnType<typeof recordSalePayment>>>
+    export type RecordSalePaymentMutationBody = BodyType<PaymentInput>
+    export type RecordSalePaymentMutationError = ErrorType<void>
+    export type RecordSalePaymentMutationVariables = {id: number;data: BodyType<PaymentInput>}
+
+    /**
+ * @summary Record a payment against a sale
+ */
+export const useRecordSalePayment = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recordSalePayment>>, TError,RecordSalePaymentMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof recordSalePayment>>,
+        TError,
+        RecordSalePaymentMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRecordSalePaymentMutationOptions(options));
+    }
+
+export const getVoidSaleUrl = (id: number,) => {
+
+
+
+
+  return `/api/sales/${id}/void`
+}
+
+/**
+ * @summary Void a sale and restore tracked stock
+ */
+export const voidSale = async (id: number,
+    statusNoteInput?: StatusNoteInput, options?: Parameters<typeof customFetch>[1]): Promise<Sale> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return customFetch<Sale>(getVoidSaleUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(statusNoteInput)
+  }
+);}
+
+
+
+
+
+export const getVoidSaleMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof voidSale>>, TError,VoidSaleMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof voidSale>>, TError,VoidSaleMutationVariables, TContext> => {
+
+const mutationKey = ['voidSale'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof voidSale>>, VoidSaleMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  voidSale(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type VoidSaleMutationResult = NonNullable<Awaited<ReturnType<typeof voidSale>>>
+    export type VoidSaleMutationBody = BodyType<StatusNoteInput> | undefined
+    export type VoidSaleMutationError = ErrorType<unknown>
+    export type VoidSaleMutationVariables = {id: number;data?: BodyType<StatusNoteInput>}
+
+    /**
+ * @summary Void a sale and restore tracked stock
+ */
+export const useVoidSale = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof voidSale>>, TError,VoidSaleMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof voidSale>>,
+        TError,
+        VoidSaleMutationVariables,
+        TContext
+      > => {
+      return useMutation(getVoidSaleMutationOptions(options));
+    }
+
+export const getRefundSaleUrl = (id: number,) => {
+
+
+
+
+  return `/api/sales/${id}/refund`
+}
+
+/**
+ * @summary Refund part or all of a sale
+ */
+export const refundSale = async (id: number,
+    refundInput: RefundInput, options?: Parameters<typeof customFetch>[1]): Promise<Sale> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return customFetch<Sale>(getRefundSaleUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(refundInput)
+  }
+);}
+
+
+
+
+
+export const getRefundSaleMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refundSale>>, TError,RefundSaleMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof refundSale>>, TError,RefundSaleMutationVariables, TContext> => {
+
+const mutationKey = ['refundSale'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof refundSale>>, RefundSaleMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  refundSale(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RefundSaleMutationResult = NonNullable<Awaited<ReturnType<typeof refundSale>>>
+    export type RefundSaleMutationBody = BodyType<RefundInput>
+    export type RefundSaleMutationError = ErrorType<unknown>
+    export type RefundSaleMutationVariables = {id: number;data: BodyType<RefundInput>}
+
+    /**
+ * @summary Refund part or all of a sale
+ */
+export const useRefundSale = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof refundSale>>, TError,RefundSaleMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof refundSale>>,
+        TError,
+        RefundSaleMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRefundSaleMutationOptions(options));
+    }
+
+export const getDuplicateSaleUrl = (id: number,) => {
+
+
+
+
+  return `/api/sales/${id}/duplicate`
+}
+
+/**
+ * @summary Duplicate a sale as a new draft
+ */
+export const duplicateSale = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<Sale> => {
+
+  return customFetch<Sale>(getDuplicateSaleUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getDuplicateSaleMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof duplicateSale>>, TError,DuplicateSaleMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof duplicateSale>>, TError,DuplicateSaleMutationVariables, TContext> => {
+
+const mutationKey = ['duplicateSale'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof duplicateSale>>, DuplicateSaleMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  duplicateSale(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DuplicateSaleMutationResult = NonNullable<Awaited<ReturnType<typeof duplicateSale>>>
+
+    export type DuplicateSaleMutationError = ErrorType<unknown>
+    export type DuplicateSaleMutationVariables = {id: number}
+
+    /**
+ * @summary Duplicate a sale as a new draft
+ */
+export const useDuplicateSale = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof duplicateSale>>, TError,DuplicateSaleMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof duplicateSale>>,
+        TError,
+        DuplicateSaleMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDuplicateSaleMutationOptions(options));
     }
 
 export const getGetQuotationsUrl = (params?: GetQuotationsParams,) => {

@@ -21,6 +21,7 @@ export const salesTable = pgTable("sales", {
   paymentMethod: text("payment_method"),
   dueDate: text("due_date"),
   paidAt: text("paid_at"),
+  idempotencyKey: text("idempotency_key"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -38,8 +39,38 @@ export const saleLineItemsTable = pgTable("sale_line_items", {
   total: numeric("total", { precision: 10, scale: 2 }).notNull(),
 });
 
+/** Append-only payment ledger. Card details are deliberately never stored here. */
+export const salePaymentsTable = pgTable("sale_payments", {
+  id: serial("id").primaryKey(),
+  saleId: integer("sale_id").notNull(),
+  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(),
+  method: text("method").notNull(),
+  reference: text("reference"),
+  idempotencyKey: text("idempotency_key"),
+  kind: text("kind").notNull().default("payment"),
+  note: text("note"),
+  employeeId: integer("employee_id"),
+  employeeName: text("employee_name"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+/** Append-only lifecycle history shown on the invoice detail screen. */
+export const saleEventsTable = pgTable("sale_events", {
+  id: serial("id").primaryKey(),
+  saleId: integer("sale_id").notNull(),
+  action: text("action").notNull(),
+  fromStatus: text("from_status"),
+  toStatus: text("to_status"),
+  note: text("note"),
+  employeeId: integer("employee_id"),
+  employeeName: text("employee_name"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 export const insertSaleSchema = createInsertSchema(salesTable).omit({ id: true, createdAt: true });
 export const insertSaleLineItemSchema = createInsertSchema(saleLineItemsTable).omit({ id: true });
 export type InsertSale = z.infer<typeof insertSaleSchema>;
 export type Sale = typeof salesTable.$inferSelect;
 export type SaleLineItem = typeof saleLineItemsTable.$inferSelect;
+export type SalePayment = typeof salePaymentsTable.$inferSelect;
+export type SaleEvent = typeof saleEventsTable.$inferSelect;

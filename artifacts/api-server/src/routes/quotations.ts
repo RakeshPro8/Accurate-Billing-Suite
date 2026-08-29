@@ -6,7 +6,7 @@ import { calculateTotals, getTaxConfig, assertMoney } from "../lib/tax";
 import { requireCurrentStoreId } from "../lib/stores";
 import { HttpError, validateRequest } from "../lib/http";
 import { logAudit } from "../lib/audit";
-import { z } from "zod/v4";
+import { z } from "zod";
 
 const router = Router();
 const idParams = z.object({ id: z.coerce.number().int().positive() });

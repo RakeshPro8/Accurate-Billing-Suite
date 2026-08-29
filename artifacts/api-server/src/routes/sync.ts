@@ -2,7 +2,7 @@ import { createHash } from "node:crypto";
 import { Router } from "express";
 import { and, eq, sql } from "drizzle-orm";
 import {
-  db, customersTable, salesTable, saleLineItemsTable, repairsTable,
+  db, customersTable, salesTable, saleLineItemsTable, salePaymentsTable, saleEventsTable, repairsTable,
   repairPhotosTable, syncOperationsTable, storesTable, productsTable,
 } from "@workspace/db";
 import { requireCurrentStoreId } from "../lib/stores";
@@ -156,9 +156,22 @@ router.post("/replay", async (req, res) => {
           await tx.execute(sql`SELECT pg_advisory_xact_lock(19001, ${storeId})`);
           const [settings] = await tx.select({ prefix: sql<string>`coalesce((select invoice_prefix from settings limit 1), 'INV-')` }).from(salesTable).limit(1);
           const [{ count }] = await tx.select({ count: sql<number>`count(*)` }).from(salesTable).where(eq(salesTable.storeId, storeId));
-          const [sale] = await tx.insert(salesTable).values({ invoiceNumber: `${settings?.prefix ?? "INV-"}${String(Number(count) + 1).padStart(4, "0")}`, customerId: Number.isInteger(body.customerId) ? body.customerId : null, customerName: optionalText(body.customerName, 120), customerEmail: optionalText(body.customerEmail, 254), employeeId, employeeName: req.employee!.name, storeId, status: body.status === "draft" ? "draft" : "invoice", subtotal: String(totals.subtotal), taxRate: String(totals.taxRate), tax: String(totals.tax), discount: String(discount), total: String(totals.total), notes: optionalText(body.notes, 4000), paymentMethod: body.status === "paid" ? optionalText(body.paymentMethod, 80) ?? "Cash" : null, paidAt: body.status === "paid" ? new Date().toISOString() : null }).returning();
-          await Promise.all(items.map((item) => tx.insert(saleLineItemsTable).values({ saleId: sale.id, type: text(item.type, 40) ?? "product", productId: Number.isInteger(item.productId) ? item.productId : null, serviceId: Number.isInteger(item.serviceId) ? item.serviceId : null, name: text(item.name, 250)!, description: optionalText(item.description, 1000), quantity: String(item.quantity), unitPrice: String(item.unitPrice), discount: String(item.discount ?? 0), total: String(Number(item.quantity) * Number(item.unitPrice) - Number(item.discount ?? 0)) })));
-          result = parseSale(sale);
+           const committed = body.status !== "draft";
+           const status = body.status === "paid" ? "paid" : committed ? "invoice" : "draft";
+           const [sale] = await tx.insert(salesTable).values({ invoiceNumber: `${settings?.prefix ?? "INV-"}${String(Number(count) + 1).padStart(4, "0")}`, idempotencyKey: op.operationId, customerId: Number.isInteger(body.customerId) ? body.customerId : null, customerName: optionalText(body.customerName, 120), customerEmail: optionalText(body.customerEmail, 254), employeeId, employeeName: req.employee!.name, storeId, status, subtotal: String(totals.subtotal), taxRate: String(totals.taxRate), tax: String(totals.tax), discount: String(discount), total: String(totals.total), notes: optionalText(body.notes, 4000), paymentMethod: body.status === "paid" ? optionalText(body.paymentMethod, 80) ?? "Cash" : null, paidAt: body.status === "paid" ? new Date().toISOString() : null }).returning();
+           await Promise.all(items.map((item) => tx.insert(saleLineItemsTable).values({ saleId: sale.id, type: text(item.type, 40) ?? "product", productId: Number.isInteger(item.productId) ? item.productId : null, serviceId: Number.isInteger(item.serviceId) ? item.serviceId : null, name: text(item.name, 250)!, description: optionalText(item.description, 1000), quantity: String(item.quantity), unitPrice: String(item.unitPrice), discount: String(item.discount ?? 0), total: String(Number(item.quantity) * Number(item.unitPrice) - Number(item.discount ?? 0)) })));
+           if (committed) {
+             for (const item of items) {
+               if (item.productId === undefined || item.productId === null) continue;
+               const [updatedProduct] = await tx.update(productsTable).set({ stock: sql`${productsTable.stock} - ${Number(item.quantity)}` }).where(and(eq(productsTable.id, Number(item.productId)), eq(productsTable.storeId, storeId), sql`${productsTable.stock} >= ${Number(item.quantity)}`)).returning({ id: productsTable.id });
+               if (!updatedProduct) throw new Error(`Insufficient stock for ${item.name}.`);
+             }
+           }
+           if (body.status === "paid") {
+             await tx.insert(salePaymentsTable).values({ saleId: sale.id, amount: String(totals.total), method: optionalText(body.paymentMethod, 80) ?? "Cash", kind: "payment", employeeId, employeeName: req.employee!.name, idempotencyKey: `${op.operationId}-payment` });
+           }
+           await tx.insert(saleEventsTable).values({ saleId: sale.id, action: "created", fromStatus: null, toStatus: status, employeeId, employeeName: req.employee!.name });
+           result = parseSale(sale);
         } else {
           const deviceType = text(body.deviceType, 120), problemDescription = text(body.problemDescription, 4000);
           if (!deviceType || !problemDescription) throw new Error("Device type and problem description are required.");

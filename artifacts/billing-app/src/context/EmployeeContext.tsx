@@ -133,7 +133,7 @@ export function EmployeeProvider({ children }: { children: ReactNode }) {
       const result = await signInEmployee({ employeeId, pin });
       queryClient.clear();
       setActiveEmployee(asActiveEmployee(result.employee));
-      const storeId = Number(localStorage.getItem("mobilinq.storeId")) || null;
+      const storeId = Number(localStorage.getItem(`mobilinq.storeId:${result.employee.id}`)) || null;
       setOfflineScope({ employeeId: result.employee.id, storeId });
       setOfflineCacheScope(`${result.employee.id}:${storeId ?? "all"}`);
       setNeedsSetup(false);

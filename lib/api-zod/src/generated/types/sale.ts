@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.2.0
  */
 import type { LineItem } from './lineItem';
+import type { Payment } from './payment';
+import type { SaleEvent } from './saleEvent';
 
 export interface Sale {
   id: number;
@@ -30,6 +32,15 @@ export interface Sale {
   dueDate?: string | null;
   /** @nullable */
   paidAt?: string | null;
+  /** @nullable */
+  employeeId?: number | null;
+  /** @nullable */
+  employeeName?: string | null;
+  /** @nullable */
+  storeId?: number | null;
+  balance?: number;
+  payments?: Payment[];
+  events?: SaleEvent[];
   items?: LineItem[];
   createdAt: string;
 }

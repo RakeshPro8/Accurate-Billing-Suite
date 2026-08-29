@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation, useParams } from "wouter";
-import { useGetSale, useCreateSale, useUpdateSale, useGetProducts, useGetServices, useGetCustomers, useGetSettings, getGetSaleQueryKey, getGetSalesQueryKey } from "@workspace/api-client-react";
+import { useGetSale, useCreateSale, useUpdateSale, useGetProducts, useGetServices, useGetCustomers, useGetSettings, useCreateCustomer, getGetSaleQueryKey, getGetSalesQueryKey, getGetCustomersQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatCurrency } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,11 +38,13 @@ export default function SaleForm({ isQuote = false }: { isQuote?: boolean }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { activeEmployee } = useEmployee();
+  const [productSearch, setProductSearch] = useState("");
+  const [customerSearch, setCustomerSearch] = useState("");
 
   const { data: sale, isLoading } = useGetSale(id!, { query: { enabled: isEdit, queryKey: getGetSaleQueryKey(id!) } });
-  const { data: products } = useGetProducts();
+  const { data: products } = useGetProducts({ search: productSearch || undefined });
   const { data: services } = useGetServices();
-  const { data: customers } = useGetCustomers();
+  const { data: customers } = useGetCustomers({ search: customerSearch || undefined });
   const { data: settings } = useGetSettings();
   const createSale = useCreateSale();
   const updateSale = useUpdateSale();
@@ -60,7 +62,9 @@ export default function SaleForm({ isQuote = false }: { isQuote?: boolean }) {
   const [dueDate, setDueDate] = useState("");
   const [saveStatus, setSaveStatus] = useState<"draft" | "invoice">("invoice");
   const [items, setItems] = useState<LineItemForm[]>([{ type: "custom", name: "", description: "", quantity: 1, unitPrice: 0, discount: 0 }]);
-  const [productSearch, setProductSearch] = useState("");
+  const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
+  const createCustomer = useCreateCustomer();
+  const draftKey = useRef(crypto.randomUUID());
 
   useEffect(() => {
     if (settings && !isEdit) {
@@ -94,6 +98,26 @@ export default function SaleForm({ isQuote = false }: { isQuote?: boolean }) {
       }
     }
   }, [sale]);
+
+  useEffect(() => {
+    if (isEdit) return;
+    try {
+      const saved = localStorage.getItem("mobilinq.sale-draft");
+      if (!saved) return;
+      const draft = JSON.parse(saved);
+      if (Array.isArray(draft.items) && draft.items.length) setItems(draft.items);
+      if (typeof draft.customerName === "string") setCustomerName(draft.customerName);
+      if (typeof draft.customerEmail === "string") setCustomerEmail(draft.customerEmail);
+      if (typeof draft.notes === "string") setNotes(draft.notes);
+      if (typeof draft.discount === "number") setDiscount(draft.discount);
+    } catch { /* ignore malformed local draft; the server remains authoritative */ }
+  }, [isEdit]);
+
+  useEffect(() => {
+    if (isEdit || !items.some((item) => item.name.trim())) return;
+    const timeout = window.setTimeout(() => localStorage.setItem("mobilinq.sale-draft", JSON.stringify({ items, customerName, customerEmail, notes, discount })), 400);
+    return () => window.clearTimeout(timeout);
+  }, [isEdit, items, customerName, customerEmail, notes, discount]);
 
   function addItem(preset?: { type: "product" | "service"; id: number; name: string; price: number; description?: string }) {
     if (preset) {
@@ -145,6 +169,25 @@ export default function SaleForm({ isQuote = false }: { isQuote?: boolean }) {
     }
   }
 
+  function createQuickCustomer() {
+    if (!customerName.trim()) {
+      toast({ title: "Enter a customer name first", variant: "destructive" });
+      return;
+    }
+    setIsCreatingCustomer(true);
+    createCustomer.mutate({ data: { name: customerName.trim(), email: customerEmail || undefined } }, {
+      onSuccess: (customer) => {
+        setCustomerId(customer.id);
+        setSelectedCustomer(customer);
+        setCustomerSearch("");
+        queryClient.invalidateQueries({ queryKey: getGetCustomersQueryKey() });
+        toast({ title: "Customer created", description: customer.name });
+      },
+      onError: (error: any) => toast({ title: error?.message ?? "Could not create customer", variant: "destructive" }),
+      onSettled: () => setIsCreatingCustomer(false),
+    });
+  }
+
   function handleSubmit(status: "draft" | "invoice" | "paid") {
     if (!items.length || items.every(i => !i.name)) {
       toast({ title: "Add at least one item", variant: "destructive" }); return;
@@ -157,7 +200,8 @@ export default function SaleForm({ isQuote = false }: { isQuote?: boolean }) {
       customerId, customerName: customerName || undefined, customerEmail: customerEmail || undefined,
       employeeId: activeEmployee?.id || undefined,
       status, taxRate, discount, notes: notes || undefined,
-      paymentMethod: paymentMethod || undefined, dueDate: dueDate || undefined,
+       paymentMethod: paymentMethod || undefined, dueDate: dueDate || undefined,
+       idempotencyKey: isEdit ? undefined : draftKey.current,
       items: items.filter(i => i.name).map(i => ({
         type: i.type, productId: i.productId, serviceId: i.serviceId,
         name: i.name, description: i.description || undefined,
@@ -165,6 +209,7 @@ export default function SaleForm({ isQuote = false }: { isQuote?: boolean }) {
       })),
     };
     const onSuccess = (s: any) => {
+      localStorage.removeItem("mobilinq.sale-draft");
       queryClient.invalidateQueries({ queryKey: getGetSalesQueryKey() });
       toast({ title: isEdit ? "Invoice updated" : "Invoice created", description: s.invoiceNumber });
       navigate(`/sales/${s.id}`);
@@ -216,6 +261,10 @@ export default function SaleForm({ isQuote = false }: { isQuote?: boolean }) {
         <Card>
           <CardHeader className="pb-3"><CardTitle className="text-sm font-semibold">Customer</CardTitle></CardHeader>
           <CardContent className="space-y-3">
+            <div className="flex gap-2">
+              <Input className="h-9 text-sm" placeholder="Find by name, email, or phone…" value={customerSearch} onChange={e => setCustomerSearch(e.target.value)} />
+              <Button type="button" variant="outline" className="h-9 shrink-0" onClick={createQuickCustomer} disabled={isCreatingCustomer || !customerName.trim()}>{isCreatingCustomer ? "Adding…" : "Create"}</Button>
+            </div>
             <div className="space-y-1">
               <Label className="text-xs">Select Existing Customer</Label>
               <Select value={customerId ? String(customerId) : ""} onValueChange={selectCustomer}>
@@ -307,7 +356,7 @@ export default function SaleForm({ isQuote = false }: { isQuote?: boolean }) {
           <CardTitle className="text-sm font-semibold">Quick Add from Catalog</CardTitle>
           <div className="relative">
             <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-            <Input className="pl-7 h-7 text-xs w-40" placeholder="Search..." value={productSearch} onChange={e => setProductSearch(e.target.value)} />
+             <Input className="pl-7 h-7 text-xs w-44" placeholder="Name, SKU, or barcode…" value={productSearch} onChange={e => setProductSearch(e.target.value)} />
           </div>
         </CardHeader>
         <CardContent>
@@ -315,8 +364,9 @@ export default function SaleForm({ isQuote = false }: { isQuote?: boolean }) {
             {filteredProducts?.map(p => (
               <button key={`p-${p.id}`} type="button" onClick={() => addItem({ type: "product", id: p.id, name: p.name, price: p.price, description: p.description ?? "" })}
                 className="text-left p-2 rounded border hover:border-primary hover:bg-primary/5 transition-colors text-xs">
-                <div className="font-medium truncate">{p.name}</div>
-            <div className="text-primary font-semibold">{formatCurrency(p.price)}</div>
+                 <div className="font-medium truncate">{p.name}</div>
+                 <div className="text-[10px] text-muted-foreground font-mono truncate">{p.sku} · stock {p.stock}</div>
+                 <div className="text-primary font-semibold">{formatCurrency(p.price)}</div>
               </button>
             ))}
             {filteredServices?.map(s => (

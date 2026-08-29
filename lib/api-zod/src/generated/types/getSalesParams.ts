@@ -5,10 +5,31 @@
  * Mobilinq store operations API
  * OpenAPI spec version: 0.2.0
  */
+import type { GetSalesDirection } from './getSalesDirection';
+import type { GetSalesSort } from './getSalesSort';
 
 export type GetSalesParams = {
+/**
+ * @maxLength 120
+ */
+search?: string;
 status?: string;
 customerId?: number;
+employeeId?: number;
+storeId?: number;
 dateFrom?: string;
 dateTo?: string;
+paymentMethod?: string;
+outstanding?: boolean;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+limit?: number;
+sort?: GetSalesSort;
+direction?: GetSalesDirection;
 };
