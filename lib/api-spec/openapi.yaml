@@ -631,6 +631,306 @@ paths:
         "204":
           description: Deleted
 
+  /finance/customers/{id}:
+    get:
+      operationId: getCustomerFinance
+      tags: [finance]
+      summary: Get a privacy-safe customer finance profile and timeline
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: Customer finance profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerFinanceProfile"
+
+  /finance/customers/{id}/preferences:
+    patch:
+      operationId: updateCustomerPreferences
+      tags: [finance]
+      summary: Update consent-aware notification preferences
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerPreferencesUpdate"
+      responses:
+        "200":
+          description: Updated preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerPreferences"
+
+  /finance/transactions:
+    post:
+      operationId: createFinanceTransaction
+      tags: [finance]
+      summary: Record an idempotent repair deposit, payment, refund or credit
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FinanceTransactionInput"
+      responses:
+        "201":
+          description: Ledger transaction
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FinanceTransaction"
+
+  /finance/share-links:
+    get:
+      operationId: getCustomerShareLinks
+      tags: [finance]
+      summary: List expiring customer access links without returning tokens
+      parameters:
+        - { name: customerId, in: query, schema: { type: integer } }
+      responses:
+        "200":
+          description: Share links
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/CustomerShareLink" }
+    post:
+      operationId: createCustomerShareLink
+      tags: [finance]
+      summary: Create a short-lived customer invoice or repair link
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomerShareLinkInput"
+      responses:
+        "201":
+          description: Link token, returned only once
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CustomerShareLinkCreated"
+
+  /finance/share-links/{id}/revoke:
+    post:
+      operationId: revokeCustomerShareLink
+      tags: [finance]
+      summary: Revoke a customer access link
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: Link revoked
+          content:
+            application/json:
+              schema: { type: object, required: [revoked], properties: { revoked: { type: boolean } } }
+
+  /finance/payment-sessions:
+    post:
+      operationId: createPaymentSession
+      tags: [finance]
+      summary: Processor-hosted payment boundary
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/PaymentSessionInput" }
+      responses:
+        "503":
+          description: No payment provider is configured
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProviderBoundaryResponse" }
+
+  /finance/notifications/templates:
+    get:
+      operationId: getNotificationTemplates
+      tags: [finance]
+      summary: List notification templates
+      responses:
+        "200":
+          description: Templates
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/NotificationTemplate" } }
+    post:
+      operationId: createNotificationTemplate
+      tags: [finance]
+      summary: Create an email or SMS notification template
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/NotificationTemplateInput" }
+      responses:
+        "201":
+          description: Template
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NotificationTemplate" }
+
+  /finance/notifications/templates/{id}:
+    patch:
+      operationId: updateNotificationTemplate
+      tags: [finance]
+      summary: Update a notification template
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/NotificationTemplateUpdate" }
+      responses:
+        "200":
+          description: Template
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NotificationTemplate" }
+
+  /finance/notifications:
+    get:
+      operationId: getNotificationEvents
+      tags: [finance]
+      summary: List notification delivery events
+      responses:
+        "200":
+          description: Delivery events
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: "#/components/schemas/NotificationEvent" } }
+    post:
+      operationId: createNotificationEvent
+      tags: [finance]
+      summary: Queue a consent-checked notification event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/NotificationEventInput" }
+      responses:
+        "201":
+          description: Delivery event
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NotificationEvent" }
+
+  /finance/notifications/{id}/retry:
+    post:
+      operationId: retryNotificationEvent
+      tags: [finance]
+      summary: Retry a failed notification
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: Queued event
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/NotificationEvent" }
+
+  /finance/receivables:
+    get:
+      operationId: getReceivables
+      tags: [finance]
+      summary: Get outstanding and aging receivables
+      responses:
+        "200":
+          description: Receivables
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ReceivablesReport" }
+
+  /finance/tax-summary:
+    get:
+      operationId: getTaxSummary
+      tags: [finance]
+      summary: Get a tax-ready paid-sales summary
+      parameters:
+        - { name: dateFrom, in: query, schema: { type: string, format: date-time } }
+        - { name: dateTo, in: query, schema: { type: string, format: date-time } }
+      responses:
+        "200":
+          description: Tax summary
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TaxSummary" }
+
+  /finance/reconciliation-export:
+    get:
+      operationId: downloadReconciliationExport
+      tags: [finance]
+      summary: Download a PII-minimized reconciliation CSV
+      responses:
+        "200":
+          description: CSV export
+          content:
+            text/csv: { schema: { type: string } }
+
+  /finance/customers/{id}/privacy-export:
+    get:
+      operationId: exportCustomerData
+      tags: [finance]
+      summary: Export a redacted customer data subject record
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: Redacted customer export
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PrivacyExport" }
+
+  /finance/customers/{id}/anonymize:
+    post:
+      operationId: anonymizeCustomer
+      tags: [finance]
+      summary: Anonymize customer contact data while retaining finance history
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: Anonymized customer
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/AnonymizeResponse" }
+
+  /public/customer-access/{token}:
+    get:
+      operationId: getPublicCustomerAccess
+      tags: [finance]
+      summary: View a short-lived customer invoice or repair status link
+      parameters:
+        - { name: token, in: path, required: true, schema: { type: string, minLength: 40 } }
+      responses:
+        "200":
+          description: Minimal public customer view
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/PublicCustomerView" }
+
+  /public/customer-access/{token}/payment-session:
+    post:
+      operationId: createPublicPaymentSession
+      tags: [finance]
+      summary: Start a processor-hosted payment from a customer link
+      parameters:
+        - { name: token, in: path, required: true, schema: { type: string, minLength: 40 } }
+      responses:
+        "503":
+          description: No provider configured
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProviderBoundaryResponse" }
+
   # ─── Sales / Invoices ────────────────────────────────────
   /sales:
     get:
@@ -1641,6 +1941,16 @@ components:
         phone:        { type: ["string", "null"] }
         address:      { type: ["string", "null"] }
         notes:        { type: ["string", "null"] }
+        isLoyaltyMember: { type: boolean }
+        loyaltyDiscountPct: { type: number }
+        loyaltyPoints: { type: integer }
+        referralCode: { type: ["string", "null"] }
+        emailConsent: { type: boolean }
+        smsConsent: { type: boolean }
+        marketingConsent: { type: boolean }
+        consentSource: { type: ["string", "null"] }
+        consentReviewedAt: { type: ["string", "null"] }
+        anonymizedAt: { type: ["string", "null"] }
         totalSpent:   { type: number }
         totalOrders:  { type: integer }
         createdAt:    { type: string }
@@ -1654,6 +1964,13 @@ components:
         phone:        { type: string }
         address:      { type: string }
         notes:        { type: string }
+        isLoyaltyMember: { type: boolean }
+        loyaltyDiscountPct: { type: number, minimum: 0, maximum: 100 }
+        loyaltyPoints: { type: integer, minimum: 0 }
+        emailConsent: { type: boolean }
+        smsConsent: { type: boolean }
+        marketingConsent: { type: boolean }
+        consentSource: { type: string, maxLength: 120 }
 
     CustomerUpdate:
       type: object
@@ -1663,6 +1980,13 @@ components:
         phone:        { type: string }
         address:      { type: string }
         notes:        { type: string }
+        isLoyaltyMember: { type: boolean }
+        loyaltyDiscountPct: { type: number, minimum: 0, maximum: 100 }
+        loyaltyPoints: { type: integer, minimum: 0 }
+        emailConsent: { type: boolean }
+        smsConsent: { type: boolean }
+        marketingConsent: { type: boolean }
+        consentSource: { type: string, maxLength: 120 }
 
     # ── Line Item ──
     LineItem:
@@ -2312,3 +2636,243 @@ components:
         quantity:     { type: number, exclusiveMinimum: 0, maximum: 100000 }
         unitPrice:    { type: number, minimum: 0, maximum: 10000000 }
         cost:         { type: number, minimum: 0, maximum: 10000000 }
+
+    CustomerPreferences:
+      type: object
+      required: [emailConsent, smsConsent, marketingConsent]
+      properties:
+        emailConsent: { type: boolean }
+        smsConsent: { type: boolean }
+        marketingConsent: { type: boolean }
+        consentSource: { type: ["string", "null"] }
+        consentReviewedAt: { type: ["string", "null"] }
+
+    CustomerPreferencesUpdate:
+      type: object
+      minProperties: 1
+      properties:
+        emailConsent: { type: boolean }
+        smsConsent: { type: boolean }
+        marketingConsent: { type: boolean }
+        source: { type: string, maxLength: 120 }
+
+    FinanceTransactionInput:
+      type: object
+      required: [repairId, kind, amount]
+      properties:
+        repairId: { type: integer, minimum: 1 }
+        customerId: { type: integer, minimum: 1 }
+        kind: { type: string, enum: [payment, deposit, refund, credit, adjustment] }
+        amount: { type: number, exclusiveMinimum: 0 }
+        currency: { type: string, minLength: 3, maxLength: 3 }
+        method: { type: string, maxLength: 80 }
+        last4: { type: string, pattern: "^[0-9]{4}$" }
+        note: { type: string, maxLength: 500 }
+
+    FinanceTransaction:
+      type: object
+      required: [id, kind, amount, currency, method, createdAt]
+      properties:
+        id: { type: integer }
+        customerId: { type: ["integer", "null"] }
+        saleId: { type: ["integer", "null"] }
+        repairId: { type: ["integer", "null"] }
+        kind: { type: string }
+        amount: { type: number }
+        currency: { type: string }
+        method: { type: string }
+        provider: { type: ["string", "null"] }
+        providerStatus: { type: ["string", "null"] }
+        last4: { type: ["string", "null"] }
+        note: { type: ["string", "null"] }
+        employeeName: { type: ["string", "null"] }
+        createdAt: { type: string }
+
+    CustomerShareLinkInput:
+      type: object
+      required: [targetType, targetId]
+      properties:
+        targetType: { type: string, enum: [sale, repair] }
+        targetId: { type: integer, minimum: 1 }
+        expiresInHours: { type: number, minimum: 1, maximum: 168, default: 48 }
+
+    CustomerShareLink:
+      type: object
+      required: [id, customerId, scope, expiresAt, active]
+      properties:
+        id: { type: integer }
+        customerId: { type: integer }
+        saleId: { type: ["integer", "null"] }
+        repairId: { type: ["integer", "null"] }
+        scope: { type: string }
+        expiresAt: { type: string }
+        revokedAt: { type: ["string", "null"] }
+        createdAt: { type: string }
+        accessCount: { type: integer }
+        active: { type: boolean }
+
+    CustomerShareLinkCreated:
+      allOf:
+        - $ref: "#/components/schemas/CustomerShareLink"
+        - type: object
+          required: [token, path]
+          properties:
+            token: { type: string }
+            path: { type: string }
+
+    PaymentSessionInput:
+      type: object
+      required: [linkId]
+      properties:
+        linkId: { type: integer, minimum: 1 }
+
+    ProviderBoundaryResponse:
+      type: object
+      required: [code, status, message]
+      properties:
+        code: { type: string }
+        status: { type: string }
+        message: { type: string }
+
+    NotificationTemplateInput:
+      type: object
+      required: [event, channel, body]
+      properties:
+        event: { type: string, enum: [invoice, estimate, repair-status, pickup, payment, reminder] }
+        channel: { type: string, enum: [email, sms] }
+        subject: { type: string, maxLength: 200 }
+        body: { type: string, maxLength: 5000 }
+        enabled: { type: boolean }
+        maxRetries: { type: integer, minimum: 0, maximum: 5 }
+
+    NotificationTemplateUpdate:
+      type: object
+      properties:
+        subject: { type: string, maxLength: 200 }
+        body: { type: string, maxLength: 5000 }
+        enabled: { type: boolean }
+        maxRetries: { type: integer, minimum: 0, maximum: 5 }
+
+    NotificationTemplate:
+      allOf:
+        - $ref: "#/components/schemas/NotificationTemplateInput"
+        - type: object
+          required: [id, storeId, createdAt, updatedAt]
+          properties:
+            id: { type: integer }
+            storeId: { type: integer }
+            createdAt: { type: string }
+            updatedAt: { type: string }
+
+    NotificationEventInput:
+      type: object
+      required: [customerId, event, channel]
+      properties:
+        customerId: { type: integer, minimum: 1 }
+        saleId: { type: integer, minimum: 1 }
+        repairId: { type: integer, minimum: 1 }
+        event: { type: string, enum: [invoice, estimate, repair-status, pickup, payment, reminder] }
+        channel: { type: string, enum: [email, sms] }
+
+    NotificationEvent:
+      allOf:
+        - $ref: "#/components/schemas/NotificationEventInput"
+        - type: object
+          required: [id, status, attempts, unsubscribed, createdAt]
+          properties:
+            id: { type: integer }
+            storeId: { type: integer }
+            destinationMasked: { type: ["string", "null"] }
+            status: { type: string, enum: [queued, sent, failed, skipped] }
+            attempts: { type: integer }
+            lastError: { type: ["string", "null"] }
+            providerMessageId: { type: ["string", "null"] }
+            nextRetryAt: { type: ["string", "null"] }
+            sentAt: { type: ["string", "null"] }
+            unsubscribed: { type: boolean }
+            createdAt: { type: string }
+
+    ReceivablesReport:
+      type: object
+      required: [asOf, totals, items]
+      properties:
+        asOf: { type: string }
+        totals:
+          type: object
+          properties:
+            outstanding: { type: number }
+            overdue: { type: number }
+        items:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: integer }
+              invoiceNumber: { type: string }
+              customerId: { type: ["integer", "null"] }
+              customerName: { type: ["string", "null"] }
+              total: { type: number }
+              paid: { type: number }
+              balance: { type: number }
+              dueDate: { type: ["string", "null"] }
+              daysOverdue: { type: integer }
+              agingBucket: { type: string }
+
+    TaxSummary:
+      type: object
+      required: [dateFrom, dateTo, invoiceCount, subtotal, tax, total]
+      properties:
+        dateFrom: { type: string }
+        dateTo: { type: string }
+        invoiceCount: { type: integer }
+        subtotal: { type: number }
+        tax: { type: number }
+        total: { type: number }
+
+    CustomerFinanceProfile:
+      type: object
+      required: [customer, stats, sales, repairs, transactions, timeline]
+      properties:
+        customer: { type: object }
+        stats:
+          type: object
+          properties:
+            invoiced: { type: number }
+            collected: { type: number }
+            outstanding: { type: number }
+            orderCount: { type: integer }
+            repairCount: { type: integer }
+        sales: { type: array, items: { type: object } }
+        repairs: { type: array, items: { type: object } }
+        transactions: { type: array, items: { $ref: "#/components/schemas/FinanceTransaction" } }
+        timeline: { type: array, items: { type: object } }
+
+    PublicCustomerView:
+      type: object
+      required: [scope, expiresAt, customer, paymentProvider]
+      properties:
+        scope: { type: string, enum: [invoice, repair-status] }
+        expiresAt: { type: string }
+        customer:
+          type: object
+          properties:
+            name: { type: string }
+        invoice: { type: object }
+        repair: { type: object }
+        paymentProvider: { $ref: "#/components/schemas/ProviderBoundaryResponse" }
+
+    PrivacyExport:
+      type: object
+      required: [exportedAt, redacted, data]
+      properties:
+        exportedAt: { type: string }
+        redacted: { type: boolean }
+        data: { $ref: "#/components/schemas/CustomerFinanceProfile" }
+
+    AnonymizeResponse:
+      type: object
+      required: [anonymized, customerId, anonymizedAt]
+      properties:
+        anonymized: { type: boolean }
+        customerId: { type: integer }
+        anonymizedAt: { type: string }

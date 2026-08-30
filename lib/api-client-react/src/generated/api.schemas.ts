@@ -280,6 +280,20 @@ export interface Customer {
   address?: string | null;
   /** @nullable */
   notes?: string | null;
+  isLoyaltyMember?: boolean;
+  loyaltyDiscountPct?: number;
+  loyaltyPoints?: number;
+  /** @nullable */
+  referralCode?: string | null;
+  emailConsent?: boolean;
+  smsConsent?: boolean;
+  marketingConsent?: boolean;
+  /** @nullable */
+  consentSource?: string | null;
+  /** @nullable */
+  consentReviewedAt?: string | null;
+  /** @nullable */
+  anonymizedAt?: string | null;
   totalSpent?: number;
   totalOrders?: number;
   createdAt: string;
@@ -291,6 +305,19 @@ export interface CustomerInput {
   phone?: string;
   address?: string;
   notes?: string;
+  isLoyaltyMember?: boolean;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  loyaltyDiscountPct?: number;
+  /** @minimum 0 */
+  loyaltyPoints?: number;
+  emailConsent?: boolean;
+  smsConsent?: boolean;
+  marketingConsent?: boolean;
+  /** @maxLength 120 */
+  consentSource?: string;
 }
 
 export interface CustomerUpdate {
@@ -299,6 +326,19 @@ export interface CustomerUpdate {
   phone?: string;
   address?: string;
   notes?: string;
+  isLoyaltyMember?: boolean;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  loyaltyDiscountPct?: number;
+  /** @minimum 0 */
+  loyaltyPoints?: number;
+  emailConsent?: boolean;
+  smsConsent?: boolean;
+  marketingConsent?: boolean;
+  /** @maxLength 120 */
+  consentSource?: string;
 }
 
 export interface LineItem {
@@ -1060,6 +1100,345 @@ export interface RepairPartInput {
   cost?: number;
 }
 
+export interface CustomerPreferences {
+  emailConsent: boolean;
+  smsConsent: boolean;
+  marketingConsent: boolean;
+  /** @nullable */
+  consentSource?: string | null;
+  /** @nullable */
+  consentReviewedAt?: string | null;
+}
+
+export interface CustomerPreferencesUpdate {
+  emailConsent?: boolean;
+  smsConsent?: boolean;
+  marketingConsent?: boolean;
+  /** @maxLength 120 */
+  source?: string;
+}
+
+export type FinanceTransactionInputKind = typeof FinanceTransactionInputKind[keyof typeof FinanceTransactionInputKind];
+
+
+export const FinanceTransactionInputKind = {
+  payment: 'payment',
+  deposit: 'deposit',
+  refund: 'refund',
+  credit: 'credit',
+  adjustment: 'adjustment',
+} as const;
+
+export interface FinanceTransactionInput {
+  /** @minimum 1 */
+  repairId: number;
+  /** @minimum 1 */
+  customerId?: number;
+  kind: FinanceTransactionInputKind;
+  /** @exclusiveMinimum 0 */
+  amount: number;
+  /**
+     * @minLength 3
+     * @maxLength 3
+     */
+  currency?: string;
+  /** @maxLength 80 */
+  method?: string;
+  /** @pattern ^[0-9]{4}$ */
+  last4?: string;
+  /** @maxLength 500 */
+  note?: string;
+}
+
+export interface FinanceTransaction {
+  id: number;
+  /** @nullable */
+  customerId?: number | null;
+  /** @nullable */
+  saleId?: number | null;
+  /** @nullable */
+  repairId?: number | null;
+  kind: string;
+  amount: number;
+  currency: string;
+  method: string;
+  /** @nullable */
+  provider?: string | null;
+  /** @nullable */
+  providerStatus?: string | null;
+  /** @nullable */
+  last4?: string | null;
+  /** @nullable */
+  note?: string | null;
+  /** @nullable */
+  employeeName?: string | null;
+  createdAt: string;
+}
+
+export type CustomerShareLinkInputTargetType = typeof CustomerShareLinkInputTargetType[keyof typeof CustomerShareLinkInputTargetType];
+
+
+export const CustomerShareLinkInputTargetType = {
+  sale: 'sale',
+  repair: 'repair',
+} as const;
+
+export interface CustomerShareLinkInput {
+  targetType: CustomerShareLinkInputTargetType;
+  /** @minimum 1 */
+  targetId: number;
+  /**
+     * @minimum 1
+     * @maximum 168
+     */
+  expiresInHours?: number;
+}
+
+export interface CustomerShareLink {
+  id: number;
+  customerId: number;
+  /** @nullable */
+  saleId?: number | null;
+  /** @nullable */
+  repairId?: number | null;
+  scope: string;
+  expiresAt: string;
+  /** @nullable */
+  revokedAt?: string | null;
+  createdAt?: string;
+  accessCount?: number;
+  active: boolean;
+}
+
+export type CustomerShareLinkCreated = CustomerShareLink & {
+  token: string;
+  path: string;
+};
+
+export interface PaymentSessionInput {
+  /** @minimum 1 */
+  linkId: number;
+}
+
+export interface ProviderBoundaryResponse {
+  code: string;
+  status: string;
+  message: string;
+}
+
+export type NotificationTemplateInputEvent = typeof NotificationTemplateInputEvent[keyof typeof NotificationTemplateInputEvent];
+
+
+export const NotificationTemplateInputEvent = {
+  invoice: 'invoice',
+  estimate: 'estimate',
+  'repair-status': 'repair-status',
+  pickup: 'pickup',
+  payment: 'payment',
+  reminder: 'reminder',
+} as const;
+
+export type NotificationTemplateInputChannel = typeof NotificationTemplateInputChannel[keyof typeof NotificationTemplateInputChannel];
+
+
+export const NotificationTemplateInputChannel = {
+  email: 'email',
+  sms: 'sms',
+} as const;
+
+export interface NotificationTemplateInput {
+  event: NotificationTemplateInputEvent;
+  channel: NotificationTemplateInputChannel;
+  /** @maxLength 200 */
+  subject?: string;
+  /** @maxLength 5000 */
+  body: string;
+  enabled?: boolean;
+  /**
+     * @minimum 0
+     * @maximum 5
+     */
+  maxRetries?: number;
+}
+
+export interface NotificationTemplateUpdate {
+  /** @maxLength 200 */
+  subject?: string;
+  /** @maxLength 5000 */
+  body?: string;
+  enabled?: boolean;
+  /**
+     * @minimum 0
+     * @maximum 5
+     */
+  maxRetries?: number;
+}
+
+export type NotificationTemplate = NotificationTemplateInput & {
+  id: number;
+  storeId: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type NotificationEventInputEvent = typeof NotificationEventInputEvent[keyof typeof NotificationEventInputEvent];
+
+
+export const NotificationEventInputEvent = {
+  invoice: 'invoice',
+  estimate: 'estimate',
+  'repair-status': 'repair-status',
+  pickup: 'pickup',
+  payment: 'payment',
+  reminder: 'reminder',
+} as const;
+
+export type NotificationEventInputChannel = typeof NotificationEventInputChannel[keyof typeof NotificationEventInputChannel];
+
+
+export const NotificationEventInputChannel = {
+  email: 'email',
+  sms: 'sms',
+} as const;
+
+export interface NotificationEventInput {
+  /** @minimum 1 */
+  customerId: number;
+  /** @minimum 1 */
+  saleId?: number;
+  /** @minimum 1 */
+  repairId?: number;
+  event: NotificationEventInputEvent;
+  channel: NotificationEventInputChannel;
+}
+
+export type NotificationEventStatus = typeof NotificationEventStatus[keyof typeof NotificationEventStatus];
+
+
+export const NotificationEventStatus = {
+  queued: 'queued',
+  sent: 'sent',
+  failed: 'failed',
+  skipped: 'skipped',
+} as const;
+
+export type NotificationEvent = NotificationEventInput & ({
+  id: number;
+  storeId?: number;
+  /** @nullable */
+  destinationMasked?: string | null;
+  status: NotificationEventStatus;
+  attempts: number;
+  /** @nullable */
+  lastError?: string | null;
+  /** @nullable */
+  providerMessageId?: string | null;
+  /** @nullable */
+  nextRetryAt?: string | null;
+  /** @nullable */
+  sentAt?: string | null;
+  unsubscribed: boolean;
+  createdAt: string;
+});
+
+export type ReceivablesReportTotals = {
+  outstanding?: number;
+  overdue?: number;
+};
+
+export type ReceivablesReportItemsItem = {
+  id?: number;
+  invoiceNumber?: string;
+  /** @nullable */
+  customerId?: number | null;
+  /** @nullable */
+  customerName?: string | null;
+  total?: number;
+  paid?: number;
+  balance?: number;
+  /** @nullable */
+  dueDate?: string | null;
+  daysOverdue?: number;
+  agingBucket?: string;
+};
+
+export interface ReceivablesReport {
+  asOf: string;
+  totals: ReceivablesReportTotals;
+  items: ReceivablesReportItemsItem[];
+}
+
+export interface TaxSummary {
+  dateFrom: string;
+  dateTo: string;
+  invoiceCount: number;
+  subtotal: number;
+  tax: number;
+  total: number;
+}
+
+export type CustomerFinanceProfileCustomer = { [key: string]: unknown };
+
+export type CustomerFinanceProfileStats = {
+  invoiced?: number;
+  collected?: number;
+  outstanding?: number;
+  orderCount?: number;
+  repairCount?: number;
+};
+
+export type CustomerFinanceProfileSalesItem = { [key: string]: unknown };
+
+export type CustomerFinanceProfileRepairsItem = { [key: string]: unknown };
+
+export type CustomerFinanceProfileTimelineItem = { [key: string]: unknown };
+
+export interface CustomerFinanceProfile {
+  customer: CustomerFinanceProfileCustomer;
+  stats: CustomerFinanceProfileStats;
+  sales: CustomerFinanceProfileSalesItem[];
+  repairs: CustomerFinanceProfileRepairsItem[];
+  transactions: FinanceTransaction[];
+  timeline: CustomerFinanceProfileTimelineItem[];
+}
+
+export type PublicCustomerViewScope = typeof PublicCustomerViewScope[keyof typeof PublicCustomerViewScope];
+
+
+export const PublicCustomerViewScope = {
+  invoice: 'invoice',
+  'repair-status': 'repair-status',
+} as const;
+
+export type PublicCustomerViewCustomer = {
+  name?: string;
+};
+
+export type PublicCustomerViewInvoice = { [key: string]: unknown };
+
+export type PublicCustomerViewRepair = { [key: string]: unknown };
+
+export interface PublicCustomerView {
+  scope: PublicCustomerViewScope;
+  expiresAt: string;
+  customer: PublicCustomerViewCustomer;
+  invoice?: PublicCustomerViewInvoice;
+  repair?: PublicCustomerViewRepair;
+  paymentProvider: ProviderBoundaryResponse;
+}
+
+export interface PrivacyExport {
+  exportedAt: string;
+  redacted: boolean;
+  data: CustomerFinanceProfile;
+}
+
+export interface AnonymizeResponse {
+  anonymized: boolean;
+  customerId: number;
+  anonymizedAt: string;
+}
+
 export type GetAuditLogsParams = {
 action?: string;
 entityType?: string;
@@ -1084,6 +1463,19 @@ search?: string;
 
 export type GetCustomersParams = {
 search?: string;
+};
+
+export type GetCustomerShareLinksParams = {
+customerId?: number;
+};
+
+export type RevokeCustomerShareLink200 = {
+  revoked: boolean;
+};
+
+export type GetTaxSummaryParams = {
+dateFrom?: string;
+dateTo?: string;
 };
 
 export type GetSalesParams = {

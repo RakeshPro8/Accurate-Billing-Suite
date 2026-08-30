@@ -17,11 +17,15 @@ import auditLogsRouter from "./auditLogs";
 import syncRouter from "./sync";
 import { auditMutation } from "../lib/audit";
 import operationsRouter from "./operations";
+import financeRouter, { publicCustomerAccessRouter } from "./finance";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use("/auth", authRouter);
+// Public customer links are intentionally mounted before the staff auth gate.
+// The router only accepts hashed, expiring tokens and returns a minimal DTO.
+router.use("/public/customer-access", publicCustomerAccessRouter);
 
 router.use(loadEmployee);
 router.use(requireAuth);
@@ -39,6 +43,7 @@ router.use("/stores", storesRouter);
 router.use("/audit-logs", auditLogsRouter);
 router.use("/sync", syncRouter);
 router.use("/operations", operationsRouter);
+router.use("/finance", financeRouter);
 router.use(requireRole("admin"), backupRouter);
 
 export default router;

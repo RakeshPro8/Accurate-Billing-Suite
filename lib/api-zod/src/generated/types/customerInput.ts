@@ -12,4 +12,17 @@ export interface CustomerInput {
   phone?: string;
   address?: string;
   notes?: string;
+  isLoyaltyMember?: boolean;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  loyaltyDiscountPct?: number;
+  /** @minimum 0 */
+  loyaltyPoints?: number;
+  emailConsent?: boolean;
+  smsConsent?: boolean;
+  marketingConsent?: boolean;
+  /** @maxLength 120 */
+  consentSource?: string;
 }

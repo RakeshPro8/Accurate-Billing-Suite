@@ -15,6 +15,7 @@ import { Building2, Mail, Percent, ImageIcon, Trash2, Upload, Type, Download, Sh
 import { apiUrl, getApiEndpointStatus } from "@/lib/api-config";
 import { readDesktopDiagnostics, type DesktopDiagnostics } from "@/lib/desktop-diagnostics";
 import { getLastSyncAt } from "@/lib/offline-store";
+import { NotificationManagement } from "@/components/NotificationManagement";
 
 function formatDiagnosticDate(value: string | null) {
   if (!value) return "Not synced yet";
@@ -288,6 +289,8 @@ export default function Settings() {
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         <DesktopDiagnosticsPanel />
+
+        <NotificationManagement />
 
         {/* Logo */}
         <Card>

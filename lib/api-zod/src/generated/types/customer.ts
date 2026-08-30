@@ -17,6 +17,20 @@ export interface Customer {
   address?: string | null;
   /** @nullable */
   notes?: string | null;
+  isLoyaltyMember?: boolean;
+  loyaltyDiscountPct?: number;
+  loyaltyPoints?: number;
+  /** @nullable */
+  referralCode?: string | null;
+  emailConsent?: boolean;
+  smsConsent?: boolean;
+  marketingConsent?: boolean;
+  /** @nullable */
+  consentSource?: string | null;
+  /** @nullable */
+  consentReviewedAt?: string | null;
+  /** @nullable */
+  anonymizedAt?: string | null;
   totalSpent?: number;
   totalOrders?: number;
   createdAt: string;

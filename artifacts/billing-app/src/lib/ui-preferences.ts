@@ -39,10 +39,7 @@ function isValue<T extends string>(value: unknown, values: readonly T[]): value 
 
 function sanitizePreferences(value: unknown): UiPreferences {
   const candidate = value && typeof value === "object" ? value as Partial<UiPreferences> : {};
-  const typography = candidate.typography === "system" ? "inter"
-    : candidate.typography === "mono" ? "jetbrains-mono"
-    : candidate.typography === "editorial" ? "dm-sans"
-    : candidate.typography;
+  const typography = candidate.typography;
   return {
     theme: isValue(candidate.theme, ["terminal", "ocean", "sunset", "berry", "forest", "monochrome"]) ? candidate.theme : null,
     buttonShape: isValue(candidate.buttonShape, ["default", "sharp", "soft", "pill"]) ? candidate.buttonShape : "default",

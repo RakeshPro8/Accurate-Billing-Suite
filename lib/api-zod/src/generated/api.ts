@@ -627,6 +627,16 @@ export const GetCustomersResponseItem = zod.object({
   "phone": zod.string().nullish(),
   "address": zod.string().nullish(),
   "notes": zod.string().nullish(),
+  "isLoyaltyMember": zod.boolean().optional(),
+  "loyaltyDiscountPct": zod.number().optional(),
+  "loyaltyPoints": zod.number().int().optional(),
+  "referralCode": zod.string().nullish(),
+  "emailConsent": zod.boolean().optional(),
+  "smsConsent": zod.boolean().optional(),
+  "marketingConsent": zod.boolean().optional(),
+  "consentSource": zod.string().nullish(),
+  "consentReviewedAt": zod.string().nullish(),
+  "anonymizedAt": zod.string().nullish(),
   "totalSpent": zod.number().optional(),
   "totalOrders": zod.number().int().optional(),
   "createdAt": zod.string()
@@ -637,12 +647,28 @@ export const GetCustomersResponse = zod.array(GetCustomersResponseItem)
 /**
  * @summary Create a customer
  */
+export const createCustomerBodyLoyaltyDiscountPctMin = 0;
+export const createCustomerBodyLoyaltyDiscountPctMax = 100;
+
+export const createCustomerBodyLoyaltyPointsMin = 0;
+
+export const createCustomerBodyConsentSourceMax = 120;
+
+
+
 export const CreateCustomerBody = zod.object({
   "name": zod.string(),
   "email": zod.string().optional(),
   "phone": zod.string().optional(),
   "address": zod.string().optional(),
-  "notes": zod.string().optional()
+  "notes": zod.string().optional(),
+  "isLoyaltyMember": zod.boolean().optional(),
+  "loyaltyDiscountPct": zod.number().min(createCustomerBodyLoyaltyDiscountPctMin).max(createCustomerBodyLoyaltyDiscountPctMax).optional(),
+  "loyaltyPoints": zod.number().int().min(createCustomerBodyLoyaltyPointsMin).optional(),
+  "emailConsent": zod.boolean().optional(),
+  "smsConsent": zod.boolean().optional(),
+  "marketingConsent": zod.boolean().optional(),
+  "consentSource": zod.string().max(createCustomerBodyConsentSourceMax).optional()
 })
 
 export const CreateCustomerResponse = zod.object({
@@ -652,6 +678,16 @@ export const CreateCustomerResponse = zod.object({
   "phone": zod.string().nullish(),
   "address": zod.string().nullish(),
   "notes": zod.string().nullish(),
+  "isLoyaltyMember": zod.boolean().optional(),
+  "loyaltyDiscountPct": zod.number().optional(),
+  "loyaltyPoints": zod.number().int().optional(),
+  "referralCode": zod.string().nullish(),
+  "emailConsent": zod.boolean().optional(),
+  "smsConsent": zod.boolean().optional(),
+  "marketingConsent": zod.boolean().optional(),
+  "consentSource": zod.string().nullish(),
+  "consentReviewedAt": zod.string().nullish(),
+  "anonymizedAt": zod.string().nullish(),
   "totalSpent": zod.number().optional(),
   "totalOrders": zod.number().int().optional(),
   "createdAt": zod.string()
@@ -672,6 +708,16 @@ export const GetCustomerResponse = zod.object({
   "phone": zod.string().nullish(),
   "address": zod.string().nullish(),
   "notes": zod.string().nullish(),
+  "isLoyaltyMember": zod.boolean().optional(),
+  "loyaltyDiscountPct": zod.number().optional(),
+  "loyaltyPoints": zod.number().int().optional(),
+  "referralCode": zod.string().nullish(),
+  "emailConsent": zod.boolean().optional(),
+  "smsConsent": zod.boolean().optional(),
+  "marketingConsent": zod.boolean().optional(),
+  "consentSource": zod.string().nullish(),
+  "consentReviewedAt": zod.string().nullish(),
+  "anonymizedAt": zod.string().nullish(),
   "totalSpent": zod.number().optional(),
   "totalOrders": zod.number().int().optional(),
   "createdAt": zod.string()
@@ -685,12 +731,28 @@ export const UpdateCustomerParams = zod.object({
   "id": zod.coerce.number().int()
 })
 
+export const updateCustomerBodyLoyaltyDiscountPctMin = 0;
+export const updateCustomerBodyLoyaltyDiscountPctMax = 100;
+
+export const updateCustomerBodyLoyaltyPointsMin = 0;
+
+export const updateCustomerBodyConsentSourceMax = 120;
+
+
+
 export const UpdateCustomerBody = zod.object({
   "name": zod.string().optional(),
   "email": zod.string().optional(),
   "phone": zod.string().optional(),
   "address": zod.string().optional(),
-  "notes": zod.string().optional()
+  "notes": zod.string().optional(),
+  "isLoyaltyMember": zod.boolean().optional(),
+  "loyaltyDiscountPct": zod.number().min(updateCustomerBodyLoyaltyDiscountPctMin).max(updateCustomerBodyLoyaltyDiscountPctMax).optional(),
+  "loyaltyPoints": zod.number().int().min(updateCustomerBodyLoyaltyPointsMin).optional(),
+  "emailConsent": zod.boolean().optional(),
+  "smsConsent": zod.boolean().optional(),
+  "marketingConsent": zod.boolean().optional(),
+  "consentSource": zod.string().max(updateCustomerBodyConsentSourceMax).optional()
 })
 
 export const UpdateCustomerResponse = zod.object({
@@ -700,6 +762,16 @@ export const UpdateCustomerResponse = zod.object({
   "phone": zod.string().nullish(),
   "address": zod.string().nullish(),
   "notes": zod.string().nullish(),
+  "isLoyaltyMember": zod.boolean().optional(),
+  "loyaltyDiscountPct": zod.number().optional(),
+  "loyaltyPoints": zod.number().int().optional(),
+  "referralCode": zod.string().nullish(),
+  "emailConsent": zod.boolean().optional(),
+  "smsConsent": zod.boolean().optional(),
+  "marketingConsent": zod.boolean().optional(),
+  "consentSource": zod.string().nullish(),
+  "consentReviewedAt": zod.string().nullish(),
+  "anonymizedAt": zod.string().nullish(),
   "totalSpent": zod.number().optional(),
   "totalOrders": zod.number().int().optional(),
   "createdAt": zod.string()
@@ -714,6 +786,586 @@ export const DeleteCustomerParams = zod.object({
 })
 
 export const DeleteCustomerResponse = zod.void()
+
+
+/**
+ * @summary Get a privacy-safe customer finance profile and timeline
+ */
+export const GetCustomerFinanceParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const GetCustomerFinanceResponse = zod.object({
+  "customer": zod.object({
+
+}).passthrough(),
+  "stats": zod.object({
+  "invoiced": zod.number().optional(),
+  "collected": zod.number().optional(),
+  "outstanding": zod.number().optional(),
+  "orderCount": zod.number().int().optional(),
+  "repairCount": zod.number().int().optional()
+}),
+  "sales": zod.array(zod.object({
+
+}).passthrough()),
+  "repairs": zod.array(zod.object({
+
+}).passthrough()),
+  "transactions": zod.array(zod.object({
+  "id": zod.number().int(),
+  "customerId": zod.number().int().nullish(),
+  "saleId": zod.number().int().nullish(),
+  "repairId": zod.number().int().nullish(),
+  "kind": zod.string(),
+  "amount": zod.number(),
+  "currency": zod.string(),
+  "method": zod.string(),
+  "provider": zod.string().nullish(),
+  "providerStatus": zod.string().nullish(),
+  "last4": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "employeeName": zod.string().nullish(),
+  "createdAt": zod.string()
+})),
+  "timeline": zod.array(zod.object({
+
+}).passthrough())
+})
+
+
+/**
+ * @summary Update consent-aware notification preferences
+ */
+export const UpdateCustomerPreferencesParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const updateCustomerPreferencesBodySourceMax = 120;
+
+
+
+export const UpdateCustomerPreferencesBody = zod.object({
+  "emailConsent": zod.boolean().optional(),
+  "smsConsent": zod.boolean().optional(),
+  "marketingConsent": zod.boolean().optional(),
+  "source": zod.string().max(updateCustomerPreferencesBodySourceMax).optional()
+})
+
+export const UpdateCustomerPreferencesResponse = zod.object({
+  "emailConsent": zod.boolean(),
+  "smsConsent": zod.boolean(),
+  "marketingConsent": zod.boolean(),
+  "consentSource": zod.string().nullish(),
+  "consentReviewedAt": zod.string().nullish()
+})
+
+
+/**
+ * @summary Record an idempotent repair deposit, payment, refund or credit
+ */
+
+
+export const createFinanceTransactionBodyAmountExclusiveMin = 0;
+
+export const createFinanceTransactionBodyCurrencyMin = 3;
+export const createFinanceTransactionBodyCurrencyMax = 3;
+
+export const createFinanceTransactionBodyMethodMax = 80;
+
+export const createFinanceTransactionBodyLast4RegExp = new RegExp('^[0-9]{4}$');
+export const createFinanceTransactionBodyNoteMax = 500;
+
+
+
+export const CreateFinanceTransactionBody = zod.object({
+  "repairId": zod.number().int().min(1),
+  "customerId": zod.number().int().min(1).optional(),
+  "kind": zod.enum(['payment', 'deposit', 'refund', 'credit', 'adjustment']),
+  "amount": zod.number().gt(createFinanceTransactionBodyAmountExclusiveMin),
+  "currency": zod.string().min(createFinanceTransactionBodyCurrencyMin).max(createFinanceTransactionBodyCurrencyMax).optional(),
+  "method": zod.string().max(createFinanceTransactionBodyMethodMax).optional(),
+  "last4": zod.string().regex(createFinanceTransactionBodyLast4RegExp).optional(),
+  "note": zod.string().max(createFinanceTransactionBodyNoteMax).optional()
+})
+
+export const CreateFinanceTransactionResponse = zod.object({
+  "id": zod.number().int(),
+  "customerId": zod.number().int().nullish(),
+  "saleId": zod.number().int().nullish(),
+  "repairId": zod.number().int().nullish(),
+  "kind": zod.string(),
+  "amount": zod.number(),
+  "currency": zod.string(),
+  "method": zod.string(),
+  "provider": zod.string().nullish(),
+  "providerStatus": zod.string().nullish(),
+  "last4": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "employeeName": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary List expiring customer access links without returning tokens
+ */
+export const GetCustomerShareLinksQueryParams = zod.object({
+  "customerId": zod.coerce.number().int().optional()
+})
+
+export const GetCustomerShareLinksResponseItem = zod.object({
+  "id": zod.number().int(),
+  "customerId": zod.number().int(),
+  "saleId": zod.number().int().nullish(),
+  "repairId": zod.number().int().nullish(),
+  "scope": zod.string(),
+  "expiresAt": zod.string(),
+  "revokedAt": zod.string().nullish(),
+  "createdAt": zod.string().optional(),
+  "accessCount": zod.number().int().optional(),
+  "active": zod.boolean()
+})
+export const GetCustomerShareLinksResponse = zod.array(GetCustomerShareLinksResponseItem)
+
+
+/**
+ * @summary Create a short-lived customer invoice or repair link
+ */
+
+export const createCustomerShareLinkBodyExpiresInHoursDefault = 48;
+export const createCustomerShareLinkBodyExpiresInHoursMax = 168;
+
+
+
+export const CreateCustomerShareLinkBody = zod.object({
+  "targetType": zod.enum(['sale', 'repair']),
+  "targetId": zod.number().int().min(1),
+  "expiresInHours": zod.number().min(1).max(createCustomerShareLinkBodyExpiresInHoursMax).default(createCustomerShareLinkBodyExpiresInHoursDefault)
+})
+
+export const CreateCustomerShareLinkResponse = zod.object({
+  "id": zod.number().int(),
+  "customerId": zod.number().int(),
+  "saleId": zod.number().int().nullish(),
+  "repairId": zod.number().int().nullish(),
+  "scope": zod.string(),
+  "expiresAt": zod.string(),
+  "revokedAt": zod.string().nullish(),
+  "createdAt": zod.string().optional(),
+  "accessCount": zod.number().int().optional(),
+  "active": zod.boolean()
+}).and(zod.object({
+  "token": zod.string(),
+  "path": zod.string()
+}))
+
+
+/**
+ * @summary Revoke a customer access link
+ */
+export const RevokeCustomerShareLinkParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const RevokeCustomerShareLinkResponse = zod.object({
+  "revoked": zod.boolean()
+})
+
+
+/**
+ * @summary Processor-hosted payment boundary
+ */
+
+
+
+export const CreatePaymentSessionBody = zod.object({
+  "linkId": zod.number().int().min(1)
+})
+
+export const CreatePaymentSessionResponse = zod.void()
+
+
+/**
+ * @summary List notification templates
+ */
+export const getNotificationTemplatesResponseOneSubjectMax = 200;
+
+export const getNotificationTemplatesResponseOneBodyMax = 5000;
+
+export const getNotificationTemplatesResponseOneMaxRetriesMin = 0;
+export const getNotificationTemplatesResponseOneMaxRetriesMax = 5;
+
+
+
+export const GetNotificationTemplatesResponseItem = zod.object({
+  "event": zod.enum(['invoice', 'estimate', 'repair-status', 'pickup', 'payment', 'reminder']),
+  "channel": zod.enum(['email', 'sms']),
+  "subject": zod.string().max(getNotificationTemplatesResponseOneSubjectMax).optional(),
+  "body": zod.string().max(getNotificationTemplatesResponseOneBodyMax),
+  "enabled": zod.boolean().optional(),
+  "maxRetries": zod.number().int().min(getNotificationTemplatesResponseOneMaxRetriesMin).max(getNotificationTemplatesResponseOneMaxRetriesMax).optional()
+}).and(zod.object({
+  "id": zod.number().int(),
+  "storeId": zod.number().int(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+}))
+export const GetNotificationTemplatesResponse = zod.array(GetNotificationTemplatesResponseItem)
+
+
+/**
+ * @summary Create an email or SMS notification template
+ */
+export const createNotificationTemplateBodySubjectMax = 200;
+
+export const createNotificationTemplateBodyBodyMax = 5000;
+
+export const createNotificationTemplateBodyMaxRetriesMin = 0;
+export const createNotificationTemplateBodyMaxRetriesMax = 5;
+
+
+
+export const CreateNotificationTemplateBody = zod.object({
+  "event": zod.enum(['invoice', 'estimate', 'repair-status', 'pickup', 'payment', 'reminder']),
+  "channel": zod.enum(['email', 'sms']),
+  "subject": zod.string().max(createNotificationTemplateBodySubjectMax).optional(),
+  "body": zod.string().max(createNotificationTemplateBodyBodyMax),
+  "enabled": zod.boolean().optional(),
+  "maxRetries": zod.number().int().min(createNotificationTemplateBodyMaxRetriesMin).max(createNotificationTemplateBodyMaxRetriesMax).optional()
+})
+
+export const createNotificationTemplateResponseOneSubjectMax = 200;
+
+export const createNotificationTemplateResponseOneBodyMax = 5000;
+
+export const createNotificationTemplateResponseOneMaxRetriesMin = 0;
+export const createNotificationTemplateResponseOneMaxRetriesMax = 5;
+
+
+
+export const CreateNotificationTemplateResponse = zod.object({
+  "event": zod.enum(['invoice', 'estimate', 'repair-status', 'pickup', 'payment', 'reminder']),
+  "channel": zod.enum(['email', 'sms']),
+  "subject": zod.string().max(createNotificationTemplateResponseOneSubjectMax).optional(),
+  "body": zod.string().max(createNotificationTemplateResponseOneBodyMax),
+  "enabled": zod.boolean().optional(),
+  "maxRetries": zod.number().int().min(createNotificationTemplateResponseOneMaxRetriesMin).max(createNotificationTemplateResponseOneMaxRetriesMax).optional()
+}).and(zod.object({
+  "id": zod.number().int(),
+  "storeId": zod.number().int(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+}))
+
+
+/**
+ * @summary Update a notification template
+ */
+export const UpdateNotificationTemplateParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const updateNotificationTemplateBodySubjectMax = 200;
+
+export const updateNotificationTemplateBodyBodyMax = 5000;
+
+export const updateNotificationTemplateBodyMaxRetriesMin = 0;
+export const updateNotificationTemplateBodyMaxRetriesMax = 5;
+
+
+
+export const UpdateNotificationTemplateBody = zod.object({
+  "subject": zod.string().max(updateNotificationTemplateBodySubjectMax).optional(),
+  "body": zod.string().max(updateNotificationTemplateBodyBodyMax).optional(),
+  "enabled": zod.boolean().optional(),
+  "maxRetries": zod.number().int().min(updateNotificationTemplateBodyMaxRetriesMin).max(updateNotificationTemplateBodyMaxRetriesMax).optional()
+})
+
+export const updateNotificationTemplateResponseOneSubjectMax = 200;
+
+export const updateNotificationTemplateResponseOneBodyMax = 5000;
+
+export const updateNotificationTemplateResponseOneMaxRetriesMin = 0;
+export const updateNotificationTemplateResponseOneMaxRetriesMax = 5;
+
+
+
+export const UpdateNotificationTemplateResponse = zod.object({
+  "event": zod.enum(['invoice', 'estimate', 'repair-status', 'pickup', 'payment', 'reminder']),
+  "channel": zod.enum(['email', 'sms']),
+  "subject": zod.string().max(updateNotificationTemplateResponseOneSubjectMax).optional(),
+  "body": zod.string().max(updateNotificationTemplateResponseOneBodyMax),
+  "enabled": zod.boolean().optional(),
+  "maxRetries": zod.number().int().min(updateNotificationTemplateResponseOneMaxRetriesMin).max(updateNotificationTemplateResponseOneMaxRetriesMax).optional()
+}).and(zod.object({
+  "id": zod.number().int(),
+  "storeId": zod.number().int(),
+  "createdAt": zod.string(),
+  "updatedAt": zod.string()
+}))
+
+
+/**
+ * @summary List notification delivery events
+ */
+
+
+
+
+
+export const GetNotificationEventsResponseItem = zod.object({
+  "customerId": zod.number().int().min(1),
+  "saleId": zod.number().int().min(1).optional(),
+  "repairId": zod.number().int().min(1).optional(),
+  "event": zod.enum(['invoice', 'estimate', 'repair-status', 'pickup', 'payment', 'reminder']),
+  "channel": zod.enum(['email', 'sms'])
+}).and(zod.object({
+  "id": zod.number().int(),
+  "storeId": zod.number().int().optional(),
+  "destinationMasked": zod.string().nullish(),
+  "status": zod.enum(['queued', 'sent', 'failed', 'skipped']),
+  "attempts": zod.number().int(),
+  "lastError": zod.string().nullish(),
+  "providerMessageId": zod.string().nullish(),
+  "nextRetryAt": zod.string().nullish(),
+  "sentAt": zod.string().nullish(),
+  "unsubscribed": zod.boolean(),
+  "createdAt": zod.string()
+}))
+export const GetNotificationEventsResponse = zod.array(GetNotificationEventsResponseItem)
+
+
+/**
+ * @summary Queue a consent-checked notification event
+ */
+
+
+
+
+
+export const CreateNotificationEventBody = zod.object({
+  "customerId": zod.number().int().min(1),
+  "saleId": zod.number().int().min(1).optional(),
+  "repairId": zod.number().int().min(1).optional(),
+  "event": zod.enum(['invoice', 'estimate', 'repair-status', 'pickup', 'payment', 'reminder']),
+  "channel": zod.enum(['email', 'sms'])
+})
+
+
+
+
+
+
+export const CreateNotificationEventResponse = zod.object({
+  "customerId": zod.number().int().min(1),
+  "saleId": zod.number().int().min(1).optional(),
+  "repairId": zod.number().int().min(1).optional(),
+  "event": zod.enum(['invoice', 'estimate', 'repair-status', 'pickup', 'payment', 'reminder']),
+  "channel": zod.enum(['email', 'sms'])
+}).and(zod.object({
+  "id": zod.number().int(),
+  "storeId": zod.number().int().optional(),
+  "destinationMasked": zod.string().nullish(),
+  "status": zod.enum(['queued', 'sent', 'failed', 'skipped']),
+  "attempts": zod.number().int(),
+  "lastError": zod.string().nullish(),
+  "providerMessageId": zod.string().nullish(),
+  "nextRetryAt": zod.string().nullish(),
+  "sentAt": zod.string().nullish(),
+  "unsubscribed": zod.boolean(),
+  "createdAt": zod.string()
+}))
+
+
+/**
+ * @summary Retry a failed notification
+ */
+export const RetryNotificationEventParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+
+
+
+
+
+export const RetryNotificationEventResponse = zod.object({
+  "customerId": zod.number().int().min(1),
+  "saleId": zod.number().int().min(1).optional(),
+  "repairId": zod.number().int().min(1).optional(),
+  "event": zod.enum(['invoice', 'estimate', 'repair-status', 'pickup', 'payment', 'reminder']),
+  "channel": zod.enum(['email', 'sms'])
+}).and(zod.object({
+  "id": zod.number().int(),
+  "storeId": zod.number().int().optional(),
+  "destinationMasked": zod.string().nullish(),
+  "status": zod.enum(['queued', 'sent', 'failed', 'skipped']),
+  "attempts": zod.number().int(),
+  "lastError": zod.string().nullish(),
+  "providerMessageId": zod.string().nullish(),
+  "nextRetryAt": zod.string().nullish(),
+  "sentAt": zod.string().nullish(),
+  "unsubscribed": zod.boolean(),
+  "createdAt": zod.string()
+}))
+
+
+/**
+ * @summary Get outstanding and aging receivables
+ */
+export const GetReceivablesResponse = zod.object({
+  "asOf": zod.string(),
+  "totals": zod.object({
+  "outstanding": zod.number().optional(),
+  "overdue": zod.number().optional()
+}),
+  "items": zod.array(zod.object({
+  "id": zod.number().int().optional(),
+  "invoiceNumber": zod.string().optional(),
+  "customerId": zod.number().int().nullish(),
+  "customerName": zod.string().nullish(),
+  "total": zod.number().optional(),
+  "paid": zod.number().optional(),
+  "balance": zod.number().optional(),
+  "dueDate": zod.string().nullish(),
+  "daysOverdue": zod.number().int().optional(),
+  "agingBucket": zod.string().optional()
+}))
+})
+
+
+/**
+ * @summary Get a tax-ready paid-sales summary
+ */
+export const GetTaxSummaryQueryParams = zod.object({
+  "dateFrom": zod.date().optional(),
+  "dateTo": zod.date().optional()
+})
+
+export const GetTaxSummaryResponse = zod.object({
+  "dateFrom": zod.string(),
+  "dateTo": zod.string(),
+  "invoiceCount": zod.number().int(),
+  "subtotal": zod.number(),
+  "tax": zod.number(),
+  "total": zod.number()
+})
+
+
+/**
+ * @summary Download a PII-minimized reconciliation CSV
+ */
+export const DownloadReconciliationExportResponse = zod.unknown()
+
+
+/**
+ * @summary Export a redacted customer data subject record
+ */
+export const ExportCustomerDataParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const ExportCustomerDataResponse = zod.object({
+  "exportedAt": zod.string(),
+  "redacted": zod.boolean(),
+  "data": zod.object({
+  "customer": zod.object({
+
+}).passthrough(),
+  "stats": zod.object({
+  "invoiced": zod.number().optional(),
+  "collected": zod.number().optional(),
+  "outstanding": zod.number().optional(),
+  "orderCount": zod.number().int().optional(),
+  "repairCount": zod.number().int().optional()
+}),
+  "sales": zod.array(zod.object({
+
+}).passthrough()),
+  "repairs": zod.array(zod.object({
+
+}).passthrough()),
+  "transactions": zod.array(zod.object({
+  "id": zod.number().int(),
+  "customerId": zod.number().int().nullish(),
+  "saleId": zod.number().int().nullish(),
+  "repairId": zod.number().int().nullish(),
+  "kind": zod.string(),
+  "amount": zod.number(),
+  "currency": zod.string(),
+  "method": zod.string(),
+  "provider": zod.string().nullish(),
+  "providerStatus": zod.string().nullish(),
+  "last4": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "employeeName": zod.string().nullish(),
+  "createdAt": zod.string()
+})),
+  "timeline": zod.array(zod.object({
+
+}).passthrough())
+})
+})
+
+
+/**
+ * @summary Anonymize customer contact data while retaining finance history
+ */
+export const AnonymizeCustomerParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const AnonymizeCustomerResponse = zod.object({
+  "anonymized": zod.boolean(),
+  "customerId": zod.number().int(),
+  "anonymizedAt": zod.string()
+})
+
+
+/**
+ * @summary View a short-lived customer invoice or repair status link
+ */
+export const getPublicCustomerAccessPathTokenMin = 40;
+
+
+
+export const GetPublicCustomerAccessParams = zod.object({
+  "token": zod.coerce.string().min(getPublicCustomerAccessPathTokenMin)
+})
+
+export const GetPublicCustomerAccessResponse = zod.object({
+  "scope": zod.enum(['invoice', 'repair-status']),
+  "expiresAt": zod.string(),
+  "customer": zod.object({
+  "name": zod.string().optional()
+}),
+  "invoice": zod.object({
+
+}).passthrough().optional(),
+  "repair": zod.object({
+
+}).passthrough().optional(),
+  "paymentProvider": zod.object({
+  "code": zod.string(),
+  "status": zod.string(),
+  "message": zod.string()
+})
+})
+
+
+/**
+ * @summary Start a processor-hosted payment from a customer link
+ */
+export const createPublicPaymentSessionPathTokenMin = 40;
+
+
+
+export const CreatePublicPaymentSessionParams = zod.object({
+  "token": zod.coerce.string().min(createPublicPaymentSessionPathTokenMin)
+})
+
+export const CreatePublicPaymentSessionResponse = zod.void()
 
 
 /**

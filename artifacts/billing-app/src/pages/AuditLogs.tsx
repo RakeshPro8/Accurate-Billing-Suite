@@ -17,6 +17,7 @@ export default function AuditLogs() {
   const [action, setAction] = useState("all");
   const [entityType, setEntityType] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   async function load() {
     setLoading(true);
@@ -25,7 +26,12 @@ export default function AuditLogs() {
     if (entityType !== "all") query.set("entityType", entityType);
     try {
       const response = await fetch(`${apiUrl("/audit-logs")}?${query}`, { credentials: "include" });
-      if (response.ok) setLogs(await response.json());
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(payload?.error ?? `Unable to load audit events (HTTP ${response.status}).`);
+      setLogs(Array.isArray(payload) ? payload : []);
+      setError(null);
+    } catch (reason: unknown) {
+      setError(reason instanceof Error ? reason.message : "Unable to load audit events.");
     } finally { setLoading(false); }
   }
   useEffect(() => { void load(); }, [action, entityType]);
@@ -46,7 +52,7 @@ export default function AuditLogs() {
       <Card>
         <CardHeader className="pb-3"><CardTitle className="text-base flex items-center gap-2"><ShieldCheck className="h-4 w-4 text-primary" /> {logs.length} events</CardTitle></CardHeader>
         <CardContent className="p-0">
-          {loading ? <div className="p-6 text-sm text-muted-foreground">Loading audit events…</div> : logs.length === 0 ? <div className="p-6 text-sm text-muted-foreground">No matching events.</div> : <div className="divide-y">{logs.map((log) => <div key={log.id} className="p-4 flex flex-wrap items-center gap-3 text-sm"><Badge variant="outline">{log.action.replace("_", " ")}</Badge><span className="font-medium">{log.entityType}{log.entityId ? ` #${log.entityId}` : ""}</span><span className="text-muted-foreground">by {log.employeeName ?? "system"}</span><span className="text-muted-foreground ml-auto">{formatDate(log.createdAt)}</span></div>)}</div>}
+          {loading ? <div className="p-6 text-sm text-muted-foreground">Loading audit events…</div> : error ? <div role="alert" className="flex items-center justify-between gap-3 p-6 text-sm"><span className="text-destructive">{error}</span><Button variant="outline" size="sm" onClick={() => void load()}>Retry</Button></div> : logs.length === 0 ? <div className="p-6 text-sm text-muted-foreground">No matching events.</div> : <div className="divide-y">{logs.map((log) => <div key={log.id} className="p-4 flex flex-wrap items-center gap-3 text-sm"><Badge variant="outline">{log.action.replace("_", " ")}</Badge><span className="font-medium">{log.entityType}{log.entityId ? ` #${log.entityId}` : ""}</span><span className="text-muted-foreground">by {log.employeeName ?? "system"}</span><span className="text-muted-foreground ml-auto">{formatDate(log.createdAt)}</span></div>)}</div>}
         </CardContent>
       </Card>
     </div>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useGetWeeklyReport, useGetMonthlyReport, useGetTopProducts, useGetRevenueByCategory } from "@workspace/api-client-react";
+import { useGetWeeklyReport, useGetMonthlyReport, useGetTopProducts, useGetRevenueByCategory, useGetReceivables, useGetTaxSummary } from "@workspace/api-client-react";
 import { formatCurrency, formatDate, downloadCSV } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import {
   BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
-import { Download, ChevronLeft, ChevronRight, TrendingUp, Users, ShoppingCart, DollarSign, Filter, FileSpreadsheet } from "lucide-react";
+import { Download, ChevronLeft, ChevronRight, TrendingUp, Users, ShoppingCart, DollarSign, Filter, FileSpreadsheet, Landmark, ReceiptText, ShieldCheck } from "lucide-react";
 import { apiUrl } from "@/lib/api-config";
 
 const COLORS = ["#00e5c8","#3b82f6","#a855f7","#f59e0b","#ef4444","#10b981"];
@@ -50,11 +50,16 @@ export default function Reports() {
     employeeId: "",
   });
   const [csvLoading, setCsvLoading] = useState(false);
+  const [taxFrom, setTaxFrom] = useState(firstOfMonth);
+  const [taxTo, setTaxTo] = useState(today.toISOString().split("T")[0]);
+  const [reconciliationLoading, setReconciliationLoading] = useState(false);
 
   const { data: weekly, isLoading: loadingWeekly } = useGetWeeklyReport({ weekOffset });
   const { data: monthly, isLoading: loadingMonthly } = useGetMonthlyReport({ year: reportYear, month: reportMonth });
   const { data: topProducts } = useGetTopProducts();
   const { data: revenueByCategory } = useGetRevenueByCategory();
+  const { data: receivables, isLoading: loadingReceivables } = useGetReceivables();
+  const { data: taxSummary, isLoading: loadingTax } = useGetTaxSummary({ dateFrom: taxFrom, dateTo: taxTo });
 
   function exportWeeklyCSV() {
     if (!weekly) return;
@@ -102,8 +107,10 @@ export default function Reports() {
       if (filter.dateTo) params.set("dateTo", new Date(filter.dateTo + "T23:59:59").toISOString());
       if (filter.status && filter.status !== "all") params.set("status", filter.status);
       if (filter.employeeId) params.set("employeeId", filter.employeeId);
-      const resp = await fetch(`${apiUrl("/sales")}?${params.toString()}`);
-      const sales = await resp.json();
+      const resp = await fetch(`${apiUrl("/sales")}?${params.toString()}`, { credentials: "include" });
+      const payload = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(payload?.error ?? `Unable to load sales (HTTP ${resp.status}).`);
+      const sales = Array.isArray(payload) ? payload : (payload?.items ?? []);
       if (!sales.length) { alert("No sales found for the selected filters."); return; }
       const XLSX = await import("@e965/xlsx");
       const wb = XLSX.utils.book_new();
@@ -142,6 +149,25 @@ export default function Reports() {
     }
   }
 
+  async function downloadReconciliation() {
+    setReconciliationLoading(true);
+    try {
+      const response = await fetch(apiUrl("/finance/reconciliation-export"), { credentials: "include" });
+      if (!response.ok) throw new Error("download failed");
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `mobilinq-reconciliation-${new Date().toISOString().slice(0, 10)}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert("Reconciliation export failed. Check your connection and try again.");
+    } finally {
+      setReconciliationLoading(false);
+    }
+  }
+
   const months = Array.from({ length: 12 }, (_, i) => ({
     value: i + 1,
     label: new Date(2024, i).toLocaleString("default", { month: "long" }),
@@ -156,11 +182,13 @@ export default function Reports() {
       </div>
 
       <Tabs defaultValue="export">
-        <TabsList>
+        <TabsList className="flex h-auto flex-wrap justify-start gap-1">
           <TabsTrigger value="export">Sales Export</TabsTrigger>
           <TabsTrigger value="weekly">Weekly</TabsTrigger>
           <TabsTrigger value="monthly">Monthly</TabsTrigger>
           <TabsTrigger value="analytics">Analytics</TabsTrigger>
+          <TabsTrigger value="receivables">Receivables</TabsTrigger>
+          <TabsTrigger value="tax">Tax summary</TabsTrigger>
         </TabsList>
 
         {/* Filtered CSV Export */}
@@ -341,6 +369,25 @@ export default function Reports() {
               )}
             </>
           ) : null}
+        </TabsContent>
+
+        {/* Finance reporting */}
+        <TabsContent value="receivables" className="space-y-4 mt-4">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div><p className="text-xs uppercase tracking-[0.18em] text-primary">Finance operations</p><h2 className="mt-1 text-lg font-semibold">Receivables & aging</h2><p className="text-sm text-muted-foreground">Outstanding customer balances as of {receivables?.asOf ? formatDate(receivables.asOf) : "today"}.</p></div>
+            <Button variant="outline" size="sm" className="gap-2" onClick={downloadReconciliation} disabled={reconciliationLoading}><ShieldCheck className="h-3.5 w-3.5" /> {reconciliationLoading ? "Preparing…" : "Download reconciliation CSV"}</Button>
+          </div>
+          {loadingReceivables ? <div className="grid gap-3 sm:grid-cols-3"><Skeleton className="h-24" /><Skeleton className="h-24" /><Skeleton className="h-24" /></div> : receivables ? (
+            <>
+              <div className="grid gap-3 sm:grid-cols-3"><SummaryCard title="Outstanding" value={formatCurrency(Number(receivables.totals.outstanding ?? 0))} icon={Landmark} /><SummaryCard title="Overdue" value={formatCurrency(Number(receivables.totals.overdue ?? 0))} icon={ReceiptText} /><SummaryCard title="Open invoices" value={String(receivables.items.length)} icon={FileSpreadsheet} /></div>
+              <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Open balances</CardTitle></CardHeader><CardContent>{receivables.items.length ? <div className="overflow-x-auto"><table className="w-full text-xs"><thead className="border-b"><tr><th className="py-2 text-left font-medium text-muted-foreground">Invoice</th><th className="py-2 text-left font-medium text-muted-foreground">Customer</th><th className="py-2 text-left font-medium text-muted-foreground">Due</th><th className="py-2 text-left font-medium text-muted-foreground">Aging</th><th className="py-2 text-right font-medium text-muted-foreground">Balance</th></tr></thead><tbody className="divide-y">{receivables.items.map((item, index) => <tr key={item.id ?? index}><td className="py-2 font-mono">{item.invoiceNumber || "—"}</td><td className="py-2">{item.customerName || "Customer"}</td><td className="py-2 text-muted-foreground">{item.dueDate ? formatDate(item.dueDate) : "No due date"}</td><td className={`py-2 ${Number(item.daysOverdue ?? 0) > 0 ? "text-amber-400" : "text-muted-foreground"}`}>{item.agingBucket || (Number(item.daysOverdue ?? 0) > 0 ? `${item.daysOverdue} days overdue` : "Current")}</td><td className="py-2 text-right font-semibold">{formatCurrency(Number(item.balance ?? 0))}</td></tr>)}</tbody></table></div> : <p className="py-8 text-center text-sm text-muted-foreground">No outstanding receivables.</p>}</CardContent></Card>
+            </>
+          ) : <p className="text-sm text-muted-foreground">Receivables data is unavailable.</p>}
+        </TabsContent>
+
+        <TabsContent value="tax" className="space-y-4 mt-4">
+          <div className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-xs uppercase tracking-[0.18em] text-primary">Finance operations</p><h2 className="mt-1 text-lg font-semibold">Tax summary</h2><p className="text-sm text-muted-foreground">Paid sales summarized for a selected filing period.</p></div><div className="flex items-end gap-2"><div><Label className="text-xs">From</Label><Input type="date" className="h-8 text-sm" value={taxFrom} onChange={e => setTaxFrom(e.target.value)} /></div><div><Label className="text-xs">To</Label><Input type="date" className="h-8 text-sm" value={taxTo} onChange={e => setTaxTo(e.target.value)} /></div></div></div>
+          {loadingTax ? <Skeleton className="h-44 w-full" /> : taxSummary ? <Card><CardHeader className="pb-2"><CardTitle className="text-sm font-semibold">Paid sales · {formatDate(taxSummary.dateFrom)} — {formatDate(taxSummary.dateTo)}</CardTitle></CardHeader><CardContent><div className="grid gap-5 sm:grid-cols-4"><SummaryCard title="Invoices" value={String(taxSummary.invoiceCount)} icon={FileSpreadsheet} /><SummaryCard title="Subtotal" value={formatCurrency(taxSummary.subtotal)} icon={DollarSign} /><SummaryCard title="Tax collected" value={formatCurrency(taxSummary.tax)} icon={ReceiptText} /><SummaryCard title="Total" value={formatCurrency(taxSummary.total)} icon={Landmark} /></div><p className="mt-5 text-xs text-muted-foreground">This summary reflects paid sales returned by the finance service. Keep the reconciliation CSV with your filing records.</p></CardContent></Card> : <p className="text-sm text-muted-foreground">Tax summary is unavailable.</p>}
         </TabsContent>
 
         {/* Analytics */}

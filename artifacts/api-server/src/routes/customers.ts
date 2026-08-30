@@ -19,6 +19,16 @@ router.get("/", async (req, res) => {
       phone: customersTable.phone,
       address: customersTable.address,
       notes: customersTable.notes,
+       isLoyaltyMember: customersTable.isLoyaltyMember,
+       loyaltyDiscountPct: customersTable.loyaltyDiscountPct,
+       loyaltyPoints: customersTable.loyaltyPoints,
+       referralCode: customersTable.referralCode,
+       emailConsent: customersTable.emailConsent,
+       smsConsent: customersTable.smsConsent,
+       marketingConsent: customersTable.marketingConsent,
+       consentSource: customersTable.consentSource,
+       consentReviewedAt: customersTable.consentReviewedAt,
+       anonymizedAt: customersTable.anonymizedAt,
       createdAt: customersTable.createdAt,
       totalSpent: sql<number>`coalesce(sum(${salesTable.total}::numeric), 0)`,
       totalOrders: sql<number>`count(${salesTable.id})`,
@@ -42,6 +52,8 @@ router.get("/", async (req, res) => {
       totalSpent: parseFloat(String(c.totalSpent)),
       totalOrders: Number(c.totalOrders),
       createdAt: c.createdAt.toISOString(),
+      consentReviewedAt: c.consentReviewedAt?.toISOString() ?? null,
+      anonymizedAt: c.anonymizedAt?.toISOString() ?? null,
     })));
   } catch (e) {
     throw e;
@@ -59,8 +71,8 @@ router.post("/", async (req, res) => {
       phone: body.phone || null,
       address: body.address || null,
       notes: body.notes || null,
-       storeId,
-    }).returning();
+      storeId,
+     }).returning();
     return res.status(201).json({ ...customer, totalSpent: 0, totalOrders: 0, createdAt: customer.createdAt.toISOString() });
   } catch (e) {
     throw e;
@@ -101,10 +113,26 @@ router.patch("/:id", async (req, res) => {
     if (body.phone !== undefined) updates.phone = body.phone;
     if (body.address !== undefined) updates.address = body.address;
     if (body.notes !== undefined) updates.notes = body.notes;
+    if (body.isLoyaltyMember !== undefined) updates.isLoyaltyMember = Boolean(body.isLoyaltyMember);
+    if (body.loyaltyDiscountPct !== undefined) {
+      const value = Number(body.loyaltyDiscountPct);
+      if (!Number.isFinite(value) || value < 0 || value > 100) throw new HttpError(400, "Invalid loyalty discount.");
+      updates.loyaltyDiscountPct = String(value);
+    }
+    if (body.loyaltyPoints !== undefined) {
+      const value = Number(body.loyaltyPoints);
+      if (!Number.isSafeInteger(value) || value < 0) throw new HttpError(400, "Invalid loyalty points.");
+      updates.loyaltyPoints = value;
+    }
+    if (body.emailConsent !== undefined) updates.emailConsent = Boolean(body.emailConsent);
+    if (body.smsConsent !== undefined) updates.smsConsent = Boolean(body.smsConsent);
+    if (body.marketingConsent !== undefined) updates.marketingConsent = Boolean(body.marketingConsent);
+    if (body.consentSource !== undefined) updates.consentSource = typeof body.consentSource === "string" ? body.consentSource.slice(0, 120) : null;
+    if (body.emailConsent !== undefined || body.smsConsent !== undefined || body.marketingConsent !== undefined) updates.consentReviewedAt = new Date();
     if (!Object.keys(updates).length) throw new HttpError(400, "No customer fields supplied.");
     const [customer] = await db.update(customersTable).set(updates).where(and(eq(customersTable.id, id), eq(customersTable.storeId, storeId))).returning();
     if (!customer) return res.status(404).json({ error: "Not found" });
-    return res.json({ ...customer, totalSpent: 0, totalOrders: 0, createdAt: customer.createdAt.toISOString() });
+     return res.json({ ...customer, totalSpent: 0, totalOrders: 0, createdAt: customer.createdAt.toISOString(), consentReviewedAt: customer.consentReviewedAt?.toISOString() ?? null, anonymizedAt: customer.anonymizedAt?.toISOString() ?? null });
   } catch (e) {
     throw e;
   }
