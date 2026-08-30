@@ -23,6 +23,14 @@ function NativeTabLayout() {
         <Icon sf={{ default: 'wrench.and.screwdriver', selected: 'wrench.and.screwdriver.fill' }} />
         <Label>Repairs</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="customers">
+        <Icon sf={{ default: 'person.2', selected: 'person.2.fill' }} />
+        <Label>Customers</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="inventory">
+        <Icon sf={{ default: 'shippingbox', selected: 'shippingbox.fill' }} />
+        <Label>Inventory</Label>
+      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="dashboard">
         <Icon sf={{ default: 'chart.bar', selected: 'chart.bar.fill' }} />
         <Label>Dashboard</Label>
@@ -38,6 +46,10 @@ function NativeTabLayout() {
       <NativeTabs.Trigger name="billing">
         <Icon sf={{ default: 'dollarsign.circle', selected: 'dollarsign.circle.fill' }} />
         <Label>Billing</Label>
+      </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="notifications">
+        <Icon sf={{ default: 'bell', selected: 'bell.fill' }} />
+        <Label>Alerts</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="settings">
         <Icon sf={{ default: 'gearshape', selected: 'gearshape.fill' }} />
@@ -98,10 +110,13 @@ function ClassicTabLayout() {
         }}
       />
       <Tabs.Screen name="repairs" options={{ title: 'Repairs', tabBarIcon: ({ color }) => <Feather name="tool" size={22} color={color} /> }} />
+      <Tabs.Screen name="customers" options={{ title: 'Customers', tabBarIcon: ({ color }) => <Feather name="users" size={22} color={color} /> }} />
+      <Tabs.Screen name="inventory" options={{ title: 'Inventory', tabBarIcon: ({ color }) => <Feather name="package" size={22} color={color} /> }} />
       <Tabs.Screen name="dashboard" options={{ title: 'Dashboard', tabBarIcon: ({ color }) => <Feather name="bar-chart-2" size={22} color={color} /> }} />
       <Tabs.Screen name="sales" options={{ title: 'Sales', tabBarIcon: ({ color }) => <Feather name="credit-card" size={22} color={color} /> }} />
       <Tabs.Screen name="quotes" options={{ title: 'Quotes', tabBarIcon: ({ color }) => <Feather name="message-square" size={22} color={color} /> }} />
       <Tabs.Screen name="billing" options={{ title: 'Billing', tabBarIcon: ({ color }) => <Feather name="dollar-sign" size={22} color={color} /> }} />
+      <Tabs.Screen name="notifications" options={{ title: 'Alerts', tabBarIcon: ({ color }) => <Feather name="bell" size={22} color={color} /> }} />
       <Tabs.Screen name="settings" options={{ title: 'Settings', tabBarIcon: ({ color }) => <Feather name="settings" size={22} color={color} /> }} />
     </Tabs>
   );

@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 import {
   getGetSalesQueryKey,
   getGetSettingsQueryKey,
@@ -10,6 +10,9 @@ import {
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import { OfflineBanner } from '@/components/OfflineBanner';
+import { OutboxPanel } from '@/components/OutboxPanel';
 import {
   EmptyState,
   ErrorState,
@@ -95,6 +98,9 @@ export default function SalesScreen() {
         icon="credit-card"
         colors={colors}
       />
+      <OfflineBanner />
+      <OutboxPanel />
+      <Pressable testID="new-sale" accessibilityRole="button" onPress={() => router.push('/sale-new')} style={[styles.newButton, { backgroundColor: colors.primary }]}><Feather name="plus" size={16} color={colors.primaryForeground} /><Text style={[styles.newButtonText, { color: colors.primaryForeground }]}>NEW INVOICE</Text></Pressable>
       <View style={styles.metrics}>
         <MetricCard
           label="INVOICES"
@@ -191,6 +197,8 @@ const styles = StyleSheet.create({
     gap: 10,
     marginBottom: 10,
   },
+  newButton: { minHeight: 44, borderRadius: 10, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 7, marginBottom: 14 },
+  newButtonText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.8 },
   saleCard: {
     borderWidth: 1,
     borderRadius: 15,

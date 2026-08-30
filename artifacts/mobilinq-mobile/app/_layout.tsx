@@ -14,6 +14,7 @@ import {
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { setBaseUrl, setAuthTokenGetter } from '@workspace/api-client-react';
+import { MobileOfflineProvider } from '@/context/MobileOfflineContext';
 
 setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
 setAuthTokenGetter(() => null);
@@ -27,6 +28,9 @@ function RootLayoutNav() {
   return (
     <Stack screenOptions={{ headerBackTitle: 'Back' }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="repair-new" options={{ title: 'New repair' }} />
+      <Stack.Screen name="sale-new" options={{ title: 'New invoice' }} />
+      <Stack.Screen name="repair/[id]" options={{ title: 'Repair detail' }} />
     </Stack>
   );
 }
@@ -51,11 +55,13 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
-          <GestureHandlerRootView>
-            <KeyboardProvider>
-              <RootLayoutNav />
-            </KeyboardProvider>
-          </GestureHandlerRootView>
+          <MobileOfflineProvider>
+            <GestureHandlerRootView>
+              <KeyboardProvider>
+                <RootLayoutNav />
+              </KeyboardProvider>
+            </GestureHandlerRootView>
+          </MobileOfflineProvider>
         </QueryClientProvider>
       </ErrorBoundary>
     </SafeAreaProvider>

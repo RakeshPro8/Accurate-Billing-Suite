@@ -5,6 +5,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
@@ -28,6 +29,9 @@ import { InventoryHealth, getInventoryItems } from '@/components/InventoryHealth
 import { getTopInset } from '@/components/BusinessUI';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import { OfflineBanner } from '@/components/OfflineBanner';
+import { OutboxPanel } from '@/components/OutboxPanel';
 
 const nextStatus: Partial<Record<string, RepairStatusChangeStatus>> = {
   intake: 'diagnostic',
@@ -72,6 +76,7 @@ export default function RepairsScreen() {
   const [actionRepairId, setActionRepairId] = useState<number | null>(null);
   const [lastAttempt, setLastAttempt] = useState<StatusAttempt | null>(null);
   const [search, setSearch] = useState('');
+  const [repairSearch, setRepairSearch] = useState('');
   const productParams = useMemo(
     () => (search.trim().length > 1 ? { q: search.trim() } : undefined),
     [search],
@@ -93,6 +98,12 @@ export default function RepairsScreen() {
       ),
     [repairs.data],
   );
+  const visibleQueue = useMemo(() => {
+    const term = repairSearch.trim().toLowerCase();
+    if (!term) return queue;
+    return queue.filter((repair) => [repair.ticketNumber, repair.customerName, repair.deviceType, repair.deviceBrand, repair.deviceModel]
+      .filter(Boolean).some((value) => String(value).toLowerCase().includes(term)));
+  }, [queue, repairSearch]);
 
   const refresh = async () => {
     setRefreshing(true);
@@ -234,6 +245,12 @@ export default function RepairsScreen() {
           <Feather name="radio" size={15} color={colors.primaryForeground} />
         </View>
       </View>
+      <OfflineBanner />
+      <OutboxPanel />
+      <Pressable testID="new-repair" accessibilityRole="button" onPress={() => router.push('/repair-new')} style={[styles.newButton, { backgroundColor: colors.primary }]}>
+        <Feather name="plus" size={16} color={colors.primaryForeground} />
+        <Text style={[styles.newButtonText, { color: colors.primaryForeground }]}>NEW REPAIR</Text>
+      </Pressable>
 
       {!!feedback && (
         <View
@@ -307,11 +324,15 @@ export default function RepairsScreen() {
           </Text>
         </View>
         <Text style={[styles.count, { color: colors.primary }]}>
-          {queue.length} {queue.length === 1 ? 'ticket' : 'tickets'}
+           {visibleQueue.length} {visibleQueue.length === 1 ? 'ticket' : 'tickets'}
         </Text>
       </View>
+      <View style={[styles.repairSearch, { borderColor: colors.border, backgroundColor: colors.card }]}>
+        <Feather name="search" size={15} color={colors.mutedForeground} />
+        <TextInput testID="repair-search" value={repairSearch} onChangeText={setRepairSearch} placeholder="Search ticket, customer, or device" placeholderTextColor={colors.mutedForeground} style={[styles.repairSearchInput, { color: colors.foreground }]} />
+      </View>
 
-      {queue.length === 0 ? (
+      {visibleQueue.length === 0 ? (
         <View
           style={[
             styles.empty,
@@ -329,7 +350,7 @@ export default function RepairsScreen() {
           </Text>
         </View>
       ) : (
-        queue.map((repair) => (
+        visibleQueue.map((repair) => (
           <RepairCard
             key={repair.id}
             repair={repair}
@@ -440,6 +461,16 @@ function RepairCard({
           {sla.date}
         </Text>
       </View>
+
+      <Pressable
+        testID={`repair-${repair.id}-detail`}
+        accessibilityRole="button"
+        onPress={() => router.push(`/repair/${repair.id}`)}
+        style={[styles.detailButton, { borderColor: colors.border }]}
+      >
+        <Text style={[styles.detailButtonText, { color: colors.primary }]}>VIEW DETAILS</Text>
+        <Feather name="chevron-right" size={14} color={colors.primary} />
+      </Pressable>
 
       {nextStatus[repair.status] ? (
         <Pressable
@@ -652,6 +683,20 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     marginBottom: 2,
   },
+  newButton: {
+    minHeight: 44,
+    borderRadius: 10,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 7,
+    marginBottom: 16,
+  },
+  newButtonText: { fontSize: 10, fontWeight: '700', letterSpacing: 0.8 },
+  repairSearch: { minHeight: 43, borderWidth: 1, borderRadius: 10, paddingHorizontal: 11, flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 11 },
+  repairSearchInput: { flex: 1, fontSize: 13, paddingVertical: 8 },
+  detailButton: { minHeight: 38, borderWidth: 1, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, marginBottom: 8 },
+  detailButtonText: { fontSize: 9, fontWeight: '700', letterSpacing: 0.8 },
   repairCard: {
     borderWidth: 1,
     borderRadius: 16,

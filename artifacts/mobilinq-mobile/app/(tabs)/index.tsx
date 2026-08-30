@@ -6,6 +6,10 @@ import { InventoryHealth, getInventoryItems } from '@/components/InventoryHealth
 import { getTopInset, ScreenSkeleton } from '@/components/BusinessUI';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { OfflineBanner } from '@/components/OfflineBanner';
+import { OutboxPanel } from '@/components/OutboxPanel';
+import { persistSessionCookie } from '@/context/MobileOfflineContext';
+import { setMobileScope } from '@/lib/mobile-offline';
 
 export default function HomeScreen() {
   const colors = useColors();
@@ -42,7 +46,7 @@ export default function HomeScreen() {
         <Text style={[styles.label, { color: colors.mutedForeground }]}>PIN</Text>
         <TextInput testID="pin-input" value={pin} onChangeText={setPin} secureTextEntry keyboardType="number-pad" maxLength={8} placeholder="Enter PIN" placeholderTextColor={colors.mutedForeground} style={[styles.input, { borderColor: colors.border, color: colors.foreground }]} />
         {!!error && <Text style={[styles.error, { color: colors.destructive }]}>{error}</Text>}
-        <Pressable testID="sign-in" disabled={signIn.isPending || !employeeId || pin.length < 4} onPress={() => { setError(''); signIn.mutate({ data: { employeeId: employeeId!, pin } }, { onError: () => setError('Sign-in failed. Check your PIN and connection.'), onSuccess: () => setPin('') }); }} style={[styles.primaryButton, { backgroundColor: colors.primary, opacity: signIn.isPending || !employeeId || pin.length < 4 ? 0.5 : 1 }]}><Text style={[styles.primaryButtonText, { color: colors.primaryForeground }]}>{signIn.isPending ? 'SIGNING IN…' : 'SIGN IN'}</Text></Pressable>
+         <Pressable testID="sign-in" disabled={signIn.isPending || !employeeId || pin.length < 4} onPress={() => { setError(''); signIn.mutate({ data: { employeeId: employeeId!, pin } }, { onError: () => setError('Sign-in failed. Check your PIN and connection.'), onSuccess: (result) => { setPin(''); setMobileScope({ employeeId: result.employee.id, storeId: null }); void persistSessionCookie(); } }); }} style={[styles.primaryButton, { backgroundColor: colors.primary, opacity: signIn.isPending || !employeeId || pin.length < 4 ? 0.5 : 1 }]}><Text style={[styles.primaryButtonText, { color: colors.primaryForeground }]}>{signIn.isPending ? 'SIGNING IN…' : 'SIGN IN'}</Text></Pressable>
       </View>
       <Text style={[styles.footnote, { color: colors.mutedForeground }]}>Uses the same server session and employee permissions as the web app.</Text>
     </ScrollView>;
@@ -51,6 +55,8 @@ export default function HomeScreen() {
   const employee = session.data.employee;
   return <ScrollView refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => { setRefreshing(true); try { await Promise.all([session.refetch(), repairs.refetch(), sales.refetch(), inventory.refetch()]); } finally { setRefreshing(false); } }} tintColor={colors.primary} colors={[colors.primary]} />} contentContainerStyle={[styles.content, { paddingTop: topInset + 24, backgroundColor: colors.background }]}>
     <View style={styles.header}><View><Text style={[styles.kicker, { color: colors.primary }]}>MOBILINQ / LIVE</Text><Text style={[styles.title, { color: colors.foreground }]}>Good to see you, {employee.name.split(' ')[0]}.</Text></View><View style={[styles.statusDot, { backgroundColor: colors.primary }]} /></View>
+      <OfflineBanner />
+      <OutboxPanel />
       <View style={styles.grid}><Metric label="OPEN REPAIRS" value={String(activeRepairs.length)} icon="tool" colors={colors} /><Metric label="AT RISK" value={String(atRiskRepairs.length)} icon="alert-triangle" colors={colors} /><Metric label="LOW STOCK" value={String(lowStockCount)} icon="package" colors={colors} /></View>
       <InventoryHealth items={inventoryItems} />
     <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}><View style={styles.row}><Text style={[styles.sectionTitle, { color: colors.foreground }]}>Active repair queue</Text><Text style={[styles.link, { color: colors.primary }]}>SYNCED</Text></View>{activeRepairs.slice(0, 5).map((repair) => <View key={repair.id} style={[styles.repairRow, { borderTopColor: colors.border }]}><View style={[styles.repairIcon, { backgroundColor: colors.accent }]}><Feather name="tool" size={16} color={colors.primary} /></View><View style={{ flex: 1 }}><Text style={[styles.repairName, { color: colors.foreground }]}>{repair.ticketNumber} · {repair.deviceType}</Text><Text style={[styles.repairMeta, { color: colors.mutedForeground }]}>{repair.customerName ?? 'Walk-in'} · {repair.status.replace('_', ' ')}</Text></View></View>)}{activeRepairs.length === 0 && <Text style={[styles.empty, { color: colors.mutedForeground }]}>No active repairs right now.</Text>}</View>

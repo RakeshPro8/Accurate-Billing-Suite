@@ -110,6 +110,16 @@ export function clearSessionCookie(): void {
   _sessionCookie = null;
 }
 
+/** Native clients persist this opaque server cookie in OS-backed storage. */
+export function setSessionCookie(cookie: string | null): void {
+  _sessionCookie = cookie;
+}
+
+/** Read the in-memory native cookie so a client can persist it securely. */
+export function getSessionCookie(): string | null {
+  return _sessionCookie;
+}
+
 function isRequest(input: RequestInfo | URL): input is Request {
   return typeof Request !== "undefined" && input instanceof Request;
 }
@@ -402,7 +412,7 @@ export async function customFetch<T = unknown>(
   }
 
   const headers = mergeHeaders(isRequest(input) ? input.headers : undefined, headersInit);
-  if (typeof window === "undefined" && _sessionCookie && !headers.has("cookie")) {
+  if (typeof document === "undefined" && _sessionCookie && !headers.has("cookie")) {
     headers.set("cookie", _sessionCookie);
   }
 
@@ -450,7 +460,7 @@ export async function customFetch<T = unknown>(
     throw new ApiError(response, errorData, requestInfo);
   }
 
-  if (typeof window === "undefined") {
+  if (typeof document === "undefined") {
     const setCookie = response.headers.get("set-cookie");
     if (setCookie) _sessionCookie = setCookie.split(";", 1)[0];
   }
