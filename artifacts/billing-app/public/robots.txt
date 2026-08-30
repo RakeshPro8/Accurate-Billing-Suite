@@ -1,2 +1,16 @@
 User-agent: *
 Allow: /
+Disallow: /sales
+Disallow: /quotations
+Disallow: /customers
+Disallow: /products
+Disallow: /repairs
+Disallow: /operations
+Disallow: /device-diagram
+Disallow: /employees
+Disallow: /reports
+Disallow: /audit-logs
+Disallow: /settings
+Disallow: /ui-lab
+Disallow: /customer-access
+Sitemap: /sitemap.xml

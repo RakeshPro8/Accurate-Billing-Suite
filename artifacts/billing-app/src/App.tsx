@@ -29,6 +29,7 @@ import AuditLogs from "@/pages/AuditLogs";
 import UiLab from "@/pages/UiLab";
 import Operations from "@/pages/Operations";
 import CustomerAccess from "@/pages/CustomerAccess";
+import Welcome from "@/pages/Welcome";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -101,6 +102,7 @@ function App() {
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
             <Switch>
               <Route path="/customer-access/:token" component={CustomerAccess} />
+              <Route path="/welcome" component={Welcome} />
               <Route component={AuthBoundary} />
             </Switch>
           </WouterRouter>

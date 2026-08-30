@@ -1,3 +1,6 @@
 <svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-<rect width="180" height="180" rx="36" fill="#FF3C00"/>
+  <rect width="180" height="180" rx="36" fill="#102729"/>
+  <ellipse cx="91" cy="92" rx="52" ry="30" transform="rotate(-28 91 92)" stroke="#EF4F3C" stroke-width="12"/>
+  <path d="M47 124V56h16v47l31-47h19l-27 34 30 34H96l-22-25-11 14v11H47Z" fill="#F3F5EF"/>
+  <circle cx="141" cy="49" r="9" fill="#79E2D7"/>
 </svg>
