@@ -55,6 +55,7 @@ import type {
   GetInventoryMovements200Item,
   GetInventorySummary200,
   GetMonthlyReportParams,
+  GetNotificationEventsParams,
   GetProductsParams,
   GetPurchaseOrders200Item,
   GetQuotationsParams,
@@ -123,6 +124,7 @@ import type {
   SyncReplayInput,
   SyncReplayResponse,
   TaxSummary,
+  ThemeUpdate,
   TopItem,
   WeeklyReport
 } from './api.schemas';
@@ -3491,20 +3493,27 @@ export const useUpdateNotificationTemplate = <TError = ErrorType<unknown>,
       return useMutation(getUpdateNotificationTemplateMutationOptions(options));
     }
 
-export const getGetNotificationEventsUrl = () => {
+export const getGetNotificationEventsUrl = (params?: GetNotificationEventsParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
 
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
 
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/api/finance/notifications`
+  return stringifiedParams.length > 0 ? `/api/finance/notifications?${stringifiedParams}` : `/api/finance/notifications`
 }
 
 /**
  * @summary List notification delivery events
  */
-export const getNotificationEvents = async ( options?: Parameters<typeof customFetch>[1]): Promise<NotificationEvent[]> => {
+export const getNotificationEvents = async (params?: GetNotificationEventsParams, options?: Parameters<typeof customFetch>[1]): Promise<NotificationEvent[]> => {
 
-  return customFetch<NotificationEvent[]>(getGetNotificationEventsUrl(),
+  return customFetch<NotificationEvent[]>(getGetNotificationEventsUrl(params),
   {
     ...options,
     method: 'GET'
@@ -3517,23 +3526,23 @@ export const getNotificationEvents = async ( options?: Parameters<typeof customF
 
 
 
-export const getGetNotificationEventsQueryKey = () => {
+export const getGetNotificationEventsQueryKey = (params?: GetNotificationEventsParams,) => {
     return [
-    `/api/finance/notifications`
+    `/api/finance/notifications`, ...(params ? [params] : [])
     ] as const;
     }
 
 
-export const getGetNotificationEventsQueryOptions = <TData = Awaited<ReturnType<typeof getNotificationEvents>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNotificationEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getGetNotificationEventsQueryOptions = <TData = Awaited<ReturnType<typeof getNotificationEvents>>, TError = ErrorType<unknown>>(params?: GetNotificationEventsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNotificationEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
 
-  const queryKey =  queryOptions?.queryKey ?? getGetNotificationEventsQueryKey();
+  const queryKey =  queryOptions?.queryKey ?? getGetNotificationEventsQueryKey(params);
 
 
 
-    const queryFn: QueryFunction<Awaited<ReturnType<typeof getNotificationEvents>>> = ({ signal }) => getNotificationEvents({ signal, ...requestOptions });
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getNotificationEvents>>> = ({ signal }) => getNotificationEvents(params, { signal, ...requestOptions });
 
 
 
@@ -3551,11 +3560,11 @@ export type GetNotificationEventsQueryError = ErrorType<unknown>
  */
 
 export function useGetNotificationEvents<TData = Awaited<ReturnType<typeof getNotificationEvents>>, TError = ErrorType<unknown>>(
-  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNotificationEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+ params?: GetNotificationEventsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getNotificationEvents>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
-  const queryOptions = getGetNotificationEventsQueryOptions(options)
+  const queryOptions = getGetNotificationEventsQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 
@@ -6046,6 +6055,84 @@ export const useUpdateSettings = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpdateSettingsMutationOptions(options));
+    }
+
+export const getApplySettingsThemeUrl = () => {
+
+
+
+
+  return `/api/settings/theme`
+}
+
+/**
+ * @summary Apply the installation-wide theme preset
+ */
+export const applySettingsTheme = async (themeUpdate: ThemeUpdate, options?: Parameters<typeof customFetch>[1]): Promise<Settings> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return customFetch<Settings>(getApplySettingsThemeUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(themeUpdate)
+  }
+);}
+
+
+
+
+
+export const getApplySettingsThemeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applySettingsTheme>>, TError,ApplySettingsThemeMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof applySettingsTheme>>, TError,ApplySettingsThemeMutationVariables, TContext> => {
+
+const mutationKey = ['applySettingsTheme'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof applySettingsTheme>>, ApplySettingsThemeMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  applySettingsTheme(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApplySettingsThemeMutationResult = NonNullable<Awaited<ReturnType<typeof applySettingsTheme>>>
+    export type ApplySettingsThemeMutationBody = BodyType<ThemeUpdate>
+    export type ApplySettingsThemeMutationError = ErrorType<unknown>
+    export type ApplySettingsThemeMutationVariables = {data: BodyType<ThemeUpdate>}
+
+    /**
+ * @summary Apply the installation-wide theme preset
+ */
+export const useApplySettingsTheme = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof applySettingsTheme>>, TError,ApplySettingsThemeMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof applySettingsTheme>>,
+        TError,
+        ApplySettingsThemeMutationVariables,
+        TContext
+      > => {
+      return useMutation(getApplySettingsThemeMutationOptions(options));
     }
 
 export const getGetRepairsUrl = (params?: GetRepairsParams,) => {

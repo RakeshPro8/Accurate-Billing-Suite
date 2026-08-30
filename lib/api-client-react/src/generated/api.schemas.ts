@@ -640,6 +640,22 @@ export interface CategoryRevenue {
   percentage: number;
 }
 
+export type ThemePreset = typeof ThemePreset[keyof typeof ThemePreset];
+
+
+export const ThemePreset = {
+  terminal: 'terminal',
+  ocean: 'ocean',
+  sunset: 'sunset',
+  berry: 'berry',
+  forest: 'forest',
+  monochrome: 'monochrome',
+} as const;
+
+export interface ThemeUpdate {
+  theme: ThemePreset;
+}
+
 export interface Settings {
   id: number;
   appName: string;
@@ -652,7 +668,7 @@ export interface Settings {
   businessEmail?: string | null;
   /** @nullable */
   logoUrl?: string | null;
-  theme: string;
+  theme: ThemePreset;
   currency: string;
   taxRate: number;
   taxName: string;
@@ -685,7 +701,6 @@ export interface SettingsUpdate {
   businessPhone?: string;
   businessEmail?: string;
   logoUrl?: string;
-  theme?: string;
   currency?: string;
   taxRate?: number;
   taxName?: string;
@@ -697,7 +712,8 @@ export interface SettingsUpdate {
   invoiceFooter?: string;
   thankYouMessage?: string;
   smtpHost?: string;
-  smtpPort?: number;
+  /** @nullable */
+  smtpPort?: number | null;
   smtpUser?: string;
   smtpPass?: string;
   /** @nullable */
@@ -1261,7 +1277,29 @@ export interface NotificationTemplateInput {
   maxRetries?: number;
 }
 
+export type NotificationTemplateUpdateEvent = typeof NotificationTemplateUpdateEvent[keyof typeof NotificationTemplateUpdateEvent];
+
+
+export const NotificationTemplateUpdateEvent = {
+  invoice: 'invoice',
+  estimate: 'estimate',
+  'repair-status': 'repair-status',
+  pickup: 'pickup',
+  payment: 'payment',
+  reminder: 'reminder',
+} as const;
+
+export type NotificationTemplateUpdateChannel = typeof NotificationTemplateUpdateChannel[keyof typeof NotificationTemplateUpdateChannel];
+
+
+export const NotificationTemplateUpdateChannel = {
+  email: 'email',
+  sms: 'sms',
+} as const;
+
 export interface NotificationTemplateUpdate {
+  event?: NotificationTemplateUpdateEvent;
+  channel?: NotificationTemplateUpdateChannel;
   /** @maxLength 200 */
   subject?: string;
   /** @maxLength 5000 */
@@ -1472,6 +1510,42 @@ customerId?: number;
 export type RevokeCustomerShareLink200 = {
   revoked: boolean;
 };
+
+export type GetNotificationEventsParams = {
+status?: GetNotificationEventsStatus;
+event?: GetNotificationEventsEvent;
+channel?: GetNotificationEventsChannel;
+};
+
+export type GetNotificationEventsStatus = typeof GetNotificationEventsStatus[keyof typeof GetNotificationEventsStatus];
+
+
+export const GetNotificationEventsStatus = {
+  queued: 'queued',
+  sent: 'sent',
+  failed: 'failed',
+  skipped: 'skipped',
+} as const;
+
+export type GetNotificationEventsEvent = typeof GetNotificationEventsEvent[keyof typeof GetNotificationEventsEvent];
+
+
+export const GetNotificationEventsEvent = {
+  invoice: 'invoice',
+  estimate: 'estimate',
+  'repair-status': 'repair-status',
+  pickup: 'pickup',
+  payment: 'payment',
+  reminder: 'reminder',
+} as const;
+
+export type GetNotificationEventsChannel = typeof GetNotificationEventsChannel[keyof typeof GetNotificationEventsChannel];
+
+
+export const GetNotificationEventsChannel = {
+  email: 'email',
+  sms: 'sms',
+} as const;
 
 export type GetTaxSummaryParams = {
 dateFrom?: string;

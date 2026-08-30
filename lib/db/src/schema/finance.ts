@@ -1,4 +1,4 @@
-import { pgTable, serial, text, integer, boolean, numeric, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, integer, boolean, numeric, timestamp, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -55,7 +55,9 @@ export const notificationTemplatesTable = pgTable("notification_templates", {
   maxRetries: integer("max_retries").notNull().default(3),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+}, (table) => ({
+  storeEventChannelUnique: uniqueIndex("notification_templates_store_event_channel_idx").on(table.storeId, table.event, table.channel),
+}));
 
 export const notificationEventsTable = pgTable("notification_events", {
   id: serial("id").primaryKey(),

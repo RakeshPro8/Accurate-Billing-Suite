@@ -801,6 +801,10 @@ paths:
       operationId: getNotificationEvents
       tags: [finance]
       summary: List notification delivery events
+      parameters:
+        - { name: status, in: query, schema: { type: string, enum: [queued, sent, failed, skipped] } }
+        - { name: event, in: query, schema: { type: string, enum: [invoice, estimate, repair-status, pickup, payment, reminder] } }
+        - { name: channel, in: query, schema: { type: string, enum: [email, sms] } }
       responses:
         "200":
           description: Delivery events
@@ -1358,6 +1362,24 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/SettingsUpdate"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Settings"
+
+  /settings/theme:
+    patch:
+      operationId: applySettingsTheme
+      tags: [settings]
+      summary: Apply the installation-wide theme preset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/ThemeUpdate" }
       responses:
         "200":
           description: Updated settings
@@ -2332,6 +2354,17 @@ components:
         percentage: { type: number }
 
     # ── Settings ──
+    ThemePreset:
+      type: string
+      enum: [terminal, ocean, sunset, berry, forest, monochrome]
+
+    ThemeUpdate:
+      type: object
+      additionalProperties: false
+      required: [theme]
+      properties:
+        theme: { $ref: "#/components/schemas/ThemePreset" }
+
     Settings:
       type: object
       required: [id, appName, businessName, currency, taxRate, taxName, taxEnabled, theme]
@@ -2343,7 +2376,7 @@ components:
         businessPhone:    { type: ["string", "null"] }
         businessEmail:    { type: ["string", "null"] }
         logoUrl:          { type: ["string", "null"] }
-        theme:            { type: string }
+        theme:            { $ref: "#/components/schemas/ThemePreset" }
         currency:         { type: string }
         taxRate:          { type: number }
         taxName:          { type: string }
@@ -2362,6 +2395,7 @@ components:
 
     SettingsUpdate:
       type: object
+      additionalProperties: false
       properties:
         appName:          { type: string }
         businessName:     { type: string }
@@ -2369,7 +2403,6 @@ components:
         businessPhone:    { type: string }
         businessEmail:    { type: string }
         logoUrl:          { type: string }
-        theme:            { type: string }
         currency:         { type: string }
         taxRate:          { type: number }
         taxName:          { type: string }
@@ -2381,7 +2414,7 @@ components:
         invoiceFooter:    { type: string }
         thankYouMessage:  { type: string }
         smtpHost:         { type: string }
-        smtpPort:         { type: integer }
+        smtpPort:         { type: ["integer", "null"] }
         smtpUser:         { type: string }
         smtpPass:         { type: string }
         defaultStoreId:   { type: ["integer", "null"] }
@@ -2736,6 +2769,7 @@ components:
 
     NotificationTemplateInput:
       type: object
+      additionalProperties: false
       required: [event, channel, body]
       properties:
         event: { type: string, enum: [invoice, estimate, repair-status, pickup, payment, reminder] }
@@ -2747,7 +2781,10 @@ components:
 
     NotificationTemplateUpdate:
       type: object
+      additionalProperties: false
       properties:
+        event: { type: string, enum: [invoice, estimate, repair-status, pickup, payment, reminder] }
+        channel: { type: string, enum: [email, sms] }
         subject: { type: string, maxLength: 200 }
         body: { type: string, maxLength: 5000 }
         enabled: { type: boolean }
@@ -2766,6 +2803,7 @@ components:
 
     NotificationEventInput:
       type: object
+      additionalProperties: false
       required: [customerId, event, channel]
       properties:
         customerId: { type: integer, minimum: 1 }

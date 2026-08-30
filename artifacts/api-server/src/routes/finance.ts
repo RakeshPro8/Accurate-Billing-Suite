@@ -20,6 +20,43 @@ export const publicCustomerAccessRouter = Router();
 const CUSTOMER_EVENTS = ["invoice", "estimate", "repair-status", "pickup", "payment", "reminder"] as const;
 const CHANNELS = ["email", "sms"] as const;
 const FINANCE_KINDS = ["payment", "deposit", "refund", "credit", "adjustment"] as const;
+const NOTIFICATION_STATUSES = ["queued", "sent", "failed", "skipped"] as const;
+
+function isNotificationEvent(value: unknown): value is typeof CUSTOMER_EVENTS[number] {
+  return typeof value === "string" && (CUSTOMER_EVENTS as readonly string[]).includes(value);
+}
+
+function isChannel(value: unknown): value is typeof CHANNELS[number] {
+  return typeof value === "string" && (CHANNELS as readonly string[]).includes(value);
+}
+
+function notificationId(value: unknown) {
+  const id = Number(value);
+  if (!Number.isSafeInteger(id) || id < 1) throw new HttpError(400, "Invalid notification template id.");
+  return id;
+}
+
+function validateRetryCount(value: unknown) {
+  if (typeof value !== "number" || !Number.isInteger(value) || value < 0 || value > 5) {
+    throw new HttpError(400, "Retry limit must be a whole number from 0 to 5.");
+  }
+}
+
+function validateTemplateText(body: Record<string, unknown>, requireBody: boolean) {
+  if (body.subject !== undefined && (typeof body.subject !== "string" || body.subject.length > 200)) {
+    throw new HttpError(400, "Subject must be 200 characters or fewer.");
+  }
+  if (body.body !== undefined && (typeof body.body !== "string" || !body.body.trim() || body.body.length > 5000)) {
+    throw new HttpError(400, "Message body must contain 1 to 5000 characters.");
+  }
+  if (requireBody && (typeof body.body !== "string" || !body.body.trim())) {
+    throw new HttpError(400, "Message body is required.");
+  }
+  if (body.enabled !== undefined && typeof body.enabled !== "boolean") {
+    throw new HttpError(400, "Enabled must be a boolean.");
+  }
+  if (body.maxRetries !== undefined) validateRetryCount(body.maxRetries);
+}
 
 function employee(req: Request) {
   if (!req.employee) throw new HttpError(401, "Authentication is required.", "AUTH_REQUIRED");
@@ -256,29 +293,80 @@ router.get("/notifications/templates", requireRole("manager"), async (req, res) 
 router.post("/notifications/templates", requireRole("admin"), async (req, res) => {
   const storeId = await requireCurrentStoreId(req);
   const body = req.body ?? {};
-  if (!(CUSTOMER_EVENTS as readonly string[]).includes(body.event) || !(CHANNELS as readonly string[]).includes(body.channel) || typeof body.body !== "string" || !body.body.trim()) throw new HttpError(400, "Invalid notification template.");
-  const [template] = await db.insert(notificationTemplatesTable).values({
-    storeId, event: body.event, channel: body.channel, subject: body.subject ? String(body.subject).slice(0, 200) : null,
-    body: String(body.body).slice(0, 5000), enabled: body.enabled !== false, maxRetries: Math.min(5, Math.max(0, Number(body.maxRetries ?? 3))),
-  }).returning();
+  if (!isNotificationEvent(body.event) || !isChannel(body.channel)) throw new HttpError(400, "Choose a supported event and channel.");
+  validateTemplateText(body, true);
+  const maxRetries = body.maxRetries === undefined ? 3 : body.maxRetries;
+  const [duplicate] = await db.select({ id: notificationTemplatesTable.id }).from(notificationTemplatesTable).where(and(
+    eq(notificationTemplatesTable.storeId, storeId),
+    eq(notificationTemplatesTable.event, body.event),
+    eq(notificationTemplatesTable.channel, body.channel),
+  )).limit(1);
+  if (duplicate) throw new HttpError(409, "A template already exists for this event and channel.", "DUPLICATE_TEMPLATE");
+  let template;
+  try {
+    [template] = await db.insert(notificationTemplatesTable).values({
+      storeId, event: body.event, channel: body.channel, subject: body.subject?.trim() || null,
+      body: body.body.trim(), enabled: body.enabled ?? true, maxRetries,
+    }).returning();
+  } catch (error) {
+    if (typeof error === "object" && error !== null && "code" in error && error.code === "23505") {
+      throw new HttpError(409, "A template already exists for this event and channel.", "DUPLICATE_TEMPLATE");
+    }
+    throw error;
+  }
   return res.status(201).json({ ...template, createdAt: date(template.createdAt), updatedAt: date(template.updatedAt) });
 });
 
 router.patch("/notifications/templates/:id", requireRole("admin"), async (req, res) => {
   const storeId = await requireCurrentStoreId(req);
   const body = req.body ?? {};
-  const updates: Record<string, unknown> = { updatedAt: new Date() };
-  for (const key of ["subject", "body"] as const) if (body[key] !== undefined) updates[key] = String(body[key]).slice(0, key === "body" ? 5000 : 200);
-  if (body.enabled !== undefined) updates.enabled = Boolean(body.enabled);
-  if (body.maxRetries !== undefined) updates.maxRetries = Math.min(5, Math.max(0, Number(body.maxRetries)));
-  const [template] = await db.update(notificationTemplatesTable).set(updates).where(and(eq(notificationTemplatesTable.id, Number(req.params.id)), eq(notificationTemplatesTable.storeId, storeId))).returning();
+  const id = notificationId(req.params.id);
+  if (body.event !== undefined && !isNotificationEvent(body.event)) throw new HttpError(400, "Choose a supported event.");
+  if (body.channel !== undefined && !isChannel(body.channel)) throw new HttpError(400, "Choose a supported channel.");
+  validateTemplateText(body, false);
+  if (!Object.keys(body).length) throw new HttpError(400, "No template changes supplied.");
+  const [existing] = await db.select().from(notificationTemplatesTable).where(and(eq(notificationTemplatesTable.id, id), eq(notificationTemplatesTable.storeId, storeId))).limit(1);
+  if (!existing) throw new HttpError(404, "Notification template not found.", "NOT_FOUND");
+  const event = body.event ?? existing.event;
+  const channel = body.channel ?? existing.channel;
+  const [duplicate] = await db.select({ id: notificationTemplatesTable.id }).from(notificationTemplatesTable).where(and(
+    eq(notificationTemplatesTable.storeId, storeId),
+    eq(notificationTemplatesTable.event, event),
+    eq(notificationTemplatesTable.channel, channel),
+  )).limit(1);
+  if (duplicate && duplicate.id !== id) throw new HttpError(409, "A template already exists for this event and channel.", "DUPLICATE_TEMPLATE");
+  const updates: Record<string, unknown> = { updatedAt: new Date(), event, channel };
+  if (body.subject !== undefined) updates.subject = body.subject.trim() || null;
+  if (body.body !== undefined) updates.body = body.body.trim();
+  if (body.enabled !== undefined) updates.enabled = body.enabled;
+  if (body.maxRetries !== undefined) updates.maxRetries = body.maxRetries;
+  let template;
+  try {
+    [template] = await db.update(notificationTemplatesTable).set(updates).where(and(eq(notificationTemplatesTable.id, id), eq(notificationTemplatesTable.storeId, storeId))).returning();
+  } catch (error) {
+    if (typeof error === "object" && error !== null && "code" in error && error.code === "23505") {
+      throw new HttpError(409, "A template already exists for this event and channel.", "DUPLICATE_TEMPLATE");
+    }
+    throw error;
+  }
   if (!template) throw new HttpError(404, "Notification template not found.", "NOT_FOUND");
   return res.json({ ...template, createdAt: date(template.createdAt), updatedAt: date(template.updatedAt) });
 });
 
 router.get("/notifications", requireRole("manager"), async (req, res) => {
   const storeId = await requireCurrentStoreId(req);
-  const rows = await db.select().from(notificationEventsTable).where(eq(notificationEventsTable.storeId, storeId)).orderBy(desc(notificationEventsTable.createdAt)).limit(200);
+  const status = req.query.status ? String(req.query.status) : undefined;
+  const event = req.query.event ? String(req.query.event) : undefined;
+  const channel = req.query.channel ? String(req.query.channel) : undefined;
+  if (status && !(NOTIFICATION_STATUSES as readonly string[]).includes(status)) throw new HttpError(400, "Invalid notification status.");
+  if (event && !isNotificationEvent(event)) throw new HttpError(400, "Invalid notification event.");
+  if (channel && !isChannel(channel)) throw new HttpError(400, "Invalid notification channel.");
+  const rows = await db.select().from(notificationEventsTable).where(and(
+    eq(notificationEventsTable.storeId, storeId),
+    status ? eq(notificationEventsTable.status, status) : undefined,
+    event ? eq(notificationEventsTable.event, event) : undefined,
+    channel ? eq(notificationEventsTable.channel, channel) : undefined,
+  )).orderBy(desc(notificationEventsTable.createdAt)).limit(200);
   return res.json(rows.map((row) => ({ ...row, createdAt: date(row.createdAt), nextRetryAt: date(row.nextRetryAt), sentAt: date(row.sentAt) })));
 });
 
@@ -302,8 +390,23 @@ router.post("/notifications", async (req, res) => {
 
 router.post("/notifications/:id/retry", requireRole("manager"), async (req, res) => {
   const storeId = await requireCurrentStoreId(req);
-  const [event] = await db.update(notificationEventsTable).set({ status: "queued", nextRetryAt: null, lastError: null }).where(and(eq(notificationEventsTable.id, Number(req.params.id)), eq(notificationEventsTable.storeId, storeId), eq(notificationEventsTable.status, "failed"))).returning();
-  if (!event) throw new HttpError(404, "A failed notification was not found.", "NOT_FOUND");
+  const id = notificationId(req.params.id);
+  const [existing] = await db.select().from(notificationEventsTable).where(and(eq(notificationEventsTable.id, id), eq(notificationEventsTable.storeId, storeId))).limit(1);
+  if (!existing || existing.status !== "failed") throw new HttpError(404, "A failed notification was not found.", "NOT_FOUND");
+  const [template] = await db.select({ maxRetries: notificationTemplatesTable.maxRetries }).from(notificationTemplatesTable).where(and(
+    eq(notificationTemplatesTable.storeId, storeId),
+    eq(notificationTemplatesTable.event, existing.event),
+    eq(notificationTemplatesTable.channel, existing.channel),
+  )).limit(1);
+  const maxRetries = template?.maxRetries ?? 3;
+  if (existing.attempts >= maxRetries) throw new HttpError(409, "This delivery has reached its retry limit.", "RETRY_LIMIT_REACHED");
+  const [event] = await db.update(notificationEventsTable).set({ status: "queued", nextRetryAt: null, lastError: null }).where(and(
+    eq(notificationEventsTable.id, id),
+    eq(notificationEventsTable.storeId, storeId),
+    eq(notificationEventsTable.status, "failed"),
+  )).returning();
+  if (!event) throw new HttpError(409, "The delivery changed before it could be retried.", "RETRY_CONFLICT");
+  await logAudit(req, "update", "settings", id, { event: "notification_retry_queued" });
   return res.json({ ...event, createdAt: date(event.createdAt) });
 });
 

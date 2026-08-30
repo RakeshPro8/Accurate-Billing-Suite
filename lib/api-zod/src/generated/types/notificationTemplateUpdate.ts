@@ -5,8 +5,12 @@
  * Mobilinq store operations API
  * OpenAPI spec version: 0.2.0
  */
+import type { NotificationTemplateUpdateChannel } from './notificationTemplateUpdateChannel';
+import type { NotificationTemplateUpdateEvent } from './notificationTemplateUpdateEvent';
 
 export interface NotificationTemplateUpdate {
+  event?: NotificationTemplateUpdateEvent;
+  channel?: NotificationTemplateUpdateChannel;
   /** @maxLength 200 */
   subject?: string;
   /** @maxLength 5000 */

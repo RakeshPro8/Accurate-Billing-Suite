@@ -5,6 +5,7 @@
  * Mobilinq store operations API
  * OpenAPI spec version: 0.2.0
  */
+import type { ThemePreset } from './themePreset';
 
 export interface Settings {
   id: number;
@@ -18,7 +19,7 @@ export interface Settings {
   businessEmail?: string | null;
   /** @nullable */
   logoUrl?: string | null;
-  theme: string;
+  theme: ThemePreset;
   currency: string;
   taxRate: number;
   taxName: string;

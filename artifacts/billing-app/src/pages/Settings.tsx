@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useGetSettings, useUpdateSettings, getGetSettingsQueryKey } from "@workspace/api-client-react";
+import { useApplySettingsTheme, useGetSettings, useUpdateSettings, getGetSettingsQueryKey, type SettingsUpdate, type ThemePreset } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +15,7 @@ import { Building2, Mail, Percent, ImageIcon, Trash2, Upload, Type, Download, Sh
 import { apiUrl, getApiEndpointStatus } from "@/lib/api-config";
 import { readDesktopDiagnostics, type DesktopDiagnostics } from "@/lib/desktop-diagnostics";
 import { getLastSyncAt } from "@/lib/offline-store";
+import { readUiPreferences, saveUiPreferences, UI_PREFERENCES_EVENT } from "@/lib/ui-preferences";
 import { NotificationManagement } from "@/components/NotificationManagement";
 
 function formatDiagnosticDate(value: string | null) {
@@ -148,15 +149,18 @@ function DesktopDiagnosticsPanel() {
 export default function Settings() {
   const { data: settings, isLoading } = useGetSettings();
   const update = useUpdateSettings();
+  const applyTheme = useApplySettingsTheme();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [backupLoading, setBackupLoading] = useState(false);
+  const [localTheme, setLocalTheme] = useState<ThemePreset | null>(() => readUiPreferences().theme);
 
   const { register, handleSubmit, reset, setValue, watch } = useForm<any>();
-  const themeValue = watch("theme") || "terminal";
+  const themeValue = (watch("theme") || settings?.theme || "terminal") as ThemePreset;
   const taxEnabled = watch("taxEnabled") !== false;
+  const [themeApplied, setThemeApplied] = useState<ThemePreset | null>(null);
 
   const themes = [
     {
@@ -216,8 +220,19 @@ export default function Settings() {
   ];
 
   useEffect(() => {
+    const onPreferencesChange = (event: Event) => {
+      const theme = (event as CustomEvent<{ theme?: ThemePreset | null }>).detail?.theme;
+      setLocalTheme(theme ?? null);
+    };
+    window.addEventListener(UI_PREFERENCES_EVENT, onPreferencesChange);
+    return () => window.removeEventListener(UI_PREFERENCES_EVENT, onPreferencesChange);
+  }, []);
+
+  useEffect(() => {
     if (settings) {
-      reset(settings);
+      const localTheme = readUiPreferences().theme;
+      setLocalTheme(localTheme);
+      reset({ ...settings, theme: localTheme ?? settings.theme, smtpPort: settings.smtpPort ?? undefined, gstRate: settings.gstRate ?? undefined, qstRate: settings.qstRate ?? undefined });
       setLogoPreview(settings.logoUrl ?? null);
     }
   }, [settings, reset]);
@@ -245,12 +260,52 @@ export default function Settings() {
   }
 
   function onSubmit(data: any) {
-    update.mutate({ data: { ...data, logoUrl: logoPreview ?? "" } }, {
+    const payload: SettingsUpdate = {
+      appName: typeof data.appName === "string" ? data.appName : undefined,
+      businessName: typeof data.businessName === "string" ? data.businessName : undefined,
+      businessAddress: typeof data.businessAddress === "string" ? data.businessAddress : undefined,
+      businessPhone: typeof data.businessPhone === "string" ? data.businessPhone : undefined,
+      businessEmail: typeof data.businessEmail === "string" ? data.businessEmail : undefined,
+      logoUrl: logoPreview ?? "",
+      currency: typeof data.currency === "string" ? data.currency : undefined,
+      taxName: typeof data.taxName === "string" ? data.taxName : undefined,
+      taxEnabled: Boolean(data.taxEnabled),
+      invoicePrefix: typeof data.invoicePrefix === "string" ? data.invoicePrefix : undefined,
+      quotePrefix: typeof data.quotePrefix === "string" ? data.quotePrefix : undefined,
+      invoiceFooter: typeof data.invoiceFooter === "string" ? data.invoiceFooter : undefined,
+      thankYouMessage: typeof data.thankYouMessage === "string" ? data.thankYouMessage : undefined,
+      smtpHost: typeof data.smtpHost === "string" ? data.smtpHost : undefined,
+      smtpUser: typeof data.smtpUser === "string" ? data.smtpUser : undefined,
+    };
+    for (const field of ["taxRate", "gstRate", "qstRate"] as const) {
+      const value = Number(data[field]);
+      if (Number.isFinite(value)) payload[field] = value;
+    }
+    if (data.smtpPort !== "" && data.smtpPort !== null && data.smtpPort !== undefined) {
+      const value = Number(data.smtpPort);
+      if (Number.isInteger(value) && value >= 1 && value <= 65535) payload.smtpPort = value;
+    }
+    if (typeof data.smtpPass === "string" && data.smtpPass.trim()) payload.smtpPass = data.smtpPass;
+
+    update.mutate({ data: payload }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetSettingsQueryKey() });
         toast({ title: "Settings saved", description: "Your business settings have been updated." });
       },
-      onError: () => toast({ title: "Error", description: "Failed to save settings.", variant: "destructive" }),
+      onError: (error) => toast({ title: "Error", description: error instanceof Error ? error.message : "Failed to save settings.", variant: "destructive" }),
+    });
+  }
+
+  function onApplyTheme() {
+    applyTheme.mutate({ data: { theme: themeValue } }, {
+      onSuccess: () => {
+        const current = readUiPreferences();
+        saveUiPreferences({ ...current, theme: themeValue });
+        setThemeApplied(themeValue);
+        queryClient.invalidateQueries({ queryKey: getGetSettingsQueryKey() });
+        toast({ title: "Theme applied", description: "This workspace and this device now use the selected theme." });
+      },
+      onError: (error) => toast({ title: "Theme not applied", description: error instanceof Error ? error.message : "The selected theme could not be applied.", variant: "destructive" }),
     });
   }
 
@@ -377,7 +432,7 @@ export default function Settings() {
                     aria-checked={themeValue === t.id}
                     tabIndex={0}
                     onClick={() => setValue("theme", t.id, { shouldDirty: true })}
-                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setValue("theme", t.id, { shouldDirty: true }); }}
+                     onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setValue("theme", t.id, { shouldDirty: true }); setThemeApplied(null); } }}
                     className={`cursor-pointer rounded-lg border p-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
                       themeValue === t.id ? "border-primary bg-primary/10" : "border-border hover:border-primary/40"
                     }`}
@@ -393,6 +448,14 @@ export default function Settings() {
                           <div className="h-1.5 w-4/5 rounded-full opacity-20" style={{ background: t.color }} />
                           <div className="h-1.5 w-3/5 rounded-full opacity-20" style={{ background: t.color }} />
                         </div>
+               <div className="mt-4 flex flex-wrap items-center gap-3">
+                 <Button type="button" onClick={onApplyTheme} disabled={applyTheme.isPending} className="gap-2">
+                   <CheckCircle2 className="h-4 w-4" /> {applyTheme.isPending ? "Applying…" : "Apply Theme"}
+                 </Button>
+                 <span className="text-xs text-muted-foreground" role="status">
+                   {applyTheme.isPending ? "Saving the selected preset…" : themeApplied === themeValue ? "Applied to server and this device." : localTheme && settings?.theme && localTheme !== settings.theme ? `This device is using ${localTheme}; Apply Theme will reconcile it.` : "Theme changes are separate from Save Settings."}
+                 </span>
+               </div>
                       </div>
                     </div>
                     <div className="flex items-center justify-between gap-2 mb-1">

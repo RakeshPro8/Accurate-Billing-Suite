@@ -13,7 +13,6 @@ export interface SettingsUpdate {
   businessPhone?: string;
   businessEmail?: string;
   logoUrl?: string;
-  theme?: string;
   currency?: string;
   taxRate?: number;
   taxName?: string;
@@ -25,7 +24,8 @@ export interface SettingsUpdate {
   invoiceFooter?: string;
   thankYouMessage?: string;
   smtpHost?: string;
-  smtpPort?: number;
+  /** @nullable */
+  smtpPort?: number | null;
   smtpUser?: string;
   smtpPass?: string;
   /** @nullable */

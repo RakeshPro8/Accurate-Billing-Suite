@@ -1076,6 +1076,8 @@ export const updateNotificationTemplateBodyMaxRetriesMax = 5;
 
 
 export const UpdateNotificationTemplateBody = zod.object({
+  "event": zod.enum(['invoice', 'estimate', 'repair-status', 'pickup', 'payment', 'reminder']).optional(),
+  "channel": zod.enum(['email', 'sms']).optional(),
   "subject": zod.string().max(updateNotificationTemplateBodySubjectMax).optional(),
   "body": zod.string().max(updateNotificationTemplateBodyBodyMax).optional(),
   "enabled": zod.boolean().optional(),
@@ -1109,6 +1111,12 @@ export const UpdateNotificationTemplateResponse = zod.object({
 /**
  * @summary List notification delivery events
  */
+export const GetNotificationEventsQueryParams = zod.object({
+  "status": zod.enum(['queued', 'sent', 'failed', 'skipped']).optional(),
+  "event": zod.enum(['invoice', 'estimate', 'repair-status', 'pickup', 'payment', 'reminder']).optional(),
+  "channel": zod.enum(['email', 'sms']).optional()
+})
+
 
 
 
@@ -2512,7 +2520,7 @@ export const GetSettingsResponse = zod.object({
   "businessPhone": zod.string().nullish(),
   "businessEmail": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
-  "theme": zod.string(),
+  "theme": zod.enum(['terminal', 'ocean', 'sunset', 'berry', 'forest', 'monochrome']),
   "currency": zod.string(),
   "taxRate": zod.number(),
   "taxName": zod.string(),
@@ -2541,7 +2549,6 @@ export const UpdateSettingsBody = zod.object({
   "businessPhone": zod.string().optional(),
   "businessEmail": zod.string().optional(),
   "logoUrl": zod.string().optional(),
-  "theme": zod.string().optional(),
   "currency": zod.string().optional(),
   "taxRate": zod.number().optional(),
   "taxName": zod.string().optional(),
@@ -2553,7 +2560,7 @@ export const UpdateSettingsBody = zod.object({
   "invoiceFooter": zod.string().optional(),
   "thankYouMessage": zod.string().optional(),
   "smtpHost": zod.string().optional(),
-  "smtpPort": zod.number().int().optional(),
+  "smtpPort": zod.number().int().nullish(),
   "smtpUser": zod.string().optional(),
   "smtpPass": zod.string().optional(),
   "defaultStoreId": zod.number().int().nullish()
@@ -2567,7 +2574,41 @@ export const UpdateSettingsResponse = zod.object({
   "businessPhone": zod.string().nullish(),
   "businessEmail": zod.string().nullish(),
   "logoUrl": zod.string().nullish(),
-  "theme": zod.string(),
+  "theme": zod.enum(['terminal', 'ocean', 'sunset', 'berry', 'forest', 'monochrome']),
+  "currency": zod.string(),
+  "taxRate": zod.number(),
+  "taxName": zod.string(),
+  "taxEnabled": zod.boolean(),
+  "gstRate": zod.number().nullish(),
+  "qstRate": zod.number().nullish(),
+  "invoicePrefix": zod.string().optional(),
+  "quotePrefix": zod.string().optional(),
+  "invoiceFooter": zod.string().nullish(),
+  "thankYouMessage": zod.string().nullish(),
+  "smtpHost": zod.string().nullish(),
+  "smtpPort": zod.number().int().nullish(),
+  "smtpUser": zod.string().nullish(),
+  "smtpConfigured": zod.boolean().optional(),
+  "defaultStoreId": zod.number().int().nullish()
+})
+
+
+/**
+ * @summary Apply the installation-wide theme preset
+ */
+export const ApplySettingsThemeBody = zod.object({
+  "theme": zod.enum(['terminal', 'ocean', 'sunset', 'berry', 'forest', 'monochrome'])
+})
+
+export const ApplySettingsThemeResponse = zod.object({
+  "id": zod.number().int(),
+  "appName": zod.string(),
+  "businessName": zod.string(),
+  "businessAddress": zod.string().nullish(),
+  "businessPhone": zod.string().nullish(),
+  "businessEmail": zod.string().nullish(),
+  "logoUrl": zod.string().nullish(),
+  "theme": zod.enum(['terminal', 'ocean', 'sunset', 'berry', 'forest', 'monochrome']),
   "currency": zod.string(),
   "taxRate": zod.number(),
   "taxName": zod.string(),
