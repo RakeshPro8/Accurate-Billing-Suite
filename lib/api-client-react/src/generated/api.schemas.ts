@@ -355,6 +355,7 @@ export interface LineItem {
   unitPrice: number;
   discount?: number;
   total: number;
+  taxExempt?: boolean;
 }
 
 export interface LineItemInput {
@@ -366,7 +367,13 @@ export interface LineItemInput {
   quantity: number;
   unitPrice: number;
   discount?: number;
+  taxExempt?: boolean;
 }
+
+/**
+ * @nullable
+ */
+export type SaleTaxProfileSnapshot = { [key: string]: unknown } | null;
 
 export interface Payment {
   id: number;
@@ -415,6 +422,12 @@ export interface Sale {
   subtotal: number;
   taxRate?: number;
   tax: number;
+  /** @nullable */
+  taxProfileId?: number | null;
+  /** @nullable */
+  taxProvinceCode?: string | null;
+  /** @nullable */
+  taxProfileSnapshot?: SaleTaxProfileSnapshot;
   discount?: number;
   total: number;
   /** @nullable */
@@ -472,6 +485,7 @@ export interface SaleInput {
   notes?: string;
   paymentMethod?: string;
   dueDate?: string;
+  transactionDate?: string;
   items: LineItemInput[];
 }
 
@@ -485,6 +499,7 @@ export interface SaleUpdate {
   notes?: string;
   paymentMethod?: string;
   dueDate?: string;
+  transactionDate?: string;
   paidAt?: string;
   items?: LineItemInput[];
 }
@@ -522,6 +537,11 @@ export interface StatusNoteInput {
   note?: string;
 }
 
+/**
+ * @nullable
+ */
+export type QuotationTaxProfileSnapshot = { [key: string]: unknown } | null;
+
 export interface Quotation {
   id: number;
   quoteNumber: string;
@@ -537,6 +557,12 @@ export interface Quotation {
   tax: number;
   discount?: number;
   total: number;
+  /** @nullable */
+  taxProfileId?: number | null;
+  /** @nullable */
+  taxProvinceCode?: string | null;
+  /** @nullable */
+  taxProfileSnapshot?: QuotationTaxProfileSnapshot;
   /** @nullable */
   notes?: string | null;
   /** @nullable */
@@ -556,6 +582,7 @@ export interface QuotationInput {
   notes?: string;
   validUntil?: string;
   expiresAt?: string;
+  transactionDate?: string;
   items: LineItemInput[];
 }
 
@@ -569,6 +596,7 @@ export interface QuotationUpdate {
   notes?: string;
   validUntil?: string;
   expiresAt?: string;
+  transactionDate?: string;
   items?: LineItemInput[];
 }
 
@@ -720,6 +748,32 @@ export interface SettingsUpdate {
   defaultStoreId?: number | null;
 }
 
+export type StoreProvinceCode = typeof StoreProvinceCode[keyof typeof StoreProvinceCode];
+
+
+export const StoreProvinceCode = {
+  AB: 'AB',
+  BC: 'BC',
+  MB: 'MB',
+  NB: 'NB',
+  NL: 'NL',
+  NS: 'NS',
+  NT: 'NT',
+  NU: 'NU',
+  ON: 'ON',
+  PE: 'PE',
+  QC: 'QC',
+  SK: 'SK',
+  YT: 'YT',
+} as const;
+
+export type StoreCurrency = typeof StoreCurrency[keyof typeof StoreCurrency];
+
+
+export const StoreCurrency = {
+  CAD: 'CAD',
+} as const;
+
 export interface Store {
   id: number;
   name: string;
@@ -731,8 +785,36 @@ export interface Store {
   email?: string | null;
   active: boolean;
   isDefault: boolean;
+  provinceCode: StoreProvinceCode;
+  currency: StoreCurrency;
   createdAt: string;
 }
+
+export type StoreInputProvinceCode = typeof StoreInputProvinceCode[keyof typeof StoreInputProvinceCode];
+
+
+export const StoreInputProvinceCode = {
+  AB: 'AB',
+  BC: 'BC',
+  MB: 'MB',
+  NB: 'NB',
+  NL: 'NL',
+  NS: 'NS',
+  NT: 'NT',
+  NU: 'NU',
+  ON: 'ON',
+  PE: 'PE',
+  QC: 'QC',
+  SK: 'SK',
+  YT: 'YT',
+} as const;
+
+export type StoreInputCurrency = typeof StoreInputCurrency[keyof typeof StoreInputCurrency];
+
+
+export const StoreInputCurrency = {
+  CAD: 'CAD',
+} as const;
 
 export interface StoreInput {
   /**
@@ -747,11 +829,274 @@ export interface StoreInput {
   /** @nullable */
   email?: string | null;
   isDefault?: boolean;
+  provinceCode?: StoreInputProvinceCode;
+  currency?: StoreInputCurrency;
 }
+
+export type StoreUpdateProvinceCode = typeof StoreUpdateProvinceCode[keyof typeof StoreUpdateProvinceCode];
+
+
+export const StoreUpdateProvinceCode = {
+  AB: 'AB',
+  BC: 'BC',
+  MB: 'MB',
+  NB: 'NB',
+  NL: 'NL',
+  NS: 'NS',
+  NT: 'NT',
+  NU: 'NU',
+  ON: 'ON',
+  PE: 'PE',
+  QC: 'QC',
+  SK: 'SK',
+  YT: 'YT',
+} as const;
+
+export type StoreUpdateCurrency = typeof StoreUpdateCurrency[keyof typeof StoreUpdateCurrency];
+
+
+export const StoreUpdateCurrency = {
+  CAD: 'CAD',
+} as const;
 
 export type StoreUpdate = StoreInput & {
   active?: boolean;
+  provinceCode?: StoreUpdateProvinceCode;
+  currency?: StoreUpdateCurrency;
 };
+
+export type TaxProfileProvinceCode = typeof TaxProfileProvinceCode[keyof typeof TaxProfileProvinceCode];
+
+
+export const TaxProfileProvinceCode = {
+  AB: 'AB',
+  BC: 'BC',
+  MB: 'MB',
+  NB: 'NB',
+  NL: 'NL',
+  NS: 'NS',
+  NT: 'NT',
+  NU: 'NU',
+  ON: 'ON',
+  PE: 'PE',
+  QC: 'QC',
+  SK: 'SK',
+  YT: 'YT',
+} as const;
+
+export type TaxProfileCurrency = typeof TaxProfileCurrency[keyof typeof TaxProfileCurrency];
+
+
+export const TaxProfileCurrency = {
+  CAD: 'CAD',
+} as const;
+
+export type TaxProfileRoundingMode = typeof TaxProfileRoundingMode[keyof typeof TaxProfileRoundingMode];
+
+
+export const TaxProfileRoundingMode = {
+  line: 'line',
+  subtotal: 'subtotal',
+} as const;
+
+export interface TaxProfile {
+  id: number;
+  storeId: number;
+  name: string;
+  provinceCode: TaxProfileProvinceCode;
+  currency: TaxProfileCurrency;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  gstRate: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  hstRate: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  pstRate: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  qstRate: number;
+  effectiveFrom: string;
+  enabled: boolean;
+  roundingMode: TaxProfileRoundingMode;
+  partsTaxable: boolean;
+  labourTaxable: boolean;
+  depositsTaxable: boolean;
+  accessoriesTaxable: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export type TaxProfileInputProvinceCode = typeof TaxProfileInputProvinceCode[keyof typeof TaxProfileInputProvinceCode];
+
+
+export const TaxProfileInputProvinceCode = {
+  AB: 'AB',
+  BC: 'BC',
+  MB: 'MB',
+  NB: 'NB',
+  NL: 'NL',
+  NS: 'NS',
+  NT: 'NT',
+  NU: 'NU',
+  ON: 'ON',
+  PE: 'PE',
+  QC: 'QC',
+  SK: 'SK',
+  YT: 'YT',
+} as const;
+
+export type TaxProfileInputCurrency = typeof TaxProfileInputCurrency[keyof typeof TaxProfileInputCurrency];
+
+
+export const TaxProfileInputCurrency = {
+  CAD: 'CAD',
+} as const;
+
+export type TaxProfileInputRoundingMode = typeof TaxProfileInputRoundingMode[keyof typeof TaxProfileInputRoundingMode];
+
+
+export const TaxProfileInputRoundingMode = {
+  line: 'line',
+  subtotal: 'subtotal',
+} as const;
+
+export interface TaxProfileInput {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  name: string;
+  provinceCode: TaxProfileInputProvinceCode;
+  currency: TaxProfileInputCurrency;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  gstRate: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  hstRate: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  pstRate: number;
+  /**
+     * @minimum 0
+     * @maximum 100
+     */
+  qstRate: number;
+  effectiveFrom: string;
+  enabled: boolean;
+  roundingMode: TaxProfileInputRoundingMode;
+  partsTaxable: boolean;
+  labourTaxable: boolean;
+  depositsTaxable: boolean;
+  accessoriesTaxable: boolean;
+}
+
+export type TaxProfileUpdate = TaxProfileInput;
+
+export type TaxProfileListStore = {
+  id: number;
+  provinceCode: string;
+  currency: string;
+};
+
+export interface TaxProfileList {
+  store: TaxProfileListStore;
+  /** @nullable */
+  activeProfileId: number | null;
+  profiles: TaxProfile[];
+}
+
+export type CustomerRightsEntryProvinceCode = typeof CustomerRightsEntryProvinceCode[keyof typeof CustomerRightsEntryProvinceCode];
+
+
+export const CustomerRightsEntryProvinceCode = {
+  AB: 'AB',
+  BC: 'BC',
+  MB: 'MB',
+  NB: 'NB',
+  NL: 'NL',
+  NS: 'NS',
+  NT: 'NT',
+  NU: 'NU',
+  ON: 'ON',
+  PE: 'PE',
+  QC: 'QC',
+  SK: 'SK',
+  YT: 'YT',
+} as const;
+
+export type CustomerRightsEntryReviewStatus = typeof CustomerRightsEntryReviewStatus[keyof typeof CustomerRightsEntryReviewStatus];
+
+
+export const CustomerRightsEntryReviewStatus = {
+  draft: 'draft',
+  published: 'published',
+  retired: 'retired',
+} as const;
+
+export interface CustomerRightsEntry {
+  id: number;
+  provinceCode: CustomerRightsEntryProvinceCode;
+  topic: string;
+  title: string;
+  summary: string;
+  /** @nullable */
+  readAloudScript?: string | null;
+  sourceUrl: string;
+  effectiveFrom: string;
+  lastReviewedAt: string;
+  reviewStatus: CustomerRightsEntryReviewStatus;
+  stale: boolean;
+  disclaimer: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export type CustomerRightsInputReviewStatus = typeof CustomerRightsInputReviewStatus[keyof typeof CustomerRightsInputReviewStatus];
+
+
+export const CustomerRightsInputReviewStatus = {
+  draft: 'draft',
+  published: 'published',
+  retired: 'retired',
+} as const;
+
+export interface CustomerRightsInput {
+  provinceCode: string;
+  topic: string;
+  title: string;
+  summary: string;
+  /** @nullable */
+  readAloudScript?: string | null;
+  sourceUrl: string;
+  effectiveFrom: string;
+  lastReviewedAt: string;
+  reviewStatus: CustomerRightsInputReviewStatus;
+}
+
+export type CustomerRightsUpdate = CustomerRightsInput;
+
+export interface CustomerRightsList {
+  entries: CustomerRightsEntry[];
+  retrievedAt: string;
+  offlineSafe: boolean;
+}
 
 export interface CurrentStore {
   /** @nullable */
@@ -864,6 +1209,11 @@ export interface SyncReplayResponse {
   results: SyncReplayResponseResultsItem[];
 }
 
+/**
+ * @nullable
+ */
+export type RepairTaxProfileSnapshot = { [key: string]: unknown } | null;
+
 export interface RepairPhoto {
   id: number;
   repairId: number;
@@ -921,6 +1271,15 @@ export interface Repair {
   /** @nullable */
   estimatedCost?: number | null;
   deposit: number;
+  subtotal?: number;
+  taxRate?: number;
+  tax?: number;
+  /** @nullable */
+  taxProfileId?: number | null;
+  /** @nullable */
+  taxProvinceCode?: string | null;
+  /** @nullable */
+  taxProfileSnapshot?: RepairTaxProfileSnapshot;
   total: number;
   balance: number;
   /** @nullable */
@@ -1023,6 +1382,7 @@ export interface RepairInput {
      * @maximum 10000000
      */
   deposit?: number;
+  transactionDate?: string;
 }
 
 export type RepairUpdatePriority = typeof RepairUpdatePriority[keyof typeof RepairUpdatePriority];
@@ -1052,6 +1412,7 @@ export interface RepairUpdate {
   technicianId?: number;
   estimatedCost?: number;
   deposit?: number;
+  transactionDate?: string;
 }
 
 export type RepairStatusChangeStatus = typeof RepairStatusChangeStatus[keyof typeof RepairStatusChangeStatus];
@@ -1476,6 +1837,25 @@ export interface AnonymizeResponse {
   customerId: number;
   anonymizedAt: string;
 }
+
+export type GetTaxProfilesParams = {
+includeDisabled?: boolean;
+};
+
+export type GetCustomerRightsParams = {
+provinceCode?: string;
+topic?: string;
+status?: GetCustomerRightsStatus;
+};
+
+export type GetCustomerRightsStatus = typeof GetCustomerRightsStatus[keyof typeof GetCustomerRightsStatus];
+
+
+export const GetCustomerRightsStatus = {
+  draft: 'draft',
+  published: 'published',
+  retired: 'retired',
+} as const;
 
 export type GetAuditLogsParams = {
 action?: string;

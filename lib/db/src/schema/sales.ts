@@ -1,4 +1,4 @@
-import { pgTable, serial, text, numeric, integer, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, numeric, integer, timestamp, jsonb, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -17,6 +17,9 @@ export const salesTable = pgTable("sales", {
   tax: numeric("tax", { precision: 10, scale: 2 }).notNull().default("0"),
   discount: numeric("discount", { precision: 10, scale: 2 }).notNull().default("0"),
   total: numeric("total", { precision: 10, scale: 2 }).notNull().default("0"),
+  taxProfileId: integer("tax_profile_id"),
+  taxProvinceCode: text("tax_province_code"),
+  taxProfileSnapshot: jsonb("tax_profile_snapshot"),
   notes: text("notes"),
   paymentMethod: text("payment_method"),
   dueDate: text("due_date"),
@@ -37,6 +40,7 @@ export const saleLineItemsTable = pgTable("sale_line_items", {
   unitPrice: numeric("unit_price", { precision: 10, scale: 2 }).notNull(),
   discount: numeric("discount", { precision: 10, scale: 2 }).notNull().default("0"),
   total: numeric("total", { precision: 10, scale: 2 }).notNull(),
+  taxExempt: boolean("tax_exempt").notNull().default(false),
 });
 
 /** Append-only payment ledger. Card details are deliberately never stored here. */

@@ -5,6 +5,8 @@
  * Mobilinq store operations API
  * OpenAPI spec version: 0.2.0
  */
+import type { StoreInputCurrency } from './storeInputCurrency';
+import type { StoreInputProvinceCode } from './storeInputProvinceCode';
 
 export interface StoreInput {
   /**
@@ -19,4 +21,6 @@ export interface StoreInput {
   /** @nullable */
   email?: string | null;
   isDefault?: boolean;
+  provinceCode?: StoreInputProvinceCode;
+  currency?: StoreInputCurrency;
 }

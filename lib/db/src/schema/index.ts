@@ -11,3 +11,5 @@ export * from "./auditLogs";
 export * from "./syncOperations";
 export * from "./operations";
 export * from "./finance";
+export * from "./tax";
+export * from "./guidance";

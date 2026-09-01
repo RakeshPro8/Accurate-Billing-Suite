@@ -269,6 +269,7 @@ export default function QuotationDetail() {
                 {(quote.taxRate ?? 0) > 0 && (
                   <div className="flex justify-between text-muted-foreground"><span>{settings?.taxName ?? "Tax"} ({quote.taxRate}%)</span><span>{formatCurrency(quote.tax ?? 0)}</span></div>
                 )}
+                {quote.taxProvinceCode && <div className="flex justify-between text-xs text-muted-foreground"><span>Tax profile</span><span>{quote.taxProvinceCode} · captured</span></div>}
                 <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2 text-[#1e3a5f]">
                   <span>TOTAL</span><span>{formatCurrency(quote.total)}</span>
                 </div>

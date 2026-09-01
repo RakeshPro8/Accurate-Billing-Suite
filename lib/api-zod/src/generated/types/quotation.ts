@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.2.0
  */
 import type { LineItem } from './lineItem';
+import type { QuotationTaxProfileSnapshot } from './quotationTaxProfileSnapshot';
 
 export interface Quotation {
   id: number;
@@ -22,6 +23,12 @@ export interface Quotation {
   tax: number;
   discount?: number;
   total: number;
+  /** @nullable */
+  taxProfileId?: number | null;
+  /** @nullable */
+  taxProvinceCode?: string | null;
+  /** @nullable */
+  taxProfileSnapshot?: QuotationTaxProfileSnapshot;
   /** @nullable */
   notes?: string | null;
   /** @nullable */

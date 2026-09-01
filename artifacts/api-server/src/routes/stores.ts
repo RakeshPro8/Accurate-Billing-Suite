@@ -7,6 +7,7 @@ import { logAudit } from "../lib/audit";
 import { HttpError } from "../lib/http";
 
 const router = Router();
+const provinceCodes = new Set(["AB", "BC", "MB", "NB", "NL", "NS", "NT", "NU", "ON", "PE", "QC", "SK", "YT"]);
 
 router.get("/", requireAuth, async (_req, res) => {
   try {
@@ -50,11 +51,11 @@ router.patch("/current", requireAuth, async (req, res) => {
 
 router.post("/", requireRole("admin"), async (req, res) => {
   try {
-    const { name, address, phone, email, isDefault } = req.body ?? {};
-    if (typeof name !== "string" || !name.trim() || name.length > 200 || (email && (typeof email !== "string" || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) || (isDefault !== undefined && typeof isDefault !== "boolean")) throw new HttpError(400, "Invalid store.");
+    const { name, address, phone, email, isDefault, provinceCode = "ON", currency = "CAD" } = req.body ?? {};
+    if (typeof name !== "string" || !name.trim() || name.length > 200 || !provinceCodes.has(provinceCode) || currency !== "CAD" || (email && (typeof email !== "string" || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) || (isDefault !== undefined && typeof isDefault !== "boolean")) throw new HttpError(400, "Invalid store.");
     const store = await db.transaction(async (tx) => {
       if (isDefault) await tx.update(storesTable).set({ isDefault: false }).where(sql`${storesTable.isDefault} = true`);
-      const [created] = await tx.insert(storesTable).values({ name: name.trim(), address: address || null, phone: phone || null, email: email || null, isDefault: isDefault === true }).returning();
+      const [created] = await tx.insert(storesTable).values({ name: name.trim(), address: address || null, phone: phone || null, email: email || null, isDefault: isDefault === true, provinceCode, currency }).returning();
       return created;
     });
     await logAudit(req, "create", "store", store.id, { name: store.name });
@@ -67,13 +68,15 @@ router.post("/", requireRole("admin"), async (req, res) => {
 router.patch("/:id", requireRole("admin"), async (req, res) => {
   try {
     const id = Number(req.params.id);
-    const { name, address, phone, email, isDefault, active } = req.body ?? {};
-    if (!Number.isSafeInteger(id) || id < 1 || (name !== undefined && (typeof name !== "string" || !name.trim() || name.length > 200)) || (email && (typeof email !== "string" || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) || (isDefault !== undefined && typeof isDefault !== "boolean") || (active !== undefined && typeof active !== "boolean")) throw new HttpError(400, "Invalid store.");
+    const { name, address, phone, email, isDefault, active, provinceCode, currency } = req.body ?? {};
+    if (!Number.isSafeInteger(id) || id < 1 || (name !== undefined && (typeof name !== "string" || !name.trim() || name.length > 200)) || (provinceCode !== undefined && !provinceCodes.has(provinceCode)) || (currency !== undefined && currency !== "CAD") || (email && (typeof email !== "string" || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) || (isDefault !== undefined && typeof isDefault !== "boolean") || (active !== undefined && typeof active !== "boolean")) throw new HttpError(400, "Invalid store.");
     const updates: Record<string, unknown> = {};
     if (name !== undefined) updates.name = name;
     if (address !== undefined) updates.address = address;
     if (phone !== undefined) updates.phone = phone;
     if (email !== undefined) updates.email = email;
+    if (provinceCode !== undefined) updates.provinceCode = provinceCode;
+    if (currency !== undefined) updates.currency = currency;
     if (active !== undefined) updates.active = active;
     if (!Object.keys(updates).length && isDefault !== true) throw new HttpError(400, "No store fields supplied.");
     const store = await db.transaction(async (tx) => {

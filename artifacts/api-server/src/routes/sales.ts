@@ -7,7 +7,7 @@ import {
   CreateSaleBody, DeleteSaleParams, GetSaleParams, GetSalesQueryParams,
   SendSaleEmailParams, UpdateSaleBody, UpdateSaleParams,
 } from "@workspace/api-zod";
-import { calculateTotals, getTaxConfig, assertMoney } from "../lib/tax";
+import { calculateTotals, getTaxConfig, taxConfigFromSnapshot, assertMoney } from "../lib/tax";
 import { requireCurrentStoreId } from "../lib/stores";
 import { escapeHtml, HttpError, validateRequest } from "../lib/http";
 import { logAudit } from "../lib/audit";
@@ -15,8 +15,8 @@ import { logAudit } from "../lib/audit";
 const router = Router();
 const saleIdParams = GetSaleParams;
 const emailBody = z.object({ to: z.string().email().optional(), subject: z.string().max(200).optional(), message: z.string().max(5_000).optional() });
-type SaleItemInput = { type: string; productId?: number; serviceId?: number; name: string; description?: string; quantity: number; unitPrice: number; discount?: number };
-type SaleBody = { customerId?: number; customerName?: string; customerEmail?: string; status?: string; discount?: number; notes?: string; paymentMethod?: string; dueDate?: string; idempotencyKey?: string; items: SaleItemInput[] };
+type SaleItemInput = { type: string; productId?: number; serviceId?: number; name: string; description?: string; quantity: number; unitPrice: number; discount?: number; taxExempt?: boolean };
+type SaleBody = { customerId?: number; customerName?: string; customerEmail?: string; status?: string; discount?: number; notes?: string; paymentMethod?: string; dueDate?: string; transactionDate?: string; idempotencyKey?: string; items: SaleItemInput[] };
 type SalesQuery = { search?: string; status?: string; customerId?: number; employeeId?: number; storeId?: number; dateFrom?: string; dateTo?: string; paymentMethod?: string; outstanding?: boolean; page?: number; limit?: number; sort?: string; direction?: string };
 type NormalizedSaleItem = SaleItemInput & { quantity: number; unitPrice: number; discount: number; total: number };
 const paymentInput = z.object({ amount: z.number().positive(), method: z.string().min(1).max(80), reference: z.string().max(160).optional(), note: z.string().max(500).optional() });
@@ -68,11 +68,11 @@ function validateDates(dateFrom?: string, dateTo?: string) {
   if ((from && Number.isNaN(from.getTime())) || (to && Number.isNaN(to.getTime())) || (from && to && from > to)) throw new HttpError(400, "Invalid date range.", "INVALID_REQUEST");
   return { from, to };
 }
-async function insertLineItems(tx: any, saleId: number, items: Array<{ type: string; productId?: number | null; serviceId?: number | null; name: string; description?: string | null; quantity: number; unitPrice: number; discount?: number; total?: number }>) {
+async function insertLineItems(tx: any, saleId: number, items: Array<{ type: string; productId?: number | null; serviceId?: number | null; name: string; description?: string | null; quantity: number; unitPrice: number; discount?: number; total?: number; taxExempt?: boolean }>) {
   return Promise.all(items.map((item) => tx.insert(saleLineItemsTable).values({
     saleId, type: item.type || "product", productId: item.productId || null, serviceId: item.serviceId || null,
     name: item.name, description: item.description || null, quantity: String(item.quantity), unitPrice: String(item.unitPrice),
-    discount: String(item.discount ?? 0), total: String(item.total ?? (item.quantity * item.unitPrice - (item.discount ?? 0))),
+    discount: String(item.discount ?? 0), total: String(item.total ?? (item.quantity * item.unitPrice - (item.discount ?? 0))), taxExempt: item.taxExempt === true,
   }).returning().then((rows: any[]) => rows[0])));
 }
 async function addEvent(tx: any, saleId: number, action: string, fromStatus: string | null, toStatus: string | null, req: any, note?: string) {
@@ -173,7 +173,9 @@ router.post("/", validateRequest({ body: CreateSaleBody }), async (req, res, nex
       const items = normalizeItems(body.items);
       const discount = money(body.discount ?? 0, "Discount");
       assertDiscountAuthority(items, discount, current.maxDiscountPct ?? 0);
-      const totals = calculateTotals(items, await getTaxConfig(), discount);
+      const transactionDate = body.transactionDate ? new Date(`${body.transactionDate}T00:00:00Z`) : new Date();
+      if (Number.isNaN(transactionDate.getTime())) throw new HttpError(400, "Invalid transaction date.", "INVALID_REQUEST");
+      const totals = calculateTotals(items, await getTaxConfig(storeId, transactionDate), discount);
       if (body.customerId) {
         const [customer] = await tx.select({ id: customersTable.id }).from(customersTable).where(and(eq(customersTable.id, body.customerId), eq(customersTable.storeId, storeId)));
         if (!customer) throw new HttpError(400, "Customer is unavailable.", "INVALID_REQUEST");
@@ -187,6 +189,7 @@ router.post("/", validateRequest({ body: CreateSaleBody }), async (req, res, nex
         invoiceNumber, idempotencyKey: key ?? null, customerId: body.customerId ?? null, customerName: body.customerName ?? null, customerEmail: body.customerEmail ?? null,
         employeeId: current.id, employeeName: current.name, storeId, status, subtotal: String(totals.subtotal), taxRate: String(totals.taxRate), tax: String(totals.tax), discount: String(discount), total: String(totals.total),
         notes: body.notes ?? null, paymentMethod: status === "paid" ? body.paymentMethod ?? "Cash" : body.paymentMethod ?? null, dueDate: body.dueDate ?? null, paidAt: status === "paid" ? new Date().toISOString() : null,
+        taxProfileId: totals.taxProfileId, taxProvinceCode: totals.taxProfileSnapshot.provinceCode, taxProfileSnapshot: totals.taxProfileSnapshot,
       }).returning();
       await insertLineItems(tx, sale.id, items);
       if (status !== "draft") await adjustInventory(tx, items, storeId, "decrement");
@@ -221,10 +224,11 @@ router.patch("/:id", validateRequest({ params: UpdateSaleParams, body: UpdateSal
         const items = normalizeItems(body.items ?? (await tx.select().from(saleLineItemsTable).where(eq(saleLineItemsTable.saleId, existing.id))).map(parseItem));
         const discount = money(body.discount ?? Number(existing.discount), "Discount");
         assertDiscountAuthority(items, discount, current.maxDiscountPct ?? 0);
-        const totals = calculateTotals(items, await getTaxConfig(), discount);
+        const tax = taxConfigFromSnapshot(existing.taxProfileSnapshot) ?? await getTaxConfig(storeId);
+        const totals = calculateTotals(items, tax, discount);
         await tx.delete(saleLineItemsTable).where(eq(saleLineItemsTable.saleId, existing.id));
         await insertLineItems(tx, existing.id, items);
-        const [updated] = await tx.update(salesTable).set({ customerId: body.customerId ?? existing.customerId, customerName: body.customerName ?? existing.customerName, customerEmail: body.customerEmail ?? existing.customerEmail, notes: body.notes ?? existing.notes, paymentMethod: body.paymentMethod ?? existing.paymentMethod, dueDate: body.dueDate ?? existing.dueDate, subtotal: String(totals.subtotal), taxRate: String(totals.taxRate), tax: String(totals.tax), discount: String(discount), total: String(totals.total) }).where(eq(salesTable.id, existing.id)).returning();
+         const [updated] = await tx.update(salesTable).set({ customerId: body.customerId ?? existing.customerId, customerName: body.customerName ?? existing.customerName, customerEmail: body.customerEmail ?? existing.customerEmail, notes: body.notes ?? existing.notes, paymentMethod: body.paymentMethod ?? existing.paymentMethod, dueDate: body.dueDate ?? existing.dueDate, subtotal: String(totals.subtotal), taxRate: String(totals.taxRate), tax: String(totals.tax), discount: String(discount), total: String(totals.total), taxProfileId: totals.taxProfileId, taxProvinceCode: totals.taxProfileSnapshot.provinceCode, taxProfileSnapshot: totals.taxProfileSnapshot }).where(eq(salesTable.id, existing.id)).returning();
         return hydrateSale(tx, updated, updated.id);
       }
       if (body.status === "paid") {
@@ -354,7 +358,7 @@ router.post("/:id/duplicate", validateRequest({ params: saleIdParams }), async (
       const items = (await tx.select().from(saleLineItemsTable).where(eq(saleLineItemsTable.saleId, source.id))).map(parseItem);
       const [{ count }] = await tx.select({ count: sql<number>`count(*)` }).from(salesTable).where(eq(salesTable.storeId, storeId));
       const [settings] = await tx.select({ invoicePrefix: settingsTable.invoicePrefix }).from(settingsTable).limit(1);
-      const [sale] = await tx.insert(salesTable).values({ invoiceNumber: `${settings?.invoicePrefix ?? "INV-"}${String(Number(count) + 1).padStart(4, "0")}`, idempotencyKey: key ?? null, customerId: source.customerId, customerName: source.customerName, customerEmail: source.customerEmail, employeeId: current.id, employeeName: current.name, storeId, status: "draft", subtotal: source.subtotal, taxRate: source.taxRate, tax: source.tax, discount: source.discount, total: source.total, notes: source.notes, paymentMethod: source.paymentMethod, dueDate: source.dueDate }).returning();
+       const [sale] = await tx.insert(salesTable).values({ invoiceNumber: `${settings?.invoicePrefix ?? "INV-"}${String(Number(count) + 1).padStart(4, "0")}`, idempotencyKey: key ?? null, customerId: source.customerId, customerName: source.customerName, customerEmail: source.customerEmail, employeeId: current.id, employeeName: current.name, storeId, status: "draft", subtotal: source.subtotal, taxRate: source.taxRate, tax: source.tax, discount: source.discount, total: source.total, notes: source.notes, paymentMethod: source.paymentMethod, dueDate: source.dueDate, taxProfileId: source.taxProfileId, taxProvinceCode: source.taxProvinceCode, taxProfileSnapshot: source.taxProfileSnapshot }).returning();
       await insertLineItems(tx, sale.id, items);
       await addEvent(tx, sale.id, "duplicated", null, "draft", req, `Copied from ${source.invoiceNumber}`);
       return hydrateSale(tx, sale, sale.id);

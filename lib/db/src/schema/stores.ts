@@ -10,6 +10,8 @@ export const storesTable = pgTable("stores", {
   email: text("email"),
   isDefault: boolean("is_default").notNull().default(false),
   active: boolean("active").notNull().default(true),
+  provinceCode: text("province_code").notNull().default("ON"),
+  currency: text("currency").notNull().default("CAD"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

@@ -27,6 +27,8 @@ export const GetStoresResponseItem = zod.object({
   "email": zod.string().nullish(),
   "active": zod.boolean(),
   "isDefault": zod.boolean(),
+  "provinceCode": zod.enum(['AB', 'BC', 'MB', 'NB', 'NL', 'NS', 'NT', 'NU', 'ON', 'PE', 'QC', 'SK', 'YT']),
+  "currency": zod.enum(['CAD']),
   "createdAt": zod.coerce.date()
 })
 export const GetStoresResponse = zod.array(GetStoresResponseItem)
@@ -44,7 +46,9 @@ export const CreateStoreBody = zod.object({
   "address": zod.string().nullish(),
   "phone": zod.string().nullish(),
   "email": zod.string().email().nullish(),
-  "isDefault": zod.boolean().optional()
+  "isDefault": zod.boolean().optional(),
+  "provinceCode": zod.enum(['AB', 'BC', 'MB', 'NB', 'NL', 'NS', 'NT', 'NU', 'ON', 'PE', 'QC', 'SK', 'YT']).optional(),
+  "currency": zod.enum(['CAD']).optional()
 })
 
 export const CreateStoreResponse = zod.object({
@@ -55,6 +59,8 @@ export const CreateStoreResponse = zod.object({
   "email": zod.string().nullish(),
   "active": zod.boolean(),
   "isDefault": zod.boolean(),
+  "provinceCode": zod.enum(['AB', 'BC', 'MB', 'NB', 'NL', 'NS', 'NT', 'NU', 'ON', 'PE', 'QC', 'SK', 'YT']),
+  "currency": zod.enum(['CAD']),
   "createdAt": zod.coerce.date()
 })
 
@@ -75,9 +81,13 @@ export const UpdateStoreBody = zod.object({
   "address": zod.string().nullish(),
   "phone": zod.string().nullish(),
   "email": zod.string().email().nullish(),
-  "isDefault": zod.boolean().optional()
+  "isDefault": zod.boolean().optional(),
+  "provinceCode": zod.enum(['AB', 'BC', 'MB', 'NB', 'NL', 'NS', 'NT', 'NU', 'ON', 'PE', 'QC', 'SK', 'YT']).optional(),
+  "currency": zod.enum(['CAD']).optional()
 }).and(zod.object({
-  "active": zod.boolean().optional()
+  "active": zod.boolean().optional(),
+  "provinceCode": zod.enum(['AB', 'BC', 'MB', 'NB', 'NL', 'NS', 'NT', 'NU', 'ON', 'PE', 'QC', 'SK', 'YT']).optional(),
+  "currency": zod.enum(['CAD']).optional()
 }))
 
 export const UpdateStoreResponse = zod.object({
@@ -88,6 +98,8 @@ export const UpdateStoreResponse = zod.object({
   "email": zod.string().nullish(),
   "active": zod.boolean(),
   "isDefault": zod.boolean(),
+  "provinceCode": zod.enum(['AB', 'BC', 'MB', 'NB', 'NL', 'NS', 'NT', 'NU', 'ON', 'PE', 'QC', 'SK', 'YT']),
+  "currency": zod.enum(['CAD']),
   "createdAt": zod.coerce.date()
 })
 
@@ -105,6 +117,8 @@ export const GetCurrentStoreResponse = zod.object({
   "email": zod.string().nullish(),
   "active": zod.boolean(),
   "isDefault": zod.boolean(),
+  "provinceCode": zod.enum(['AB', 'BC', 'MB', 'NB', 'NL', 'NS', 'NT', 'NU', 'ON', 'PE', 'QC', 'SK', 'YT']),
+  "currency": zod.enum(['CAD']),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional()
 })
@@ -127,8 +141,378 @@ export const SetCurrentStoreResponse = zod.object({
   "email": zod.string().nullish(),
   "active": zod.boolean(),
   "isDefault": zod.boolean(),
+  "provinceCode": zod.enum(['AB', 'BC', 'MB', 'NB', 'NL', 'NS', 'NT', 'NU', 'ON', 'PE', 'QC', 'SK', 'YT']),
+  "currency": zod.enum(['CAD']),
   "createdAt": zod.coerce.date()
 }),zod.null()]).optional()
+})
+
+
+/**
+ * @summary List tax profiles for the current store
+ */
+export const GetTaxProfilesQueryParams = zod.object({
+  "includeDisabled": zod.coerce.boolean().optional()
+})
+
+export const getTaxProfilesResponseProfilesItemGstRateMin = 0;
+export const getTaxProfilesResponseProfilesItemGstRateMax = 100;
+
+export const getTaxProfilesResponseProfilesItemHstRateMin = 0;
+export const getTaxProfilesResponseProfilesItemHstRateMax = 100;
+
+export const getTaxProfilesResponseProfilesItemPstRateMin = 0;
+export const getTaxProfilesResponseProfilesItemPstRateMax = 100;
+
+export const getTaxProfilesResponseProfilesItemQstRateMin = 0;
+export const getTaxProfilesResponseProfilesItemQstRateMax = 100;
+
+
+
+export const GetTaxProfilesResponse = zod.object({
+  "store": zod.object({
+  "id": zod.number().int(),
+  "provinceCode": zod.string(),
+  "currency": zod.string()
+}),
+  "activeProfileId": zod.number().int().nullable(),
+  "profiles": zod.array(zod.object({
+  "id": zod.number().int(),
+  "storeId": zod.number().int(),
+  "name": zod.string(),
+  "provinceCode": zod.enum(['AB', 'BC', 'MB', 'NB', 'NL', 'NS', 'NT', 'NU', 'ON', 'PE', 'QC', 'SK', 'YT']),
+  "currency": zod.enum(['CAD']),
+  "gstRate": zod.number().min(getTaxProfilesResponseProfilesItemGstRateMin).max(getTaxProfilesResponseProfilesItemGstRateMax),
+  "hstRate": zod.number().min(getTaxProfilesResponseProfilesItemHstRateMin).max(getTaxProfilesResponseProfilesItemHstRateMax),
+  "pstRate": zod.number().min(getTaxProfilesResponseProfilesItemPstRateMin).max(getTaxProfilesResponseProfilesItemPstRateMax),
+  "qstRate": zod.number().min(getTaxProfilesResponseProfilesItemQstRateMin).max(getTaxProfilesResponseProfilesItemQstRateMax),
+  "effectiveFrom": zod.coerce.date(),
+  "enabled": zod.boolean(),
+  "roundingMode": zod.enum(['line', 'subtotal']),
+  "partsTaxable": zod.boolean(),
+  "labourTaxable": zod.boolean(),
+  "depositsTaxable": zod.boolean(),
+  "accessoriesTaxable": zod.boolean(),
+  "createdAt": zod.coerce.date().optional(),
+  "updatedAt": zod.coerce.date().optional()
+}))
+})
+
+
+/**
+ * @summary Create an effective-dated Canadian tax profile
+ */
+export const createTaxProfileBodyNameMax = 120;
+
+export const createTaxProfileBodyGstRateMin = 0;
+export const createTaxProfileBodyGstRateMax = 100;
+
+export const createTaxProfileBodyHstRateMin = 0;
+export const createTaxProfileBodyHstRateMax = 100;
+
+export const createTaxProfileBodyPstRateMin = 0;
+export const createTaxProfileBodyPstRateMax = 100;
+
+export const createTaxProfileBodyQstRateMin = 0;
+export const createTaxProfileBodyQstRateMax = 100;
+
+
+
+export const CreateTaxProfileBody = zod.object({
+  "name": zod.string().min(1).max(createTaxProfileBodyNameMax),
+  "provinceCode": zod.enum(['AB', 'BC', 'MB', 'NB', 'NL', 'NS', 'NT', 'NU', 'ON', 'PE', 'QC', 'SK', 'YT']),
+  "currency": zod.enum(['CAD']),
+  "gstRate": zod.number().min(createTaxProfileBodyGstRateMin).max(createTaxProfileBodyGstRateMax),
+  "hstRate": zod.number().min(createTaxProfileBodyHstRateMin).max(createTaxProfileBodyHstRateMax),
+  "pstRate": zod.number().min(createTaxProfileBodyPstRateMin).max(createTaxProfileBodyPstRateMax),
+  "qstRate": zod.number().min(createTaxProfileBodyQstRateMin).max(createTaxProfileBodyQstRateMax),
+  "effectiveFrom": zod.coerce.date(),
+  "enabled": zod.boolean(),
+  "roundingMode": zod.enum(['line', 'subtotal']),
+  "partsTaxable": zod.boolean(),
+  "labourTaxable": zod.boolean(),
+  "depositsTaxable": zod.boolean(),
+  "accessoriesTaxable": zod.boolean()
+})
+
+export const createTaxProfileResponseGstRateMin = 0;
+export const createTaxProfileResponseGstRateMax = 100;
+
+export const createTaxProfileResponseHstRateMin = 0;
+export const createTaxProfileResponseHstRateMax = 100;
+
+export const createTaxProfileResponsePstRateMin = 0;
+export const createTaxProfileResponsePstRateMax = 100;
+
+export const createTaxProfileResponseQstRateMin = 0;
+export const createTaxProfileResponseQstRateMax = 100;
+
+
+
+export const CreateTaxProfileResponse = zod.object({
+  "id": zod.number().int(),
+  "storeId": zod.number().int(),
+  "name": zod.string(),
+  "provinceCode": zod.enum(['AB', 'BC', 'MB', 'NB', 'NL', 'NS', 'NT', 'NU', 'ON', 'PE', 'QC', 'SK', 'YT']),
+  "currency": zod.enum(['CAD']),
+  "gstRate": zod.number().min(createTaxProfileResponseGstRateMin).max(createTaxProfileResponseGstRateMax),
+  "hstRate": zod.number().min(createTaxProfileResponseHstRateMin).max(createTaxProfileResponseHstRateMax),
+  "pstRate": zod.number().min(createTaxProfileResponsePstRateMin).max(createTaxProfileResponsePstRateMax),
+  "qstRate": zod.number().min(createTaxProfileResponseQstRateMin).max(createTaxProfileResponseQstRateMax),
+  "effectiveFrom": zod.coerce.date(),
+  "enabled": zod.boolean(),
+  "roundingMode": zod.enum(['line', 'subtotal']),
+  "partsTaxable": zod.boolean(),
+  "labourTaxable": zod.boolean(),
+  "depositsTaxable": zod.boolean(),
+  "accessoriesTaxable": zod.boolean(),
+  "createdAt": zod.coerce.date().optional(),
+  "updatedAt": zod.coerce.date().optional()
+})
+
+
+/**
+ * @summary Update a current-store tax profile
+ */
+export const UpdateTaxProfileParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const updateTaxProfileBodyOneNameMax = 120;
+
+export const updateTaxProfileBodyOneGstRateMin = 0;
+export const updateTaxProfileBodyOneGstRateMax = 100;
+
+export const updateTaxProfileBodyOneHstRateMin = 0;
+export const updateTaxProfileBodyOneHstRateMax = 100;
+
+export const updateTaxProfileBodyOnePstRateMin = 0;
+export const updateTaxProfileBodyOnePstRateMax = 100;
+
+export const updateTaxProfileBodyOneQstRateMin = 0;
+export const updateTaxProfileBodyOneQstRateMax = 100;
+
+
+
+export const UpdateTaxProfileBody = zod.object({
+  "name": zod.string().min(1).max(updateTaxProfileBodyOneNameMax),
+  "provinceCode": zod.enum(['AB', 'BC', 'MB', 'NB', 'NL', 'NS', 'NT', 'NU', 'ON', 'PE', 'QC', 'SK', 'YT']),
+  "currency": zod.enum(['CAD']),
+  "gstRate": zod.number().min(updateTaxProfileBodyOneGstRateMin).max(updateTaxProfileBodyOneGstRateMax),
+  "hstRate": zod.number().min(updateTaxProfileBodyOneHstRateMin).max(updateTaxProfileBodyOneHstRateMax),
+  "pstRate": zod.number().min(updateTaxProfileBodyOnePstRateMin).max(updateTaxProfileBodyOnePstRateMax),
+  "qstRate": zod.number().min(updateTaxProfileBodyOneQstRateMin).max(updateTaxProfileBodyOneQstRateMax),
+  "effectiveFrom": zod.coerce.date(),
+  "enabled": zod.boolean(),
+  "roundingMode": zod.enum(['line', 'subtotal']),
+  "partsTaxable": zod.boolean(),
+  "labourTaxable": zod.boolean(),
+  "depositsTaxable": zod.boolean(),
+  "accessoriesTaxable": zod.boolean()
+})
+
+export const updateTaxProfileResponseGstRateMin = 0;
+export const updateTaxProfileResponseGstRateMax = 100;
+
+export const updateTaxProfileResponseHstRateMin = 0;
+export const updateTaxProfileResponseHstRateMax = 100;
+
+export const updateTaxProfileResponsePstRateMin = 0;
+export const updateTaxProfileResponsePstRateMax = 100;
+
+export const updateTaxProfileResponseQstRateMin = 0;
+export const updateTaxProfileResponseQstRateMax = 100;
+
+
+
+export const UpdateTaxProfileResponse = zod.object({
+  "id": zod.number().int(),
+  "storeId": zod.number().int(),
+  "name": zod.string(),
+  "provinceCode": zod.enum(['AB', 'BC', 'MB', 'NB', 'NL', 'NS', 'NT', 'NU', 'ON', 'PE', 'QC', 'SK', 'YT']),
+  "currency": zod.enum(['CAD']),
+  "gstRate": zod.number().min(updateTaxProfileResponseGstRateMin).max(updateTaxProfileResponseGstRateMax),
+  "hstRate": zod.number().min(updateTaxProfileResponseHstRateMin).max(updateTaxProfileResponseHstRateMax),
+  "pstRate": zod.number().min(updateTaxProfileResponsePstRateMin).max(updateTaxProfileResponsePstRateMax),
+  "qstRate": zod.number().min(updateTaxProfileResponseQstRateMin).max(updateTaxProfileResponseQstRateMax),
+  "effectiveFrom": zod.coerce.date(),
+  "enabled": zod.boolean(),
+  "roundingMode": zod.enum(['line', 'subtotal']),
+  "partsTaxable": zod.boolean(),
+  "labourTaxable": zod.boolean(),
+  "depositsTaxable": zod.boolean(),
+  "accessoriesTaxable": zod.boolean(),
+  "createdAt": zod.coerce.date().optional(),
+  "updatedAt": zod.coerce.date().optional()
+})
+
+
+/**
+ * @summary Disable a current-store tax profile
+ */
+export const RetireTaxProfileParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const retireTaxProfileResponseGstRateMin = 0;
+export const retireTaxProfileResponseGstRateMax = 100;
+
+export const retireTaxProfileResponseHstRateMin = 0;
+export const retireTaxProfileResponseHstRateMax = 100;
+
+export const retireTaxProfileResponsePstRateMin = 0;
+export const retireTaxProfileResponsePstRateMax = 100;
+
+export const retireTaxProfileResponseQstRateMin = 0;
+export const retireTaxProfileResponseQstRateMax = 100;
+
+
+
+export const RetireTaxProfileResponse = zod.object({
+  "id": zod.number().int(),
+  "storeId": zod.number().int(),
+  "name": zod.string(),
+  "provinceCode": zod.enum(['AB', 'BC', 'MB', 'NB', 'NL', 'NS', 'NT', 'NU', 'ON', 'PE', 'QC', 'SK', 'YT']),
+  "currency": zod.enum(['CAD']),
+  "gstRate": zod.number().min(retireTaxProfileResponseGstRateMin).max(retireTaxProfileResponseGstRateMax),
+  "hstRate": zod.number().min(retireTaxProfileResponseHstRateMin).max(retireTaxProfileResponseHstRateMax),
+  "pstRate": zod.number().min(retireTaxProfileResponsePstRateMin).max(retireTaxProfileResponsePstRateMax),
+  "qstRate": zod.number().min(retireTaxProfileResponseQstRateMin).max(retireTaxProfileResponseQstRateMax),
+  "effectiveFrom": zod.coerce.date(),
+  "enabled": zod.boolean(),
+  "roundingMode": zod.enum(['line', 'subtotal']),
+  "partsTaxable": zod.boolean(),
+  "labourTaxable": zod.boolean(),
+  "depositsTaxable": zod.boolean(),
+  "accessoriesTaxable": zod.boolean(),
+  "createdAt": zod.coerce.date().optional(),
+  "updatedAt": zod.coerce.date().optional()
+})
+
+
+/**
+ * @summary List reviewed customer-rights guidance
+ */
+export const GetCustomerRightsQueryParams = zod.object({
+  "provinceCode": zod.coerce.string().optional(),
+  "topic": zod.coerce.string().optional(),
+  "status": zod.enum(['draft', 'published', 'retired']).optional()
+})
+
+export const GetCustomerRightsResponse = zod.object({
+  "entries": zod.array(zod.object({
+  "id": zod.number().int(),
+  "provinceCode": zod.enum(['AB', 'BC', 'MB', 'NB', 'NL', 'NS', 'NT', 'NU', 'ON', 'PE', 'QC', 'SK', 'YT']),
+  "topic": zod.string(),
+  "title": zod.string(),
+  "summary": zod.string(),
+  "readAloudScript": zod.string().nullish(),
+  "sourceUrl": zod.string().url(),
+  "effectiveFrom": zod.coerce.date(),
+  "lastReviewedAt": zod.coerce.date(),
+  "reviewStatus": zod.enum(['draft', 'published', 'retired']),
+  "stale": zod.boolean(),
+  "disclaimer": zod.string(),
+  "createdAt": zod.coerce.date().optional(),
+  "updatedAt": zod.coerce.date().optional()
+})),
+  "retrievedAt": zod.coerce.date(),
+  "offlineSafe": zod.boolean()
+})
+
+
+/**
+ * @summary Create a customer-rights guidance entry (admin only)
+ */
+export const CreateCustomerRightsEntryBody = zod.object({
+  "provinceCode": zod.string(),
+  "topic": zod.string(),
+  "title": zod.string(),
+  "summary": zod.string(),
+  "readAloudScript": zod.string().nullish(),
+  "sourceUrl": zod.string().url(),
+  "effectiveFrom": zod.coerce.date(),
+  "lastReviewedAt": zod.coerce.date(),
+  "reviewStatus": zod.enum(['draft', 'published', 'retired'])
+})
+
+export const CreateCustomerRightsEntryResponse = zod.object({
+  "id": zod.number().int(),
+  "provinceCode": zod.enum(['AB', 'BC', 'MB', 'NB', 'NL', 'NS', 'NT', 'NU', 'ON', 'PE', 'QC', 'SK', 'YT']),
+  "topic": zod.string(),
+  "title": zod.string(),
+  "summary": zod.string(),
+  "readAloudScript": zod.string().nullish(),
+  "sourceUrl": zod.string().url(),
+  "effectiveFrom": zod.coerce.date(),
+  "lastReviewedAt": zod.coerce.date(),
+  "reviewStatus": zod.enum(['draft', 'published', 'retired']),
+  "stale": zod.boolean(),
+  "disclaimer": zod.string(),
+  "createdAt": zod.coerce.date().optional(),
+  "updatedAt": zod.coerce.date().optional()
+})
+
+
+/**
+ * @summary Update customer-rights guidance (admin only)
+ */
+export const UpdateCustomerRightsEntryParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const UpdateCustomerRightsEntryBody = zod.object({
+  "provinceCode": zod.string(),
+  "topic": zod.string(),
+  "title": zod.string(),
+  "summary": zod.string(),
+  "readAloudScript": zod.string().nullish(),
+  "sourceUrl": zod.string().url(),
+  "effectiveFrom": zod.coerce.date(),
+  "lastReviewedAt": zod.coerce.date(),
+  "reviewStatus": zod.enum(['draft', 'published', 'retired'])
+})
+
+export const UpdateCustomerRightsEntryResponse = zod.object({
+  "id": zod.number().int(),
+  "provinceCode": zod.enum(['AB', 'BC', 'MB', 'NB', 'NL', 'NS', 'NT', 'NU', 'ON', 'PE', 'QC', 'SK', 'YT']),
+  "topic": zod.string(),
+  "title": zod.string(),
+  "summary": zod.string(),
+  "readAloudScript": zod.string().nullish(),
+  "sourceUrl": zod.string().url(),
+  "effectiveFrom": zod.coerce.date(),
+  "lastReviewedAt": zod.coerce.date(),
+  "reviewStatus": zod.enum(['draft', 'published', 'retired']),
+  "stale": zod.boolean(),
+  "disclaimer": zod.string(),
+  "createdAt": zod.coerce.date().optional(),
+  "updatedAt": zod.coerce.date().optional()
+})
+
+
+/**
+ * @summary Retire customer-rights guidance (admin only)
+ */
+export const RetireCustomerRightsEntryParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const RetireCustomerRightsEntryResponse = zod.object({
+  "id": zod.number().int(),
+  "provinceCode": zod.enum(['AB', 'BC', 'MB', 'NB', 'NL', 'NS', 'NT', 'NU', 'ON', 'PE', 'QC', 'SK', 'YT']),
+  "topic": zod.string(),
+  "title": zod.string(),
+  "summary": zod.string(),
+  "readAloudScript": zod.string().nullish(),
+  "sourceUrl": zod.string().url(),
+  "effectiveFrom": zod.coerce.date(),
+  "lastReviewedAt": zod.coerce.date(),
+  "reviewStatus": zod.enum(['draft', 'published', 'retired']),
+  "stale": zod.boolean(),
+  "disclaimer": zod.string(),
+  "createdAt": zod.coerce.date().optional(),
+  "updatedAt": zod.coerce.date().optional()
 })
 
 
@@ -1415,6 +1799,9 @@ export const GetSalesResponse = zod.object({
   "subtotal": zod.number(),
   "taxRate": zod.number().optional(),
   "tax": zod.number(),
+  "taxProfileId": zod.number().int().nullish(),
+  "taxProvinceCode": zod.string().nullish(),
+  "taxProfileSnapshot": zod.record(zod.string(), zod.unknown()).nullish(),
   "discount": zod.number().optional(),
   "total": zod.number(),
   "notes": zod.string().nullish(),
@@ -1458,7 +1845,8 @@ export const GetSalesResponse = zod.object({
   "quantity": zod.number(),
   "unitPrice": zod.number(),
   "discount": zod.number().optional(),
-  "total": zod.number()
+  "total": zod.number(),
+  "taxExempt": zod.boolean().optional()
 })).optional(),
   "createdAt": zod.string()
 })),
@@ -1495,6 +1883,7 @@ export const CreateSaleBody = zod.object({
   "notes": zod.string().optional(),
   "paymentMethod": zod.string().optional(),
   "dueDate": zod.string().optional(),
+  "transactionDate": zod.coerce.date().optional(),
   "items": zod.array(zod.object({
   "type": zod.string(),
   "productId": zod.number().int().optional(),
@@ -1503,7 +1892,8 @@ export const CreateSaleBody = zod.object({
   "description": zod.string().optional(),
   "quantity": zod.number(),
   "unitPrice": zod.number(),
-  "discount": zod.number().optional()
+  "discount": zod.number().optional(),
+  "taxExempt": zod.boolean().optional()
 }))
 })
 
@@ -1517,6 +1907,9 @@ export const CreateSaleResponse = zod.object({
   "subtotal": zod.number(),
   "taxRate": zod.number().optional(),
   "tax": zod.number(),
+  "taxProfileId": zod.number().int().nullish(),
+  "taxProvinceCode": zod.string().nullish(),
+  "taxProfileSnapshot": zod.record(zod.string(), zod.unknown()).nullish(),
   "discount": zod.number().optional(),
   "total": zod.number(),
   "notes": zod.string().nullish(),
@@ -1560,7 +1953,8 @@ export const CreateSaleResponse = zod.object({
   "quantity": zod.number(),
   "unitPrice": zod.number(),
   "discount": zod.number().optional(),
-  "total": zod.number()
+  "total": zod.number(),
+  "taxExempt": zod.boolean().optional()
 })).optional(),
   "createdAt": zod.string()
 })
@@ -1583,6 +1977,9 @@ export const GetSaleResponse = zod.object({
   "subtotal": zod.number(),
   "taxRate": zod.number().optional(),
   "tax": zod.number(),
+  "taxProfileId": zod.number().int().nullish(),
+  "taxProvinceCode": zod.string().nullish(),
+  "taxProfileSnapshot": zod.record(zod.string(), zod.unknown()).nullish(),
   "discount": zod.number().optional(),
   "total": zod.number(),
   "notes": zod.string().nullish(),
@@ -1626,7 +2023,8 @@ export const GetSaleResponse = zod.object({
   "quantity": zod.number(),
   "unitPrice": zod.number(),
   "discount": zod.number().optional(),
-  "total": zod.number()
+  "total": zod.number(),
+  "taxExempt": zod.boolean().optional()
 })).optional(),
   "createdAt": zod.string()
 })
@@ -1649,6 +2047,7 @@ export const UpdateSaleBody = zod.object({
   "notes": zod.string().optional(),
   "paymentMethod": zod.string().optional(),
   "dueDate": zod.string().optional(),
+  "transactionDate": zod.coerce.date().optional(),
   "paidAt": zod.string().optional(),
   "items": zod.array(zod.object({
   "type": zod.string(),
@@ -1658,7 +2057,8 @@ export const UpdateSaleBody = zod.object({
   "description": zod.string().optional(),
   "quantity": zod.number(),
   "unitPrice": zod.number(),
-  "discount": zod.number().optional()
+  "discount": zod.number().optional(),
+  "taxExempt": zod.boolean().optional()
 })).optional()
 })
 
@@ -1672,6 +2072,9 @@ export const UpdateSaleResponse = zod.object({
   "subtotal": zod.number(),
   "taxRate": zod.number().optional(),
   "tax": zod.number(),
+  "taxProfileId": zod.number().int().nullish(),
+  "taxProvinceCode": zod.string().nullish(),
+  "taxProfileSnapshot": zod.record(zod.string(), zod.unknown()).nullish(),
   "discount": zod.number().optional(),
   "total": zod.number(),
   "notes": zod.string().nullish(),
@@ -1715,7 +2118,8 @@ export const UpdateSaleResponse = zod.object({
   "quantity": zod.number(),
   "unitPrice": zod.number(),
   "discount": zod.number().optional(),
-  "total": zod.number()
+  "total": zod.number(),
+  "taxExempt": zod.boolean().optional()
 })).optional(),
   "createdAt": zod.string()
 })
@@ -1792,6 +2196,9 @@ export const RecordSalePaymentResponse = zod.object({
   "subtotal": zod.number(),
   "taxRate": zod.number().optional(),
   "tax": zod.number(),
+  "taxProfileId": zod.number().int().nullish(),
+  "taxProvinceCode": zod.string().nullish(),
+  "taxProfileSnapshot": zod.record(zod.string(), zod.unknown()).nullish(),
   "discount": zod.number().optional(),
   "total": zod.number(),
   "notes": zod.string().nullish(),
@@ -1835,7 +2242,8 @@ export const RecordSalePaymentResponse = zod.object({
   "quantity": zod.number(),
   "unitPrice": zod.number(),
   "discount": zod.number().optional(),
-  "total": zod.number()
+  "total": zod.number(),
+  "taxExempt": zod.boolean().optional()
 })).optional(),
   "createdAt": zod.string()
 })
@@ -1875,6 +2283,9 @@ export const VoidSaleResponse = zod.object({
   "subtotal": zod.number(),
   "taxRate": zod.number().optional(),
   "tax": zod.number(),
+  "taxProfileId": zod.number().int().nullish(),
+  "taxProvinceCode": zod.string().nullish(),
+  "taxProfileSnapshot": zod.record(zod.string(), zod.unknown()).nullish(),
   "discount": zod.number().optional(),
   "total": zod.number(),
   "notes": zod.string().nullish(),
@@ -1918,7 +2329,8 @@ export const VoidSaleResponse = zod.object({
   "quantity": zod.number(),
   "unitPrice": zod.number(),
   "discount": zod.number().optional(),
-  "total": zod.number()
+  "total": zod.number(),
+  "taxExempt": zod.boolean().optional()
 })).optional(),
   "createdAt": zod.string()
 })
@@ -1967,6 +2379,9 @@ export const RefundSaleResponse = zod.object({
   "subtotal": zod.number(),
   "taxRate": zod.number().optional(),
   "tax": zod.number(),
+  "taxProfileId": zod.number().int().nullish(),
+  "taxProvinceCode": zod.string().nullish(),
+  "taxProfileSnapshot": zod.record(zod.string(), zod.unknown()).nullish(),
   "discount": zod.number().optional(),
   "total": zod.number(),
   "notes": zod.string().nullish(),
@@ -2010,7 +2425,8 @@ export const RefundSaleResponse = zod.object({
   "quantity": zod.number(),
   "unitPrice": zod.number(),
   "discount": zod.number().optional(),
-  "total": zod.number()
+  "total": zod.number(),
+  "taxExempt": zod.boolean().optional()
 })).optional(),
   "createdAt": zod.string()
 })
@@ -2042,6 +2458,9 @@ export const DuplicateSaleResponse = zod.object({
   "subtotal": zod.number(),
   "taxRate": zod.number().optional(),
   "tax": zod.number(),
+  "taxProfileId": zod.number().int().nullish(),
+  "taxProvinceCode": zod.string().nullish(),
+  "taxProfileSnapshot": zod.record(zod.string(), zod.unknown()).nullish(),
   "discount": zod.number().optional(),
   "total": zod.number(),
   "notes": zod.string().nullish(),
@@ -2085,7 +2504,8 @@ export const DuplicateSaleResponse = zod.object({
   "quantity": zod.number(),
   "unitPrice": zod.number(),
   "discount": zod.number().optional(),
-  "total": zod.number()
+  "total": zod.number(),
+  "taxExempt": zod.boolean().optional()
 })).optional(),
   "createdAt": zod.string()
 })
@@ -2110,6 +2530,9 @@ export const GetQuotationsResponseItem = zod.object({
   "tax": zod.number(),
   "discount": zod.number().optional(),
   "total": zod.number(),
+  "taxProfileId": zod.number().int().nullish(),
+  "taxProvinceCode": zod.string().nullish(),
+  "taxProfileSnapshot": zod.record(zod.string(), zod.unknown()).nullish(),
   "notes": zod.string().nullish(),
   "validUntil": zod.string().nullish(),
   "expiresAt": zod.string().nullish(),
@@ -2123,7 +2546,8 @@ export const GetQuotationsResponseItem = zod.object({
   "quantity": zod.number(),
   "unitPrice": zod.number(),
   "discount": zod.number().optional(),
-  "total": zod.number()
+  "total": zod.number(),
+  "taxExempt": zod.boolean().optional()
 })).optional(),
   "createdAt": zod.string()
 })
@@ -2142,6 +2566,7 @@ export const CreateQuotationBody = zod.object({
   "notes": zod.string().optional(),
   "validUntil": zod.string().optional(),
   "expiresAt": zod.string().optional(),
+  "transactionDate": zod.coerce.date().optional(),
   "items": zod.array(zod.object({
   "type": zod.string(),
   "productId": zod.number().int().optional(),
@@ -2150,7 +2575,8 @@ export const CreateQuotationBody = zod.object({
   "description": zod.string().optional(),
   "quantity": zod.number(),
   "unitPrice": zod.number(),
-  "discount": zod.number().optional()
+  "discount": zod.number().optional(),
+  "taxExempt": zod.boolean().optional()
 }))
 })
 
@@ -2166,6 +2592,9 @@ export const CreateQuotationResponse = zod.object({
   "tax": zod.number(),
   "discount": zod.number().optional(),
   "total": zod.number(),
+  "taxProfileId": zod.number().int().nullish(),
+  "taxProvinceCode": zod.string().nullish(),
+  "taxProfileSnapshot": zod.record(zod.string(), zod.unknown()).nullish(),
   "notes": zod.string().nullish(),
   "validUntil": zod.string().nullish(),
   "expiresAt": zod.string().nullish(),
@@ -2179,7 +2608,8 @@ export const CreateQuotationResponse = zod.object({
   "quantity": zod.number(),
   "unitPrice": zod.number(),
   "discount": zod.number().optional(),
-  "total": zod.number()
+  "total": zod.number(),
+  "taxExempt": zod.boolean().optional()
 })).optional(),
   "createdAt": zod.string()
 })
@@ -2204,6 +2634,9 @@ export const GetQuotationResponse = zod.object({
   "tax": zod.number(),
   "discount": zod.number().optional(),
   "total": zod.number(),
+  "taxProfileId": zod.number().int().nullish(),
+  "taxProvinceCode": zod.string().nullish(),
+  "taxProfileSnapshot": zod.record(zod.string(), zod.unknown()).nullish(),
   "notes": zod.string().nullish(),
   "validUntil": zod.string().nullish(),
   "expiresAt": zod.string().nullish(),
@@ -2217,7 +2650,8 @@ export const GetQuotationResponse = zod.object({
   "quantity": zod.number(),
   "unitPrice": zod.number(),
   "discount": zod.number().optional(),
-  "total": zod.number()
+  "total": zod.number(),
+  "taxExempt": zod.boolean().optional()
 })).optional(),
   "createdAt": zod.string()
 })
@@ -2240,6 +2674,7 @@ export const UpdateQuotationBody = zod.object({
   "notes": zod.string().optional(),
   "validUntil": zod.string().optional(),
   "expiresAt": zod.string().optional(),
+  "transactionDate": zod.coerce.date().optional(),
   "items": zod.array(zod.object({
   "type": zod.string(),
   "productId": zod.number().int().optional(),
@@ -2248,7 +2683,8 @@ export const UpdateQuotationBody = zod.object({
   "description": zod.string().optional(),
   "quantity": zod.number(),
   "unitPrice": zod.number(),
-  "discount": zod.number().optional()
+  "discount": zod.number().optional(),
+  "taxExempt": zod.boolean().optional()
 })).optional()
 })
 
@@ -2264,6 +2700,9 @@ export const UpdateQuotationResponse = zod.object({
   "tax": zod.number(),
   "discount": zod.number().optional(),
   "total": zod.number(),
+  "taxProfileId": zod.number().int().nullish(),
+  "taxProvinceCode": zod.string().nullish(),
+  "taxProfileSnapshot": zod.record(zod.string(), zod.unknown()).nullish(),
   "notes": zod.string().nullish(),
   "validUntil": zod.string().nullish(),
   "expiresAt": zod.string().nullish(),
@@ -2277,7 +2716,8 @@ export const UpdateQuotationResponse = zod.object({
   "quantity": zod.number(),
   "unitPrice": zod.number(),
   "discount": zod.number().optional(),
-  "total": zod.number()
+  "total": zod.number(),
+  "taxExempt": zod.boolean().optional()
 })).optional(),
   "createdAt": zod.string()
 })
@@ -2310,6 +2750,9 @@ export const ConvertQuotationToSaleResponse = zod.object({
   "subtotal": zod.number(),
   "taxRate": zod.number().optional(),
   "tax": zod.number(),
+  "taxProfileId": zod.number().int().nullish(),
+  "taxProvinceCode": zod.string().nullish(),
+  "taxProfileSnapshot": zod.record(zod.string(), zod.unknown()).nullish(),
   "discount": zod.number().optional(),
   "total": zod.number(),
   "notes": zod.string().nullish(),
@@ -2353,7 +2796,8 @@ export const ConvertQuotationToSaleResponse = zod.object({
   "quantity": zod.number(),
   "unitPrice": zod.number(),
   "discount": zod.number().optional(),
-  "total": zod.number()
+  "total": zod.number(),
+  "taxExempt": zod.boolean().optional()
 })).optional(),
   "createdAt": zod.string()
 })
@@ -2436,6 +2880,9 @@ export const GetMonthlyReportResponse = zod.object({
   "subtotal": zod.number(),
   "taxRate": zod.number().optional(),
   "tax": zod.number(),
+  "taxProfileId": zod.number().int().nullish(),
+  "taxProvinceCode": zod.string().nullish(),
+  "taxProfileSnapshot": zod.record(zod.string(), zod.unknown()).nullish(),
   "discount": zod.number().optional(),
   "total": zod.number(),
   "notes": zod.string().nullish(),
@@ -2479,7 +2926,8 @@ export const GetMonthlyReportResponse = zod.object({
   "quantity": zod.number(),
   "unitPrice": zod.number(),
   "discount": zod.number().optional(),
-  "total": zod.number()
+  "total": zod.number(),
+  "taxExempt": zod.boolean().optional()
 })).optional(),
   "createdAt": zod.string()
 }))
@@ -2658,6 +3106,12 @@ export const GetRepairsResponseItem = zod.object({
   "technicianName": zod.string().nullish(),
   "estimatedCost": zod.number().nullish(),
   "deposit": zod.number(),
+  "subtotal": zod.number().optional(),
+  "taxRate": zod.number().optional(),
+  "tax": zod.number().optional(),
+  "taxProfileId": zod.number().int().nullish(),
+  "taxProvinceCode": zod.string().nullish(),
+  "taxProfileSnapshot": zod.record(zod.string(), zod.unknown()).nullish(),
   "total": zod.number(),
   "balance": zod.number(),
   "notifiedAt": zod.string().nullish(),
@@ -2739,7 +3193,8 @@ export const CreateRepairBody = zod.object({
   "priority": zod.enum(['low', 'normal', 'high', 'urgent']).optional(),
   "technicianId": zod.number().int().min(1).nullish(),
   "estimatedCost": zod.number().min(createRepairBodyEstimatedCostMin).max(createRepairBodyEstimatedCostMax).nullish(),
-  "deposit": zod.number().min(createRepairBodyDepositMin).max(createRepairBodyDepositMax).optional()
+  "deposit": zod.number().min(createRepairBodyDepositMin).max(createRepairBodyDepositMax).optional(),
+  "transactionDate": zod.coerce.date().optional()
 })
 
 export const CreateRepairResponse = zod.object({
@@ -2762,6 +3217,12 @@ export const CreateRepairResponse = zod.object({
   "technicianName": zod.string().nullish(),
   "estimatedCost": zod.number().nullish(),
   "deposit": zod.number(),
+  "subtotal": zod.number().optional(),
+  "taxRate": zod.number().optional(),
+  "tax": zod.number().optional(),
+  "taxProfileId": zod.number().int().nullish(),
+  "taxProvinceCode": zod.string().nullish(),
+  "taxProfileSnapshot": zod.record(zod.string(), zod.unknown()).nullish(),
   "total": zod.number(),
   "balance": zod.number(),
   "notifiedAt": zod.string().nullish(),
@@ -2818,6 +3279,12 @@ export const GetRepairResponse = zod.object({
   "technicianName": zod.string().nullish(),
   "estimatedCost": zod.number().nullish(),
   "deposit": zod.number(),
+  "subtotal": zod.number().optional(),
+  "taxRate": zod.number().optional(),
+  "tax": zod.number().optional(),
+  "taxProfileId": zod.number().int().nullish(),
+  "taxProvinceCode": zod.string().nullish(),
+  "taxProfileSnapshot": zod.record(zod.string(), zod.unknown()).nullish(),
   "total": zod.number(),
   "balance": zod.number(),
   "notifiedAt": zod.string().nullish(),
@@ -2870,7 +3337,8 @@ export const UpdateRepairBody = zod.object({
   "priority": zod.enum(['low', 'normal', 'high', 'urgent']).optional(),
   "technicianId": zod.number().int().optional(),
   "estimatedCost": zod.number().optional(),
-  "deposit": zod.number().optional()
+  "deposit": zod.number().optional(),
+  "transactionDate": zod.coerce.date().optional()
 })
 
 export const UpdateRepairResponse = zod.object({
@@ -2893,6 +3361,12 @@ export const UpdateRepairResponse = zod.object({
   "technicianName": zod.string().nullish(),
   "estimatedCost": zod.number().nullish(),
   "deposit": zod.number(),
+  "subtotal": zod.number().optional(),
+  "taxRate": zod.number().optional(),
+  "tax": zod.number().optional(),
+  "taxProfileId": zod.number().int().nullish(),
+  "taxProvinceCode": zod.string().nullish(),
+  "taxProfileSnapshot": zod.record(zod.string(), zod.unknown()).nullish(),
   "total": zod.number(),
   "balance": zod.number(),
   "notifiedAt": zod.string().nullish(),
@@ -2969,6 +3443,12 @@ export const UpdateRepairStatusResponse = zod.object({
   "technicianName": zod.string().nullish(),
   "estimatedCost": zod.number().nullish(),
   "deposit": zod.number(),
+  "subtotal": zod.number().optional(),
+  "taxRate": zod.number().optional(),
+  "tax": zod.number().optional(),
+  "taxProfileId": zod.number().int().nullish(),
+  "taxProvinceCode": zod.string().nullish(),
+  "taxProfileSnapshot": zod.record(zod.string(), zod.unknown()).nullish(),
   "total": zod.number(),
   "balance": zod.number(),
   "notifiedAt": zod.string().nullish(),

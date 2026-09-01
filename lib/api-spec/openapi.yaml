@@ -35,6 +35,10 @@ tags:
     description: Privacy-safe manager audit trail
   - name: sync
     description: Offline operation replay and reconciliation
+  - name: tax-profiles
+    description: Canadian store tax profiles
+  - name: customer-rights
+    description: Reviewed internal customer-rights guidance
 
 paths:
   /healthz:
@@ -136,6 +140,134 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/CurrentStore"
+
+  /tax-profiles:
+    get:
+      operationId: getTaxProfiles
+      tags: [tax-profiles]
+      summary: List tax profiles for the current store
+      parameters:
+        - name: includeDisabled
+          in: query
+          schema: { type: boolean }
+      responses:
+        "200":
+          description: Store tax profiles and active profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TaxProfileList" }
+    post:
+      operationId: createTaxProfile
+      tags: [tax-profiles]
+      summary: Create an effective-dated Canadian tax profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TaxProfileInput" }
+      responses:
+        "201":
+          description: Tax profile created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TaxProfile" }
+
+  /tax-profiles/{id}:
+    patch:
+      operationId: updateTaxProfile
+      tags: [tax-profiles]
+      summary: Update a current-store tax profile
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/TaxProfileUpdate" }
+      responses:
+        "200":
+          description: Updated tax profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TaxProfile" }
+
+  /tax-profiles/{id}/retire:
+    post:
+      operationId: retireTaxProfile
+      tags: [tax-profiles]
+      summary: Disable a current-store tax profile
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: Retired tax profile
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TaxProfile" }
+
+  /customer-rights:
+    get:
+      operationId: getCustomerRights
+      tags: [customer-rights]
+      summary: List reviewed customer-rights guidance
+      parameters:
+        - { name: provinceCode, in: query, schema: { type: string } }
+        - { name: topic, in: query, schema: { type: string } }
+        - { name: status, in: query, schema: { type: string, enum: [draft, published, retired] } }
+      responses:
+        "200":
+          description: Guidance entries; ordinary employees receive published entries only
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CustomerRightsList" }
+    post:
+      operationId: createCustomerRightsEntry
+      tags: [customer-rights]
+      summary: Create a customer-rights guidance entry (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CustomerRightsInput" }
+      responses:
+        "201":
+          description: Guidance entry created
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CustomerRightsEntry" }
+
+  /customer-rights/{id}:
+    patch:
+      operationId: updateCustomerRightsEntry
+      tags: [customer-rights]
+      summary: Update customer-rights guidance (admin only)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/CustomerRightsUpdate" }
+      responses:
+        "200":
+          description: Updated guidance entry
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CustomerRightsEntry" }
+
+  /customer-rights/{id}/retire:
+    post:
+      operationId: retireCustomerRightsEntry
+      tags: [customer-rights]
+      summary: Retire customer-rights guidance (admin only)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: Retired guidance entry
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CustomerRightsEntry" }
 
   /audit-logs:
     get:
@@ -2025,6 +2157,7 @@ components:
         unitPrice:    { type: number }
         discount:     { type: number }
         total:        { type: number }
+        taxExempt:    { type: boolean }
 
     LineItemInput:
       type: object
@@ -2038,6 +2171,7 @@ components:
         quantity:     { type: number }
         unitPrice:    { type: number }
         discount:     { type: number }
+        taxExempt:    { type: boolean }
 
     # ── Sale ──
     Sale:
@@ -2053,6 +2187,9 @@ components:
         subtotal:       { type: number }
         taxRate:        { type: number }
         tax:            { type: number }
+        taxProfileId:   { type: ["integer", "null"] }
+        taxProvinceCode: { type: ["string", "null"] }
+        taxProfileSnapshot: { type: ["object", "null"], additionalProperties: true }
         discount:       { type: number }
         total:          { type: number }
         notes:          { type: ["string", "null"] }
@@ -2145,6 +2282,7 @@ components:
         notes:          { type: string }
         paymentMethod:  { type: string }
         dueDate:        { type: string }
+        transactionDate: { type: string, format: date }
         items:
           type: array
           items:
@@ -2162,6 +2300,7 @@ components:
         notes:          { type: string }
         paymentMethod:  { type: string }
         dueDate:        { type: string }
+        transactionDate: { type: string, format: date }
         paidAt:         { type: string }
         items:
           type: array
@@ -2207,6 +2346,9 @@ components:
         tax:            { type: number }
         discount:       { type: number }
         total:          { type: number }
+        taxProfileId:   { type: ["integer", "null"] }
+        taxProvinceCode: { type: ["string", "null"] }
+        taxProfileSnapshot: { type: ["object", "null"], additionalProperties: true }
         notes:          { type: ["string", "null"] }
         validUntil:     { type: ["string", "null"] }
         expiresAt:      { type: ["string", "null"] }
@@ -2228,6 +2370,7 @@ components:
         notes:          { type: string }
         validUntil:     { type: string }
         expiresAt:      { type: string }
+        transactionDate: { type: string, format: date }
         items:
           type: array
           items:
@@ -2245,6 +2388,7 @@ components:
         notes:          { type: string }
         validUntil:     { type: string }
         expiresAt:      { type: string }
+        transactionDate: { type: string, format: date }
         items:
           type: array
           items:
@@ -2421,7 +2565,7 @@ components:
 
     Store:
       type: object
-      required: [id, name, active, isDefault, createdAt]
+      required: [id, name, active, isDefault, createdAt, provinceCode, currency]
       properties:
         id: { type: integer }
         name: { type: string }
@@ -2430,6 +2574,8 @@ components:
         email: { type: ["string", "null"] }
         active: { type: boolean }
         isDefault: { type: boolean }
+        provinceCode: { type: string, enum: [AB, BC, MB, NB, NL, NS, NT, NU, ON, PE, QC, SK, YT] }
+        currency: { type: string, enum: [CAD] }
         createdAt: { type: string, format: date-time }
 
     StoreInput:
@@ -2442,6 +2588,8 @@ components:
         phone: { type: ["string", "null"] }
         email: { type: ["string", "null"], format: email }
         isDefault: { type: boolean }
+        provinceCode: { type: string, enum: [AB, BC, MB, NB, NL, NS, NT, NU, ON, PE, QC, SK, YT] }
+        currency: { type: string, enum: [CAD] }
 
     StoreUpdate:
       allOf:
@@ -2449,6 +2597,115 @@ components:
       required: []
       properties:
         active: { type: boolean }
+        provinceCode: { type: string, enum: [AB, BC, MB, NB, NL, NS, NT, NU, ON, PE, QC, SK, YT] }
+        currency: { type: string, enum: [CAD] }
+
+    TaxProfile:
+      type: object
+      required: [id, storeId, name, provinceCode, currency, gstRate, hstRate, pstRate, qstRate, effectiveFrom, enabled, roundingMode, partsTaxable, labourTaxable, depositsTaxable, accessoriesTaxable]
+      properties:
+        id: { type: integer }
+        storeId: { type: integer }
+        name: { type: string }
+        provinceCode: { type: string, enum: [AB, BC, MB, NB, NL, NS, NT, NU, ON, PE, QC, SK, YT] }
+        currency: { type: string, enum: [CAD] }
+        gstRate: { type: number, minimum: 0, maximum: 100 }
+        hstRate: { type: number, minimum: 0, maximum: 100 }
+        pstRate: { type: number, minimum: 0, maximum: 100 }
+        qstRate: { type: number, minimum: 0, maximum: 100 }
+        effectiveFrom: { type: string, format: date }
+        enabled: { type: boolean }
+        roundingMode: { type: string, enum: [line, subtotal] }
+        partsTaxable: { type: boolean }
+        labourTaxable: { type: boolean }
+        depositsTaxable: { type: boolean }
+        accessoriesTaxable: { type: boolean }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    TaxProfileInput:
+      type: object
+      required: [name, provinceCode, currency, gstRate, hstRate, pstRate, qstRate, effectiveFrom, enabled, roundingMode, partsTaxable, labourTaxable, depositsTaxable, accessoriesTaxable]
+      properties:
+        name: { type: string, minLength: 1, maxLength: 120 }
+        provinceCode: { type: string, enum: [AB, BC, MB, NB, NL, NS, NT, NU, ON, PE, QC, SK, YT] }
+        currency: { type: string, enum: [CAD] }
+        gstRate: { type: number, minimum: 0, maximum: 100 }
+        hstRate: { type: number, minimum: 0, maximum: 100 }
+        pstRate: { type: number, minimum: 0, maximum: 100 }
+        qstRate: { type: number, minimum: 0, maximum: 100 }
+        effectiveFrom: { type: string, format: date }
+        enabled: { type: boolean }
+        roundingMode: { type: string, enum: [line, subtotal] }
+        partsTaxable: { type: boolean }
+        labourTaxable: { type: boolean }
+        depositsTaxable: { type: boolean }
+        accessoriesTaxable: { type: boolean }
+
+    TaxProfileUpdate:
+      allOf:
+        - $ref: "#/components/schemas/TaxProfileInput"
+      required: []
+
+    TaxProfileList:
+      type: object
+      required: [store, activeProfileId, profiles]
+      properties:
+        store:
+          type: object
+          required: [id, provinceCode, currency]
+          properties:
+            id: { type: integer }
+            provinceCode: { type: string }
+            currency: { type: string }
+        activeProfileId: { type: ["integer", "null"] }
+        profiles: { type: array, items: { $ref: "#/components/schemas/TaxProfile" } }
+
+    CustomerRightsEntry:
+      type: object
+      required: [id, provinceCode, topic, title, summary, sourceUrl, effectiveFrom, lastReviewedAt, reviewStatus, stale, disclaimer]
+      properties:
+        id: { type: integer }
+        provinceCode: { type: string, enum: [AB, BC, MB, NB, NL, NS, NT, NU, ON, PE, QC, SK, YT] }
+        topic: { type: string }
+        title: { type: string }
+        summary: { type: string }
+        readAloudScript: { type: ["string", "null"] }
+        sourceUrl: { type: string, format: uri }
+        effectiveFrom: { type: string, format: date }
+        lastReviewedAt: { type: string, format: date }
+        reviewStatus: { type: string, enum: [draft, published, retired] }
+        stale: { type: boolean }
+        disclaimer: { type: string }
+        createdAt: { type: string, format: date-time }
+        updatedAt: { type: string, format: date-time }
+
+    CustomerRightsInput:
+      type: object
+      required: [provinceCode, topic, title, summary, sourceUrl, effectiveFrom, lastReviewedAt, reviewStatus]
+      properties:
+        provinceCode: { type: string }
+        topic: { type: string }
+        title: { type: string }
+        summary: { type: string }
+        readAloudScript: { type: ["string", "null"] }
+        sourceUrl: { type: string, format: uri }
+        effectiveFrom: { type: string, format: date }
+        lastReviewedAt: { type: string, format: date }
+        reviewStatus: { type: string, enum: [draft, published, retired] }
+
+    CustomerRightsUpdate:
+      allOf:
+        - $ref: "#/components/schemas/CustomerRightsInput"
+      required: []
+
+    CustomerRightsList:
+      type: object
+      required: [entries, retrievedAt, offlineSafe]
+      properties:
+        entries: { type: array, items: { $ref: "#/components/schemas/CustomerRightsEntry" } }
+        retrievedAt: { type: string, format: date-time }
+        offlineSafe: { type: boolean }
 
     CurrentStore:
       type: object
@@ -2550,6 +2807,12 @@ components:
         technicianName:     { type: ["string", "null"] }
         estimatedCost:      { type: ["number", "null"] }
         deposit:            { type: number }
+        subtotal:           { type: number }
+        taxRate:            { type: number }
+        tax:                { type: number }
+        taxProfileId:       { type: ["integer", "null"] }
+        taxProvinceCode:    { type: ["string", "null"] }
+        taxProfileSnapshot: { type: ["object", "null"], additionalProperties: true }
         total:              { type: number }
         balance:            { type: number }
         notifiedAt:         { type: ["string", "null"] }
@@ -2587,6 +2850,7 @@ components:
         technicianId:       { type: ["integer", "null"], minimum: 1 }
         estimatedCost:      { type: ["number", "null"], minimum: 0, maximum: 10000000 }
         deposit:            { type: number, minimum: 0, maximum: 10000000 }
+        transactionDate:    { type: string, format: date }
 
     RepairUpdate:
       type: object
@@ -2608,6 +2872,7 @@ components:
         technicianId:       { type: integer }
         estimatedCost:      { type: number }
         deposit:            { type: number }
+        transactionDate:    { type: string, format: date }
 
     RepairStatusChange:
       type: object

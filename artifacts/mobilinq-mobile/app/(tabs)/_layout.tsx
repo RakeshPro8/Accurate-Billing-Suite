@@ -55,6 +55,10 @@ function NativeTabLayout() {
         <Icon sf={{ default: 'gearshape', selected: 'gearshape.fill' }} />
         <Label>Settings</Label>
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="rights">
+        <Icon sf={{ default: 'book.closed', selected: 'book.closed.fill' }} />
+        <Label>Rights Guide</Label>
+      </NativeTabs.Trigger>
     </NativeTabs>
   );
 }
@@ -118,6 +122,7 @@ function ClassicTabLayout() {
       <Tabs.Screen name="billing" options={{ title: 'Billing', tabBarIcon: ({ color }) => <Feather name="dollar-sign" size={22} color={color} /> }} />
       <Tabs.Screen name="notifications" options={{ title: 'Alerts', tabBarIcon: ({ color }) => <Feather name="bell" size={22} color={color} /> }} />
       <Tabs.Screen name="settings" options={{ title: 'Settings', tabBarIcon: ({ color }) => <Feather name="settings" size={22} color={color} /> }} />
+      <Tabs.Screen name="rights" options={{ title: 'Rights Guide', tabBarIcon: ({ color }) => <Feather name="book-open" size={22} color={color} /> }} />
     </Tabs>
   );
 }

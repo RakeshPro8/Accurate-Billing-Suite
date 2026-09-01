@@ -18,6 +18,8 @@ import syncRouter from "./sync";
 import { auditMutation } from "../lib/audit";
 import operationsRouter from "./operations";
 import financeRouter, { publicCustomerAccessRouter } from "./finance";
+import taxProfilesRouter from "./taxProfiles";
+import customerRightsRouter from "./customerRights";
 
 const router: IRouter = Router();
 
@@ -40,6 +42,8 @@ router.use("/settings", requireRole("admin"), settingsRouter);
 router.use("/employees", requireRole("admin"), employeesRouter);
 router.use("/repairs", repairsRouter);
 router.use("/stores", storesRouter);
+router.use("/tax-profiles", taxProfilesRouter);
+router.use("/customer-rights", customerRightsRouter);
 router.use("/audit-logs", auditLogsRouter);
 router.use("/sync", syncRouter);
 router.use("/operations", operationsRouter);

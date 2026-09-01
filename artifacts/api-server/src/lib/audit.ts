@@ -3,7 +3,7 @@ import type { Request, Response, NextFunction } from "express";
 import { logger } from "./logger";
 
 export type AuditAction = "create" | "update" | "delete" | "login" | "logout" | "print" | "payment" | "store" | "authentication" | "convert" | "status_change";
-export type AuditEntityType = "sale" | "quotation" | "repair" | "repair_photo" | "customer" | "product" | "service" | "employee" | "settings" | "store" | "backup";
+export type AuditEntityType = "sale" | "quotation" | "repair" | "repair_photo" | "customer" | "product" | "service" | "employee" | "settings" | "store" | "backup" | "tax_profile" | "guidance_entry";
 
 export interface AuditDetails {
   [key: string]: unknown;
@@ -51,6 +51,8 @@ const AUDIT_ENTITY_TYPES = new Set<AuditEntityType>([
   "settings",
   "store",
   "backup",
+  "tax_profile",
+  "guidance_entry",
 ]);
 
 export function auditMutation(req: Request, res: Response, next: NextFunction) {

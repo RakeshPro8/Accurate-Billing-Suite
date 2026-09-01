@@ -85,4 +85,5 @@ export interface RepairInput {
      * @maximum 10000000
      */
   deposit?: number;
+  transactionDate?: Date;
 }

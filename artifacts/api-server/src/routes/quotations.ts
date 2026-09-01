@@ -2,7 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { quotationsTable, quotationLineItemsTable, salesTable, saleLineItemsTable, settingsTable } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
-import { calculateTotals, getTaxConfig, assertMoney } from "../lib/tax";
+import { calculateTotals, getTaxConfig, taxConfigFromSnapshot, assertMoney } from "../lib/tax";
 import { requireCurrentStoreId } from "../lib/stores";
 import { HttpError, validateRequest } from "../lib/http";
 import { logAudit } from "../lib/audit";
@@ -21,6 +21,7 @@ const lineItem = z.object({
   quantity: z.coerce.number().finite().positive().max(100_000),
   unitPrice: money,
   discount: money.optional(),
+  taxExempt: z.boolean().optional(),
 }).strict();
 const quoteInput = z.object({
   customerId: z.coerce.number().int().positive().optional(),
@@ -32,6 +33,7 @@ const quoteInput = z.object({
   notes: z.string().trim().max(4_000).optional(),
   validUntil: z.string().date().optional(),
   expiresAt: z.string().date().optional(),
+  transactionDate: z.string().date().optional(),
   items: z.array(lineItem).max(100),
 }).strict();
 const quoteUpdate = quoteInput.partial().extend({ status: quoteStatus.optional() }).strict();
@@ -85,7 +87,10 @@ router.post("/", validateRequest({ body: quoteInput }), async (req, res) => {
     const storeId = await requireCurrentStoreId(req);
     const items = body.items;
     const discount = assertMoney(body.discount ?? 0, "Discount");
-    const { subtotal, taxRate, tax, total } = calculateTotals(items, await getTaxConfig(), discount);
+    const transactionDate = body.transactionDate ? new Date(`${body.transactionDate}T00:00:00Z`) : new Date();
+    if (Number.isNaN(transactionDate.getTime())) throw new HttpError(400, "Invalid transaction date.");
+    const totals = calculateTotals(items, await getTaxConfig(storeId, transactionDate), discount);
+    const { subtotal, taxRate, tax, total } = totals;
     const { quote, lineItems } = await db.transaction(async (tx) => {
       // A transaction-scoped PostgreSQL advisory lock serializes numbering only
       // within this store, without blocking other stores' quote creation.
@@ -98,11 +103,12 @@ router.post("/", validateRequest({ body: quoteInput }), async (req, res) => {
         customerEmail: body.customerEmail || null, status: body.status ?? "draft", subtotal: String(subtotal),
         taxRate: String(taxRate), tax: String(tax), discount: String(discount), total: String(total),
         notes: body.notes || null, validUntil: body.validUntil ?? body.expiresAt ?? null, storeId,
+        taxProfileId: totals.taxProfileId, taxProvinceCode: totals.taxProfileSnapshot.provinceCode, taxProfileSnapshot: totals.taxProfileSnapshot,
       }).returning();
       const createdItems = [];
-      for (const item of items) {
-        const lineTotal = item.quantity * item.unitPrice - (item.discount || 0);
-        const [lineItem] = await tx.insert(quotationLineItemsTable).values({ quotationId: created.id, type: item.type || "product", productId: item.productId || null, serviceId: item.serviceId || null, name: item.name, description: item.description || null, quantity: String(item.quantity), unitPrice: String(item.unitPrice), discount: String(item.discount || 0), total: String(lineTotal) }).returning();
+        for (const item of items) {
+          const lineTotal = item.quantity * item.unitPrice - (item.discount || 0);
+          const [lineItem] = await tx.insert(quotationLineItemsTable).values({ quotationId: created.id, type: item.type || "product", productId: item.productId || null, serviceId: item.serviceId || null, name: item.name, description: item.description || null, quantity: String(item.quantity), unitPrice: String(item.unitPrice), discount: String(item.discount || 0), total: String(lineTotal), taxExempt: item.taxExempt === true }).returning();
         createdItems.push(lineItem);
       }
       return { quote: created, lineItems: createdItems };
@@ -134,7 +140,7 @@ router.patch("/:id", validateRequest({ params: idParams, body: quoteUpdate }), a
     const storeId = await requireCurrentStoreId(req);
     const body = req.body as z.infer<typeof quoteUpdate>;
     if (!Number.isSafeInteger(id) || id < 1) throw new HttpError(400, "Invalid quotation id.");
-    const [existingQuote] = await db.select({ id: quotationsTable.id }).from(quotationsTable).where(and(eq(quotationsTable.id, id), eq(quotationsTable.storeId, storeId)));
+    const [existingQuote] = await db.select().from(quotationsTable).where(and(eq(quotationsTable.id, id), eq(quotationsTable.storeId, storeId)));
     if (!existingQuote) return res.status(404).json({ error: "Not found" });
     const updates: Record<string, unknown> = {};
     if (body.customerId !== undefined) updates.customerId = body.customerId;
@@ -146,12 +152,16 @@ router.patch("/:id", validateRequest({ params: idParams, body: quoteUpdate }), a
       if (body.expiresAt !== undefined) updates.validUntil = body.expiresAt;
     if (body.items !== undefined) {
       const discount = assertMoney(body.discount ?? 0, "Discount");
-      const { subtotal, taxRate, tax, total } = calculateTotals(body.items, await getTaxConfig(), discount);
+      const totals = calculateTotals(body.items, taxConfigFromSnapshot(existingQuote.taxProfileSnapshot) ?? await getTaxConfig(storeId), discount);
+      const { subtotal, taxRate, tax, total } = totals;
       updates.subtotal = String(subtotal);
       updates.taxRate = String(taxRate);
       updates.tax = String(tax);
       updates.discount = String(discount);
       updates.total = String(total);
+       updates.taxProfileId = totals.taxProfileId;
+       updates.taxProvinceCode = totals.taxProfileSnapshot.provinceCode;
+       updates.taxProfileSnapshot = totals.taxProfileSnapshot;
     }
     const result = await db.transaction(async (tx) => {
       const [quote] = await tx.update(quotationsTable).set(updates).where(and(eq(quotationsTable.id, id), eq(quotationsTable.storeId, storeId))).returning();
@@ -160,7 +170,7 @@ router.patch("/:id", validateRequest({ params: idParams, body: quoteUpdate }), a
         await tx.delete(quotationLineItemsTable).where(eq(quotationLineItemsTable.quotationId, id));
         for (const item of body.items) {
           const lineTotal = item.quantity * item.unitPrice - (item.discount || 0);
-          await tx.insert(quotationLineItemsTable).values({ quotationId: id, type: item.type || "product", productId: item.productId || null, serviceId: item.serviceId || null, name: item.name, description: item.description || null, quantity: String(item.quantity), unitPrice: String(item.unitPrice), discount: String(item.discount || 0), total: String(lineTotal) });
+          await tx.insert(quotationLineItemsTable).values({ quotationId: id, type: item.type || "product", productId: item.productId || null, serviceId: item.serviceId || null, name: item.name, description: item.description || null, quantity: String(item.quantity), unitPrice: String(item.unitPrice), discount: String(item.discount || 0), total: String(lineTotal), taxExempt: item.taxExempt === true });
         }
       }
       const lineItems = await tx.select().from(quotationLineItemsTable).where(eq(quotationLineItemsTable.quotationId, id));
@@ -210,11 +220,11 @@ router.post("/:id/convert", validateRequest({ params: idParams, body: z.object({
         invoiceNumber, customerId: claimed.customerId, customerName: claimed.customerName,
         customerEmail: claimed.customerEmail, status: "invoice", subtotal: claimed.subtotal,
         taxRate: claimed.taxRate, tax: claimed.tax, discount: claimed.discount, total: claimed.total,
-        notes: claimed.notes, storeId,
+        notes: claimed.notes, storeId, taxProfileId: claimed.taxProfileId, taxProvinceCode: claimed.taxProvinceCode, taxProfileSnapshot: claimed.taxProfileSnapshot,
       }).returning();
       const createdItems = [];
       for (const item of quoteItems) {
-        const [lineItem] = await tx.insert(saleLineItemsTable).values({ saleId: createdSale.id, type: item.type, productId: item.productId, serviceId: item.serviceId, name: item.name, description: item.description, quantity: item.quantity, unitPrice: item.unitPrice, discount: item.discount, total: item.total }).returning();
+        const [lineItem] = await tx.insert(saleLineItemsTable).values({ saleId: createdSale.id, type: item.type, productId: item.productId, serviceId: item.serviceId, name: item.name, description: item.description, quantity: item.quantity, unitPrice: item.unitPrice, discount: item.discount, total: item.total, taxExempt: item.taxExempt }).returning();
         createdItems.push(lineItem);
       }
       return { quote: claimed, sale: createdSale, lineItems: createdItems };

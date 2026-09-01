@@ -126,15 +126,18 @@ router.post("/replay", async (req, res) => {
             return line;
           });
           const discount = assertMoney(body.discount ?? 0, "Discount");
+           const transactionDate = body.transactionDate ? new Date(`${body.transactionDate}T00:00:00Z`) : new Date();
+           if (Number.isNaN(transactionDate.getTime())) throw new Error("Invalid transaction date.");
           const subtotal = items.reduce((sum, item) => sum + Number(item.quantity) * Number(item.unitPrice) - Number(item.discount ?? 0), 0);
           if (discount > subtotal || (subtotal > 0 && discount / subtotal * 100 > req.employee!.maxDiscountPct)) throw new Error("Discount exceeds your authorization.");
           const totals = calculateTotals(
             items.map((item) => ({
-              quantity: Number(item.quantity),
+               quantity: Number(item.quantity),
               unitPrice: Number(item.unitPrice),
               discount: Number(item.discount ?? 0),
+               taxExempt: item.taxExempt === true,
             })),
-            await getTaxConfig(),
+             await getTaxConfig(storeId, transactionDate),
             discount,
           );
           if (body.customerId !== undefined) {
@@ -158,8 +161,8 @@ router.post("/replay", async (req, res) => {
           const [{ count }] = await tx.select({ count: sql<number>`count(*)` }).from(salesTable).where(eq(salesTable.storeId, storeId));
            const committed = body.status !== "draft";
            const status = body.status === "paid" ? "paid" : committed ? "invoice" : "draft";
-           const [sale] = await tx.insert(salesTable).values({ invoiceNumber: `${settings?.prefix ?? "INV-"}${String(Number(count) + 1).padStart(4, "0")}`, idempotencyKey: op.operationId, customerId: Number.isInteger(body.customerId) ? body.customerId : null, customerName: optionalText(body.customerName, 120), customerEmail: optionalText(body.customerEmail, 254), employeeId, employeeName: req.employee!.name, storeId, status, subtotal: String(totals.subtotal), taxRate: String(totals.taxRate), tax: String(totals.tax), discount: String(discount), total: String(totals.total), notes: optionalText(body.notes, 4000), paymentMethod: body.status === "paid" ? optionalText(body.paymentMethod, 80) ?? "Cash" : null, paidAt: body.status === "paid" ? new Date().toISOString() : null }).returning();
-           await Promise.all(items.map((item) => tx.insert(saleLineItemsTable).values({ saleId: sale.id, type: text(item.type, 40) ?? "product", productId: Number.isInteger(item.productId) ? item.productId : null, serviceId: Number.isInteger(item.serviceId) ? item.serviceId : null, name: text(item.name, 250)!, description: optionalText(item.description, 1000), quantity: String(item.quantity), unitPrice: String(item.unitPrice), discount: String(item.discount ?? 0), total: String(Number(item.quantity) * Number(item.unitPrice) - Number(item.discount ?? 0)) })));
+            const [sale] = await tx.insert(salesTable).values({ invoiceNumber: `${settings?.prefix ?? "INV-"}${String(Number(count) + 1).padStart(4, "0")}`, idempotencyKey: op.operationId, customerId: Number.isInteger(body.customerId) ? body.customerId : null, customerName: optionalText(body.customerName, 120), customerEmail: optionalText(body.customerEmail, 254), employeeId, employeeName: req.employee!.name, storeId, status, subtotal: String(totals.subtotal), taxRate: String(totals.taxRate), tax: String(totals.tax), discount: String(discount), total: String(totals.total), taxProfileId: totals.taxProfileId, taxProvinceCode: totals.taxProfileSnapshot.provinceCode, taxProfileSnapshot: totals.taxProfileSnapshot, notes: optionalText(body.notes, 4000), paymentMethod: body.status === "paid" ? optionalText(body.paymentMethod, 80) ?? "Cash" : null, paidAt: body.status === "paid" ? new Date().toISOString() : null }).returning();
+            await Promise.all(items.map((item) => tx.insert(saleLineItemsTable).values({ saleId: sale.id, type: text(item.type, 40) ?? "product", productId: Number.isInteger(item.productId) ? item.productId : null, serviceId: Number.isInteger(item.serviceId) ? item.serviceId : null, name: text(item.name, 250)!, description: optionalText(item.description, 1000), quantity: String(item.quantity), unitPrice: String(item.unitPrice), discount: String(item.discount ?? 0), total: String(Number(item.quantity) * Number(item.unitPrice) - Number(item.discount ?? 0)), taxExempt: item.taxExempt === true })));
            if (committed) {
              for (const item of items) {
                if (item.productId === undefined || item.productId === null) continue;
@@ -175,7 +178,14 @@ router.post("/replay", async (req, res) => {
         } else {
           const deviceType = text(body.deviceType, 120), problemDescription = text(body.problemDescription, 4000);
           if (!deviceType || !problemDescription) throw new Error("Device type and problem description are required.");
-          const deposit = assertMoney(body.deposit ?? 0, "Deposit");
+           const deposit = assertMoney(body.deposit ?? 0, "Deposit");
+           const estimatedCost = body.estimatedCost == null ? null : assertMoney(body.estimatedCost, "Estimated labour");
+           const transactionDate = body.transactionDate ? new Date(`${body.transactionDate}T00:00:00Z`) : new Date();
+           if (Number.isNaN(transactionDate.getTime())) throw new Error("Invalid transaction date.");
+           const totals = calculateTotals(
+             estimatedCost == null ? [] : [{ type: "labour", quantity: 1, unitPrice: estimatedCost }],
+             await getTaxConfig(storeId, transactionDate),
+           );
           if (deposit < 0) throw new Error("Invalid repair deposit.");
           if (body.customerId !== undefined) {
             const customerId = Number(body.customerId);
@@ -188,7 +198,7 @@ router.post("/replay", async (req, res) => {
           // Ticket numbers are allocated serially per store.
           await tx.execute(sql`SELECT pg_advisory_xact_lock(19002, ${storeId})`);
           const [{ count }] = await tx.select({ count: sql<number>`count(*)` }).from(repairsTable).where(eq(repairsTable.storeId, storeId));
-          const [repair] = await tx.insert(repairsTable).values({ ticketNumber: `REP-${String(Number(count) + 1).padStart(4, "0")}`, customerId: Number.isInteger(body.customerId) ? body.customerId : null, customerName: optionalText(body.customerName, 120), customerPhone: optionalText(body.customerPhone, 64), customerEmail: optionalText(body.customerEmail, 254), deviceType, deviceBrand: optionalText(body.deviceBrand, 120), deviceModel: optionalText(body.deviceModel, 120), serialNumber: optionalText(body.serialNumber, 160), imei: optionalText(body.imei, 160), problemDescription, diagnosticNotes: optionalText(body.diagnosticNotes, 4000), status: "intake", priority: ["low", "normal", "high", "urgent"].includes(body.priority) ? body.priority : "normal", storeId, deposit: String(deposit), total: "0", balance: "0" }).returning();
+           const [repair] = await tx.insert(repairsTable).values({ ticketNumber: `REP-${String(Number(count) + 1).padStart(4, "0")}`, customerId: Number.isInteger(body.customerId) ? body.customerId : null, customerName: optionalText(body.customerName, 120), customerPhone: optionalText(body.customerPhone, 64), customerEmail: optionalText(body.customerEmail, 254), deviceType, deviceBrand: optionalText(body.deviceBrand, 120), deviceModel: optionalText(body.deviceModel, 120), serialNumber: optionalText(body.serialNumber, 160), imei: optionalText(body.imei, 160), problemDescription, diagnosticNotes: optionalText(body.diagnosticNotes, 4000), status: "intake", priority: ["low", "normal", "high", "urgent"].includes(body.priority) ? body.priority : "normal", storeId, estimatedCost: estimatedCost == null ? null : String(estimatedCost), deposit: String(deposit), subtotal: String(totals.subtotal), taxRate: String(totals.taxRate), tax: String(totals.tax), total: String(totals.total), taxProfileId: totals.taxProfileId, taxProvinceCode: totals.taxProfileSnapshot.provinceCode, taxProfileSnapshot: totals.taxProfileSnapshot, balance: String(totals.total - deposit) }).returning();
           result = { id: repair.id, ticketNumber: repair.ticketNumber, status: repair.status, createdAt: repair.createdAt.toISOString() };
         }
         await tx.update(syncOperationsTable).set({ status: "completed", response: result }).where(and(eq(syncOperationsTable.operationId, op.operationId), eq(syncOperationsTable.employeeId, employeeId), eq(syncOperationsTable.storeId, storeId)));

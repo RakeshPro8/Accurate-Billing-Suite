@@ -324,6 +324,7 @@ export default function SaleDetail() {
                 {(sale.taxRate ?? 0) > 0 && (
                   <div className="flex justify-between text-muted-foreground"><span>{settings?.taxName ?? "Tax"} ({sale.taxRate ?? 0}%)</span><span>{formatCurrency(sale.tax ?? 0)}</span></div>
                 )}
+                {sale.taxProvinceCode && <div className="flex justify-between text-xs text-muted-foreground"><span>Tax profile</span><span>{sale.taxProvinceCode} · captured</span></div>}
                 <div className="flex justify-between font-bold text-lg border-t pt-2 mt-2 text-[#0d4d47]">
                   <span>TOTAL</span>
                   <span>{formatCurrency(sale.total)}</span>

@@ -24,4 +24,5 @@ export interface RepairUpdate {
   technicianId?: number;
   estimatedCost?: number;
   deposit?: number;
+  transactionDate?: Date;
 }

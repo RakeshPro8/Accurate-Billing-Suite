@@ -7,6 +7,7 @@
  */
 import type { RepairPart } from './repairPart';
 import type { RepairPhoto } from './repairPhoto';
+import type { RepairTaxProfileSnapshot } from './repairTaxProfileSnapshot';
 
 export interface Repair {
   id: number;
@@ -41,6 +42,15 @@ export interface Repair {
   /** @nullable */
   estimatedCost?: number | null;
   deposit: number;
+  subtotal?: number;
+  taxRate?: number;
+  tax?: number;
+  /** @nullable */
+  taxProfileId?: number | null;
+  /** @nullable */
+  taxProvinceCode?: string | null;
+  /** @nullable */
+  taxProfileSnapshot?: RepairTaxProfileSnapshot;
   total: number;
   balance: number;
   /** @nullable */

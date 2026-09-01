@@ -17,6 +17,7 @@ export interface SaleUpdate {
   notes?: string;
   paymentMethod?: string;
   dueDate?: string;
+  transactionDate?: Date;
   paidAt?: string;
   items?: LineItemInput[];
 }

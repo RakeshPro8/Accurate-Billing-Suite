@@ -6,7 +6,11 @@
  * OpenAPI spec version: 0.2.0
  */
 import type { StoreInput } from './storeInput';
+import type { StoreUpdateCurrency } from './storeUpdateCurrency';
+import type { StoreUpdateProvinceCode } from './storeUpdateProvinceCode';
 
 export type StoreUpdate = StoreInput & {
   active?: boolean;
+  provinceCode?: StoreUpdateProvinceCode;
+  currency?: StoreUpdateCurrency;
 };

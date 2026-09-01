@@ -386,6 +386,9 @@ export default function RepairDetail() {
             <CardHeader className="pb-3"><CardTitle className="text-base">Financials</CardTitle></CardHeader>
             <CardContent className="space-y-2 text-sm">
               <div className="flex justify-between"><span className="text-muted-foreground">Parts Total</span><span className="font-medium">{formatCurrency(parts.reduce((s, p) => s + p.total, 0))}</span></div>
+              {(r.estimatedCost ?? 0) > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Labour estimate</span><span className="font-medium">{formatCurrency(r.estimatedCost ?? 0)}</span></div>}
+              {(r.tax ?? 0) > 0 && <div className="flex justify-between"><span className="text-muted-foreground">Tax ({r.taxRate ?? 0}%)</span><span className="font-medium">{formatCurrency(r.tax ?? 0)}</span></div>}
+              {r.taxProvinceCode && <div className="flex justify-between text-xs text-muted-foreground"><span>Tax profile</span><span>{r.taxProvinceCode} · captured</span></div>}
               <div className="flex justify-between"><span className="text-muted-foreground">Deposit</span><span className="font-medium">{formatCurrency(r.deposit)}</span></div>
               <div className="flex justify-between border-t pt-2"><span className="font-semibold">Total</span><span className="font-bold">{formatCurrency(r.total)}</span></div>
               <div className="flex justify-between"><span className="text-muted-foreground">Balance</span><span className={`font-bold ${r.balance > 0 ? "text-amber-400" : "text-emerald-400"}`}>{formatCurrency(r.balance)}</span></div>

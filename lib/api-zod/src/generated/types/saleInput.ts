@@ -22,5 +22,6 @@ export interface SaleInput {
   notes?: string;
   paymentMethod?: string;
   dueDate?: string;
+  transactionDate?: Date;
   items: LineItemInput[];
 }

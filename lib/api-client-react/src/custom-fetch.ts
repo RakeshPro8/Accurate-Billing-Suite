@@ -21,7 +21,7 @@ let _sessionCookie: string | null = null;
 let _offlineScope: string | null = null;
 type OfflineCacheEntry = { key: string; data: unknown; cachedAt: string };
 const offlineCacheName = "mobilinq-api-cache-v1";
-const offlineSafePaths = ["/products", "/services", "/customers", "/sales", "/quotations", "/repairs", "/settings", "/stores"];
+const offlineSafePaths = ["/products", "/services", "/customers", "/sales", "/quotations", "/repairs", "/settings", "/stores", "/customer-rights"];
 
 function isOfflineSafeGet(url: string, method: string) {
   if (method !== "GET" || !_offlineScope || typeof window === "undefined" || typeof indexedDB === "undefined") return false;

@@ -5,6 +5,8 @@
  * Mobilinq store operations API
  * OpenAPI spec version: 0.2.0
  */
+import type { StoreCurrency } from './storeCurrency';
+import type { StoreProvinceCode } from './storeProvinceCode';
 
 export interface Store {
   id: number;
@@ -17,5 +19,7 @@ export interface Store {
   email?: string | null;
   active: boolean;
   isDefault: boolean;
+  provinceCode: StoreProvinceCode;
+  currency: StoreCurrency;
   createdAt: Date;
 }

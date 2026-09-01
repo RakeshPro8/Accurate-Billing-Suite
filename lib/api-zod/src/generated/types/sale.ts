@@ -8,6 +8,7 @@
 import type { LineItem } from './lineItem';
 import type { Payment } from './payment';
 import type { SaleEvent } from './saleEvent';
+import type { SaleTaxProfileSnapshot } from './saleTaxProfileSnapshot';
 
 export interface Sale {
   id: number;
@@ -22,6 +23,12 @@ export interface Sale {
   subtotal: number;
   taxRate?: number;
   tax: number;
+  /** @nullable */
+  taxProfileId?: number | null;
+  /** @nullable */
+  taxProvinceCode?: string | null;
+  /** @nullable */
+  taxProfileSnapshot?: SaleTaxProfileSnapshot;
   discount?: number;
   total: number;
   /** @nullable */

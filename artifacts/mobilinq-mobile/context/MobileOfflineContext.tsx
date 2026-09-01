@@ -122,7 +122,7 @@ export function MobileOfflineProvider({ children }: { children: ReactNode }) {
       const scope = getMobileScope();
       const key = event.query.queryKey;
       const keyText = JSON.stringify(key);
-      const safe = ['/api/customers', '/api/repairs', '/api/products', '/api/services', '/api/sales', '/api/stores', '/api/reports', '/api/settings']
+      const safe = ['/api/customers', '/api/repairs', '/api/products', '/api/services', '/api/sales', '/api/stores', '/api/reports', '/api/settings', '/api/customer-rights']
         .some((prefix) => keyText.includes(prefix));
       if (scope && safe && !keyText.includes('/auth/')) {
         void import('@/lib/mobile-offline').then(({ saveCachedQuery }) => saveCachedQuery(scope, key, event.query.state.data));

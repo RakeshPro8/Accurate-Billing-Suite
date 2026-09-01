@@ -3,7 +3,7 @@ const DB_VERSION = 2;
 const CACHE_STORE = "read-cache";
 const OUTBOX_STORE = "outbox";
 const LAST_SYNC_KEY = "mobilinq.lastSyncAt";
-const SAFE_PATHS = ["/products", "/services", "/customers", "/sales", "/quotations", "/repairs", "/settings", "/stores"];
+const SAFE_PATHS = ["/products", "/services", "/customers", "/sales", "/quotations", "/repairs", "/settings", "/stores", "/customer-rights"];
 
 export type OutboxStatus = "pending" | "syncing" | "completed" | "conflict" | "error";
 

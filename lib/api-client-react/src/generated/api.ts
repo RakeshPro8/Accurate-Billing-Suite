@@ -37,6 +37,10 @@ import type {
   CustomerInput,
   CustomerPreferences,
   CustomerPreferencesUpdate,
+  CustomerRightsEntry,
+  CustomerRightsInput,
+  CustomerRightsList,
+  CustomerRightsUpdate,
   CustomerShareLink,
   CustomerShareLinkCreated,
   CustomerShareLinkInput,
@@ -50,6 +54,7 @@ import type {
   FinanceTransaction,
   FinanceTransactionInput,
   GetAuditLogsParams,
+  GetCustomerRightsParams,
   GetCustomerShareLinksParams,
   GetCustomersParams,
   GetInventoryMovements200Item,
@@ -62,6 +67,7 @@ import type {
   GetRepairsParams,
   GetSalesParams,
   GetSuppliers200Item,
+  GetTaxProfilesParams,
   GetTaxSummaryParams,
   GetWeeklyReportParams,
   HealthStatus,
@@ -123,6 +129,10 @@ import type {
   SupplierInput,
   SyncReplayInput,
   SyncReplayResponse,
+  TaxProfile,
+  TaxProfileInput,
+  TaxProfileList,
+  TaxProfileUpdate,
   TaxSummary,
   ThemeUpdate,
   TopItem,
@@ -620,6 +630,632 @@ export const useSetCurrentStore = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getSetCurrentStoreMutationOptions(options));
+    }
+
+export const getGetTaxProfilesUrl = (params?: GetTaxProfilesParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/tax-profiles?${stringifiedParams}` : `/api/tax-profiles`
+}
+
+/**
+ * @summary List tax profiles for the current store
+ */
+export const getTaxProfiles = async (params?: GetTaxProfilesParams, options?: Parameters<typeof customFetch>[1]): Promise<TaxProfileList> => {
+
+  return customFetch<TaxProfileList>(getGetTaxProfilesUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTaxProfilesQueryKey = (params?: GetTaxProfilesParams,) => {
+    return [
+    `/api/tax-profiles`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetTaxProfilesQueryOptions = <TData = Awaited<ReturnType<typeof getTaxProfiles>>, TError = ErrorType<unknown>>(params?: GetTaxProfilesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTaxProfiles>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTaxProfilesQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getTaxProfiles>>> = ({ signal }) => getTaxProfiles(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getTaxProfiles>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTaxProfilesQueryResult = NonNullable<Awaited<ReturnType<typeof getTaxProfiles>>>
+export type GetTaxProfilesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List tax profiles for the current store
+ */
+
+export function useGetTaxProfiles<TData = Awaited<ReturnType<typeof getTaxProfiles>>, TError = ErrorType<unknown>>(
+ params?: GetTaxProfilesParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getTaxProfiles>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTaxProfilesQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateTaxProfileUrl = () => {
+
+
+
+
+  return `/api/tax-profiles`
+}
+
+/**
+ * @summary Create an effective-dated Canadian tax profile
+ */
+export const createTaxProfile = async (taxProfileInput: TaxProfileInput, options?: Parameters<typeof customFetch>[1]): Promise<TaxProfile> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return customFetch<TaxProfile>(getCreateTaxProfileUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(taxProfileInput)
+  }
+);}
+
+
+
+
+
+export const getCreateTaxProfileMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTaxProfile>>, TError,CreateTaxProfileMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createTaxProfile>>, TError,CreateTaxProfileMutationVariables, TContext> => {
+
+const mutationKey = ['createTaxProfile'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createTaxProfile>>, CreateTaxProfileMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createTaxProfile(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateTaxProfileMutationResult = NonNullable<Awaited<ReturnType<typeof createTaxProfile>>>
+    export type CreateTaxProfileMutationBody = BodyType<TaxProfileInput>
+    export type CreateTaxProfileMutationError = ErrorType<unknown>
+    export type CreateTaxProfileMutationVariables = {data: BodyType<TaxProfileInput>}
+
+    /**
+ * @summary Create an effective-dated Canadian tax profile
+ */
+export const useCreateTaxProfile = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createTaxProfile>>, TError,CreateTaxProfileMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createTaxProfile>>,
+        TError,
+        CreateTaxProfileMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateTaxProfileMutationOptions(options));
+    }
+
+export const getUpdateTaxProfileUrl = (id: number,) => {
+
+
+
+
+  return `/api/tax-profiles/${id}`
+}
+
+/**
+ * @summary Update a current-store tax profile
+ */
+export const updateTaxProfile = async (id: number,
+    taxProfileUpdate: TaxProfileUpdate, options?: Parameters<typeof customFetch>[1]): Promise<TaxProfile> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return customFetch<TaxProfile>(getUpdateTaxProfileUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(taxProfileUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateTaxProfileMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTaxProfile>>, TError,UpdateTaxProfileMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateTaxProfile>>, TError,UpdateTaxProfileMutationVariables, TContext> => {
+
+const mutationKey = ['updateTaxProfile'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateTaxProfile>>, UpdateTaxProfileMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateTaxProfile(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateTaxProfileMutationResult = NonNullable<Awaited<ReturnType<typeof updateTaxProfile>>>
+    export type UpdateTaxProfileMutationBody = BodyType<TaxProfileUpdate>
+    export type UpdateTaxProfileMutationError = ErrorType<unknown>
+    export type UpdateTaxProfileMutationVariables = {id: number;data: BodyType<TaxProfileUpdate>}
+
+    /**
+ * @summary Update a current-store tax profile
+ */
+export const useUpdateTaxProfile = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateTaxProfile>>, TError,UpdateTaxProfileMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateTaxProfile>>,
+        TError,
+        UpdateTaxProfileMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateTaxProfileMutationOptions(options));
+    }
+
+export const getRetireTaxProfileUrl = (id: number,) => {
+
+
+
+
+  return `/api/tax-profiles/${id}/retire`
+}
+
+/**
+ * @summary Disable a current-store tax profile
+ */
+export const retireTaxProfile = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<TaxProfile> => {
+
+  return customFetch<TaxProfile>(getRetireTaxProfileUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRetireTaxProfileMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retireTaxProfile>>, TError,RetireTaxProfileMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof retireTaxProfile>>, TError,RetireTaxProfileMutationVariables, TContext> => {
+
+const mutationKey = ['retireTaxProfile'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof retireTaxProfile>>, RetireTaxProfileMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  retireTaxProfile(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RetireTaxProfileMutationResult = NonNullable<Awaited<ReturnType<typeof retireTaxProfile>>>
+
+    export type RetireTaxProfileMutationError = ErrorType<unknown>
+    export type RetireTaxProfileMutationVariables = {id: number}
+
+    /**
+ * @summary Disable a current-store tax profile
+ */
+export const useRetireTaxProfile = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retireTaxProfile>>, TError,RetireTaxProfileMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof retireTaxProfile>>,
+        TError,
+        RetireTaxProfileMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRetireTaxProfileMutationOptions(options));
+    }
+
+export const getGetCustomerRightsUrl = (params?: GetCustomerRightsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/customer-rights?${stringifiedParams}` : `/api/customer-rights`
+}
+
+/**
+ * @summary List reviewed customer-rights guidance
+ */
+export const getCustomerRights = async (params?: GetCustomerRightsParams, options?: Parameters<typeof customFetch>[1]): Promise<CustomerRightsList> => {
+
+  return customFetch<CustomerRightsList>(getGetCustomerRightsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCustomerRightsQueryKey = (params?: GetCustomerRightsParams,) => {
+    return [
+    `/api/customer-rights`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetCustomerRightsQueryOptions = <TData = Awaited<ReturnType<typeof getCustomerRights>>, TError = ErrorType<unknown>>(params?: GetCustomerRightsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCustomerRights>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCustomerRightsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCustomerRights>>> = ({ signal }) => getCustomerRights(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCustomerRights>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCustomerRightsQueryResult = NonNullable<Awaited<ReturnType<typeof getCustomerRights>>>
+export type GetCustomerRightsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List reviewed customer-rights guidance
+ */
+
+export function useGetCustomerRights<TData = Awaited<ReturnType<typeof getCustomerRights>>, TError = ErrorType<unknown>>(
+ params?: GetCustomerRightsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCustomerRights>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCustomerRightsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateCustomerRightsEntryUrl = () => {
+
+
+
+
+  return `/api/customer-rights`
+}
+
+/**
+ * @summary Create a customer-rights guidance entry (admin only)
+ */
+export const createCustomerRightsEntry = async (customerRightsInput: CustomerRightsInput, options?: Parameters<typeof customFetch>[1]): Promise<CustomerRightsEntry> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return customFetch<CustomerRightsEntry>(getCreateCustomerRightsEntryUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(customerRightsInput)
+  }
+);}
+
+
+
+
+
+export const getCreateCustomerRightsEntryMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCustomerRightsEntry>>, TError,CreateCustomerRightsEntryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCustomerRightsEntry>>, TError,CreateCustomerRightsEntryMutationVariables, TContext> => {
+
+const mutationKey = ['createCustomerRightsEntry'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCustomerRightsEntry>>, CreateCustomerRightsEntryMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCustomerRightsEntry(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCustomerRightsEntryMutationResult = NonNullable<Awaited<ReturnType<typeof createCustomerRightsEntry>>>
+    export type CreateCustomerRightsEntryMutationBody = BodyType<CustomerRightsInput>
+    export type CreateCustomerRightsEntryMutationError = ErrorType<unknown>
+    export type CreateCustomerRightsEntryMutationVariables = {data: BodyType<CustomerRightsInput>}
+
+    /**
+ * @summary Create a customer-rights guidance entry (admin only)
+ */
+export const useCreateCustomerRightsEntry = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCustomerRightsEntry>>, TError,CreateCustomerRightsEntryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCustomerRightsEntry>>,
+        TError,
+        CreateCustomerRightsEntryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateCustomerRightsEntryMutationOptions(options));
+    }
+
+export const getUpdateCustomerRightsEntryUrl = (id: number,) => {
+
+
+
+
+  return `/api/customer-rights/${id}`
+}
+
+/**
+ * @summary Update customer-rights guidance (admin only)
+ */
+export const updateCustomerRightsEntry = async (id: number,
+    customerRightsUpdate: CustomerRightsUpdate, options?: Parameters<typeof customFetch>[1]): Promise<CustomerRightsEntry> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return customFetch<CustomerRightsEntry>(getUpdateCustomerRightsEntryUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(customerRightsUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateCustomerRightsEntryMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCustomerRightsEntry>>, TError,UpdateCustomerRightsEntryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateCustomerRightsEntry>>, TError,UpdateCustomerRightsEntryMutationVariables, TContext> => {
+
+const mutationKey = ['updateCustomerRightsEntry'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateCustomerRightsEntry>>, UpdateCustomerRightsEntryMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateCustomerRightsEntry(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateCustomerRightsEntryMutationResult = NonNullable<Awaited<ReturnType<typeof updateCustomerRightsEntry>>>
+    export type UpdateCustomerRightsEntryMutationBody = BodyType<CustomerRightsUpdate>
+    export type UpdateCustomerRightsEntryMutationError = ErrorType<unknown>
+    export type UpdateCustomerRightsEntryMutationVariables = {id: number;data: BodyType<CustomerRightsUpdate>}
+
+    /**
+ * @summary Update customer-rights guidance (admin only)
+ */
+export const useUpdateCustomerRightsEntry = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateCustomerRightsEntry>>, TError,UpdateCustomerRightsEntryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateCustomerRightsEntry>>,
+        TError,
+        UpdateCustomerRightsEntryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateCustomerRightsEntryMutationOptions(options));
+    }
+
+export const getRetireCustomerRightsEntryUrl = (id: number,) => {
+
+
+
+
+  return `/api/customer-rights/${id}/retire`
+}
+
+/**
+ * @summary Retire customer-rights guidance (admin only)
+ */
+export const retireCustomerRightsEntry = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<CustomerRightsEntry> => {
+
+  return customFetch<CustomerRightsEntry>(getRetireCustomerRightsEntryUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRetireCustomerRightsEntryMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retireCustomerRightsEntry>>, TError,RetireCustomerRightsEntryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof retireCustomerRightsEntry>>, TError,RetireCustomerRightsEntryMutationVariables, TContext> => {
+
+const mutationKey = ['retireCustomerRightsEntry'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof retireCustomerRightsEntry>>, RetireCustomerRightsEntryMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  retireCustomerRightsEntry(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RetireCustomerRightsEntryMutationResult = NonNullable<Awaited<ReturnType<typeof retireCustomerRightsEntry>>>
+
+    export type RetireCustomerRightsEntryMutationError = ErrorType<unknown>
+    export type RetireCustomerRightsEntryMutationVariables = {id: number}
+
+    /**
+ * @summary Retire customer-rights guidance (admin only)
+ */
+export const useRetireCustomerRightsEntry = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof retireCustomerRightsEntry>>, TError,RetireCustomerRightsEntryMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof retireCustomerRightsEntry>>,
+        TError,
+        RetireCustomerRightsEntryMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRetireCustomerRightsEntryMutationOptions(options));
     }
 
 export const getGetAuditLogsUrl = (params?: GetAuditLogsParams,) => {

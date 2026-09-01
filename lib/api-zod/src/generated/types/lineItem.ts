@@ -20,4 +20,5 @@ export interface LineItem {
   unitPrice: number;
   discount?: number;
   total: number;
+  taxExempt?: boolean;
 }

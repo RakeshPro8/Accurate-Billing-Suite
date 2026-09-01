@@ -2,7 +2,7 @@ import { useState, ReactNode, useEffect } from "react";
 import { Link, useLocation } from "wouter";
 import {
   LayoutDashboard, Receipt, FileText, Users, PackageSearch,
-  BarChart3, Settings, Menu, ShieldCheck, LogIn, Wrench, Cpu, Activity, MonitorCog, Boxes
+  BarChart3, Settings, Menu, ShieldCheck, LogIn, Wrench, Cpu, Activity, MonitorCog, Boxes, Scale
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
@@ -20,6 +20,7 @@ const navItems: Array<{ href: string; label: string; icon: typeof LayoutDashboar
   { href: "/customers", label: "Customers", icon: Users },
   { href: "/products", label: "Products & Services", icon: PackageSearch },
   { href: "/repairs", label: "Repairs", icon: Wrench },
+  { href: "/customer-rights", label: "Customer Rights Guide", icon: Scale },
   { href: "/operations", label: "Operations", icon: Boxes },
   { href: "/device-diagram", label: "Device Diagram", icon: Cpu },
   { href: "/employees", label: "Employees", icon: ShieldCheck, roles: ["admin"] },

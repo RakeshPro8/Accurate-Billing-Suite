@@ -17,6 +17,7 @@ import { readDesktopDiagnostics, type DesktopDiagnostics } from "@/lib/desktop-d
 import { getLastSyncAt } from "@/lib/offline-store";
 import { readUiPreferences, saveUiPreferences, UI_PREFERENCES_EVENT } from "@/lib/ui-preferences";
 import { NotificationManagement } from "@/components/NotificationManagement";
+import { TaxProfileAdmin } from "@/components/TaxProfileAdmin";
 
 function formatDiagnosticDate(value: string | null) {
   if (!value) return "Not synced yet";
@@ -578,6 +579,7 @@ export default function Settings() {
         </Card>
 
         <StoreAdmin />
+        <TaxProfileAdmin />
 
         {/* SMTP */}
         <Card>

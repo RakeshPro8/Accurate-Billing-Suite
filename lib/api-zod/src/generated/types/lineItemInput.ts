@@ -15,4 +15,5 @@ export interface LineItemInput {
   quantity: number;
   unitPrice: number;
   discount?: number;
+  taxExempt?: boolean;
 }

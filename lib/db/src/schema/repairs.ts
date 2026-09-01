@@ -1,4 +1,4 @@
-import { pgTable, serial, text, numeric, integer, boolean, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, numeric, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -25,6 +25,12 @@ export const repairsTable = pgTable("repairs", {
   estimatedCost: numeric("estimated_cost", { precision: 10, scale: 2 }),
   deposit: numeric("deposit", { precision: 10, scale: 2 }).notNull().default("0"),
   total: numeric("total", { precision: 10, scale: 2 }).notNull().default("0"),
+  subtotal: numeric("subtotal", { precision: 10, scale: 2 }).notNull().default("0"),
+  taxRate: numeric("tax_rate", { precision: 6, scale: 4 }).notNull().default("0"),
+  tax: numeric("tax", { precision: 10, scale: 2 }).notNull().default("0"),
+  taxProfileId: integer("tax_profile_id"),
+  taxProvinceCode: text("tax_province_code"),
+  taxProfileSnapshot: jsonb("tax_profile_snapshot"),
   balance: numeric("balance", { precision: 10, scale: 2 }).notNull().default("0"),
   notifiedAt: timestamp("notified_at"),
   pickedUpAt: timestamp("picked_up_at"),
