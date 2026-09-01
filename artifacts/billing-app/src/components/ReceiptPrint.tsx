@@ -2,6 +2,7 @@
  * Thermal receipt layout — optimised for Star TSP100 FuturePRNT (80 mm roll).
  */
 
+import React from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
@@ -25,6 +26,8 @@ interface ReceiptData {
   subtotal: number;
   taxRate: number;
   tax: number;
+  taxName?: string;
+  taxProvinceCode?: string;
   discount: number;
   total: number;
   notes?: string;
@@ -39,8 +42,6 @@ interface BusinessInfo {
   logoUrl?: string;
   thankYouMessage?: string;
   invoiceFooter?: string;
-  gstRate?: number;
-  qstRate?: number;
   currency?: string;
   taxName?: string;
   taxEnabled?: boolean;
@@ -56,22 +57,17 @@ interface ReceiptPrintProps {
 
 export function ReceiptPrint({ data, business, qrValue }: ReceiptPrintProps) {
   const docNum = data.invoiceNumber ?? data.quoteNumber ?? "";
-  const gstRate = business.gstRate ?? 0;
-  const qstRate = business.qstRate ?? 0;
-  const taxableBase = data.subtotal - data.discount;
-
-  // Tax breakdown
-  const showGstQst = gstRate > 0 || qstRate > 0;
-  const gstAmount  = gstRate > 0 ? taxableBase * (gstRate / 100) : 0;
-  const qstAmount  = qstRate > 0 ? taxableBase * (qstRate / 100) : 0;
-  const genericTax = data.tax; // fallback if no GST/QST configured
-
   const qrContent = qrValue ?? docNum;
+  const showTax = data.taxRate > 0 || data.tax !== 0;
+  const taxLabel = data.taxName ?? business.taxName ?? "Tax";
 
   return (
     <div
       style={{
         width: "72mm",
+        boxSizing: "border-box",
+        maxWidth: "100%",
+        overflowWrap: "anywhere",
         fontFamily: "'Courier New', Courier, monospace",
         fontSize: "11px",
         color: "#000",
@@ -87,6 +83,7 @@ export function ReceiptPrint({ data, business, qrValue }: ReceiptPrintProps) {
             src={business.logoUrl}
             alt="logo"
             style={{ maxHeight: "18mm", maxWidth: "62mm", objectFit: "contain" }}
+            onError={(event) => { event.currentTarget.style.display = "none"; }}
           />
         </div>
       )}
@@ -113,7 +110,7 @@ export function ReceiptPrint({ data, business, qrValue }: ReceiptPrintProps) {
       <div style={{ marginBottom: "2mm" }}>
         <Row label={data.invoiceNumber ? "INVOICE" : "QUOTATION"} value={docNum} bold />
         <Row label="Date" value={formatDate(data.createdAt)} />
-        {data.customerName && <Row label="Customer" value={data.customerName} />}
+        <Row label="Customer" value={data.customerName || "Walk-in Customer"} />
         {data.paymentMethod && <Row label="Payment" value={data.paymentMethod} />}
       </div>
 
@@ -123,12 +120,12 @@ export function ReceiptPrint({ data, business, qrValue }: ReceiptPrintProps) {
       <div style={{ marginBottom: "2mm" }}>
         {data.items.map((item, i) => (
           <div key={i} style={{ marginBottom: "2mm" }}>
-            <div style={{ fontWeight: "bold" }}>{item.name}</div>
+            <div style={{ fontWeight: "bold", overflowWrap: "anywhere" }}>{item.name}</div>
             {item.description && (
-              <div style={{ fontSize: "9px", color: "#555" }}>{item.description}</div>
+              <div style={{ fontSize: "9px", color: "#555", overflowWrap: "anywhere" }}>{item.description}</div>
             )}
             <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <span style={{ fontSize: "10px" }}>
+              <span style={{ minWidth: 0, fontSize: "10px", overflowWrap: "anywhere" }}>
                 {item.quantity} × {formatCurrency(item.unitPrice)}
                 {(item.discount ?? 0) > 0 && (
                   <span style={{ color: "#555" }}> − {formatCurrency(item.discount ?? 0)}</span>
@@ -149,38 +146,18 @@ export function ReceiptPrint({ data, business, qrValue }: ReceiptPrintProps) {
           <Row label="Discount" value={`−${formatCurrency(data.discount)}`} />
         )}
 
-        {/* Tax breakdown: prefer GST/QST if configured */}
-        {showGstQst ? (
-          <>
-            {gstRate > 0 && (
-              <Row
-                label={`GST (${gstRate}%)`}
-                value={formatCurrency(gstAmount)}
-              />
-            )}
-            {qstRate > 0 && (
-              <Row
-                label={`QST (${qstRate}%)`}
-                value={formatCurrency(qstAmount)}
-              />
-            )}
-          </>
-        ) : (
-          data.taxRate > 0 && (
-            <Row label={`${business.taxName ?? "Tax"} (${data.taxRate}%)`} value={formatCurrency(genericTax)} />
-          )
+        {/* Tax values are captured on the document; never recalculate from current settings. */}
+        {showTax && (
+          <Row label={`${taxLabel} (${data.taxRate}%)`} value={formatCurrency(data.tax)} />
+        )}
+        {data.taxProvinceCode && (
+          <Row label="Tax profile" value={data.taxProvinceCode} />
         )}
       </div>
 
       <Divider thick />
 
       <Row label="TOTAL" value={formatCurrency(data.total)} bold large />
-
-      {showGstQst && (
-        <div style={{ fontSize: "9px", color: "#555", textAlign: "right", marginTop: "1mm" }}>
-          incl. GST {formatCurrency(gstAmount)} + QST {formatCurrency(qstAmount)}
-        </div>
-      )}
 
       <Divider />
 
@@ -237,10 +214,11 @@ function Row({
         fontWeight: bold ? "bold" : "normal",
         fontSize: large ? "14px" : "inherit",
         marginBottom: "0.5mm",
+        gap: "2mm",
       }}
     >
-      <span>{label}</span>
-      <span>{value}</span>
+      <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>{label}</span>
+      <span style={{ minWidth: 0, textAlign: "right", overflowWrap: "anywhere" }}>{value}</span>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import {
   useGetQuotation, useUpdateQuotation, useCreateSale,
@@ -15,6 +15,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ReceiptPrint } from "@/components/ReceiptPrint";
+import { startThermalPrint, type ThermalPrintSession } from "@/lib/thermal-print";
 import { recordAuditEvent } from "@/lib/audit-client";
 import { ArrowLeft, Printer, Download, ChevronDown, Check, Edit, FileText, RefreshCw, Receipt } from "lucide-react";
 
@@ -25,11 +26,23 @@ export default function QuotationDetail() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const quoteRef = useRef<HTMLDivElement>(null);
+  const thermalPrintSession = useRef<ThermalPrintSession | null>(null);
+  const mountedRef = useRef(true);
+  const [isPrintingReceipt, setIsPrintingReceipt] = useState(false);
 
   const { data: quote, isLoading } = useGetQuotation(id, { query: { queryKey: getGetQuotationQueryKey(id) } });
-  const { data: settings } = useGetSettings();
+  const { data: settings, isLoading: settingsLoading } = useGetSettings();
   const updateQuotation = useUpdateQuotation();
   const createSale = useCreateSale();
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      thermalPrintSession.current?.cancel();
+      thermalPrintSession.current = null;
+    };
+  }, []);
 
   function markStatus(status: string) {
     updateQuotation.mutate({ id, data: { status } as any }, {
@@ -76,17 +89,35 @@ export default function QuotationDetail() {
   }
 
   function handlePrintReceipt() {
+    if (!quote) {
+      toast({ title: "Receipt is still loading", description: "Wait for the quotation data to finish loading.", variant: "destructive" });
+      return;
+    }
+    if (!settings) {
+      toast({ title: settingsLoading ? "Business settings are still loading" : "Receipt settings unavailable", description: "The receipt was not opened so it cannot print without the saved business identity.", variant: "destructive" });
+      return;
+    }
+    if (thermalPrintSession.current?.isActive()) return;
+
     recordAuditEvent("print", "quotation", id);
-    const style = document.createElement("style");
-    style.id = "__receipt-page-size";
-    style.textContent = "@page { size: 80mm auto; margin: 3mm 3mm 6mm; }";
-    document.head.appendChild(style);
-    document.body.classList.add("receipt-mode");
-    setTimeout(() => {
-      window.print();
-      document.body.classList.remove("receipt-mode");
-      document.getElementById("__receipt-page-size")?.remove();
-    }, 100);
+    setIsPrintingReceipt(true);
+    try {
+      const session = startThermalPrint({
+        onFinished: (reason) => {
+          thermalPrintSession.current = null;
+          if (!mountedRef.current) return;
+          setIsPrintingReceipt(false);
+          if (reason === "error") {
+            toast({ title: "Receipt print failed", description: "The browser could not open print preview.", variant: "destructive" });
+          }
+        },
+      });
+      if (session.isActive()) thermalPrintSession.current = session;
+    } catch {
+      thermalPrintSession.current = null;
+      setIsPrintingReceipt(false);
+      toast({ title: "Receipt print failed", description: "The browser could not open print preview.", variant: "destructive" });
+    }
   }
 
   async function handlePDF() {
@@ -121,6 +152,10 @@ export default function QuotationDetail() {
   if (!quote) return <div className="text-center py-16 text-muted-foreground">Quotation not found.</div>;
 
   const items = quote.items ?? [];
+  const storedTax = quote as typeof quote & {
+    taxProfileSnapshot?: Record<string, unknown> | null;
+    taxProvinceCode?: string | null;
+  };
   const business = {
     businessName: settings?.businessName,
     businessAddress: settings?.businessAddress ?? undefined,
@@ -129,8 +164,6 @@ export default function QuotationDetail() {
     logoUrl: settings?.logoUrl ?? undefined,
     thankYouMessage: settings?.thankYouMessage ?? undefined,
     invoiceFooter: settings?.invoiceFooter ?? undefined,
-    gstRate: settings?.gstRate ?? 0,
-    qstRate: settings?.qstRate ?? 0,
     taxName: settings?.taxName ?? "Tax",
     taxEnabled: settings?.taxEnabled !== false,
     currency: settings?.currency ?? "USD",
@@ -149,6 +182,8 @@ export default function QuotationDetail() {
     subtotal: quote.subtotal,
     taxRate: quote.taxRate ?? 0,
     tax: quote.tax ?? 0,
+    taxName: typeof storedTax.taxProfileSnapshot?.["name"] === "string" ? storedTax.taxProfileSnapshot["name"] as string : undefined,
+    taxProvinceCode: storedTax.taxProvinceCode ?? (typeof storedTax.taxProfileSnapshot?.["provinceCode"] === "string" ? storedTax.taxProfileSnapshot["provinceCode"] as string : undefined),
     discount: quote.discount ?? 0,
     total: quote.total,
     notes: quote.notes ?? undefined,
@@ -157,7 +192,7 @@ export default function QuotationDetail() {
   return (
     <div className="space-y-4">
       {/* Thermal receipt — hidden on screen, shown in receipt-mode print */}
-      <div className="receipt-print-area" style={{ display: "none" }}>
+      <div className="receipt-print-area">
         <ReceiptPrint data={receiptData} business={business} mode="receipt" />
       </div>
 
@@ -175,8 +210,8 @@ export default function QuotationDetail() {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Button size="sm" variant="outline" onClick={handlePrintQuote} className="gap-1.5"><Printer className="h-3.5 w-3.5" /> Print</Button>
-          <Button size="sm" variant="outline" onClick={handlePrintReceipt} className="gap-1.5 border-teal-400 text-teal-700 hover:bg-teal-50">
-            <Receipt className="h-3.5 w-3.5" /> Print Receipt (TSP100)
+          <Button size="sm" variant="outline" onClick={handlePrintReceipt} disabled={isPrintingReceipt || settingsLoading} aria-busy={isPrintingReceipt} className="gap-1.5 border-teal-400 text-teal-700 hover:bg-teal-50">
+            <Receipt className="h-3.5 w-3.5" /> {isPrintingReceipt ? "Opening print preview…" : settingsLoading ? "Loading receipt…" : "Print Receipt (TSP100)"}
           </Button>
           <Button size="sm" variant="outline" onClick={handlePDF} className="gap-1.5"><Download className="h-3.5 w-3.5" /> PDF</Button>
           <Button size="sm" variant="outline" onClick={handleCSV} className="gap-1.5"><FileText className="h-3.5 w-3.5" /> CSV</Button>

@@ -724,31 +724,54 @@ html[data-ui-density="comfortable"] .app-header { min-height: 3.5rem; }
 }
 
 @media print {
-  /* Always hide UI chrome */
+  /* Keep the authenticated shell and screen-only controls out of every print. */
   .no-print { display: none !important; }
-  body { background: white; }
+  html, body { margin: 0 !important; padding: 0 !important; background: white !important; }
 
-  /* Print-only area takes over the whole page */
-  .invoice-print-area,
-  body.receipt-mode .receipt-print-area {
+  /* A4 invoice, quotation, and repair ticket path. */
+  .receipt-print-area { display: none !important; }
+  .invoice-print-area {
     display: block !important;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100vw;
-    height: 100vh;
-    z-index: 99999;
-    background: white;
-    overflow: auto;
-    padding: 0.5rem;
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    overflow: visible !important;
   }
 
-  /* Default (A4 invoice / quotation) */
-  .receipt-print-area { display: none !important; }
-
-  /* Thermal receipt mode — activated by body.receipt-mode class */
-  body.receipt-mode .receipt-print-area { display: block !important; }
-  body.receipt-mode .invoice-print-area  { display: none  !important; }
+  /*
+   * Thermal mode only reveals the one receipt surface. Static positioning is
+   * intentional: fixed full-viewport containers can create a second blank
+   * page when the app shell has its own scrolling container.
+   */
+  body.receipt-mode #root,
+  body.receipt-mode #root > *,
+  body.receipt-mode #root main,
+  body.receipt-mode #root main > div,
+  body.receipt-mode #root main > div > div,
+  body.receipt-mode #root .overflow-auto {
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+  }
+  body.receipt-mode #root * { visibility: hidden !important; }
+  body.receipt-mode #root .receipt-print-area,
+  body.receipt-mode #root .receipt-print-area * {
+    visibility: visible !important;
+  }
+  body.receipt-mode .receipt-print-area {
+    display: block !important;
+    position: static !important;
+    width: 72mm !important;
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: white !important;
+  }
+  body.receipt-mode .invoice-print-area { display: none !important; }
 }
 
 /* ─── PUBLIC SALES PAGE / SIGNAL COUNTER ─────────────────────

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useParams, useLocation } from "wouter";
 import {
   useGetSale, useUpdateSale, useRecordSalePayment, useVoidSale, useRefundSale,
@@ -15,6 +15,7 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ReceiptPrint } from "@/components/ReceiptPrint";
+import { startThermalPrint, type ThermalPrintSession } from "@/lib/thermal-print";
 import { recordAuditEvent } from "@/lib/audit-client";
 import {
   ArrowLeft, Printer, Download, Edit, FileText, Receipt, Mail, Copy, RotateCcw,
@@ -35,6 +36,8 @@ export default function SaleDetail() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const invoiceRef = useRef<HTMLDivElement>(null);
+  const thermalPrintSession = useRef<ThermalPrintSession | null>(null);
+  const mountedRef = useRef(true);
   const paymentKey = useRef(crypto.randomUUID());
   const refundKey = useRef(crypto.randomUUID());
   const voidKey = useRef(crypto.randomUUID());
@@ -47,15 +50,25 @@ export default function SaleDetail() {
   const [note, setNote] = useState("");
   const [voidOpen, setVoidOpen] = useState(false);
   const [refundOpen, setRefundOpen] = useState(false);
+  const [isPrintingReceipt, setIsPrintingReceipt] = useState(false);
 
   const { data: sale, isLoading } = useGetSale(id, { query: { queryKey: getGetSaleQueryKey(id) } });
-  const { data: settings } = useGetSettings();
+  const { data: settings, isLoading: settingsLoading } = useGetSettings();
   const updateSale = useUpdateSale();
   const payment = useRecordSalePayment({ request: { headers: { "Idempotency-Key": paymentKey.current } } });
   const voidMutation = useVoidSale({ request: { headers: { "Idempotency-Key": voidKey.current } } });
   const refundMutation = useRefundSale({ request: { headers: { "Idempotency-Key": refundKey.current } } });
   const duplicateMutation = useDuplicateSale({ request: { headers: { "Idempotency-Key": duplicateKey.current } } });
   const emailMutation = useSendSaleEmail();
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      thermalPrintSession.current?.cancel();
+      thermalPrintSession.current = null;
+    };
+  }, []);
 
   function markStatus(status: string) {
     updateSale.mutate({ id, data: { status } as any }, {
@@ -111,17 +124,35 @@ export default function SaleDetail() {
   }
 
   function handlePrintReceipt() {
+    if (!sale) {
+      toast({ title: "Receipt is still loading", description: "Wait for the invoice data to finish loading.", variant: "destructive" });
+      return;
+    }
+    if (!settings) {
+      toast({ title: settingsLoading ? "Business settings are still loading" : "Receipt settings unavailable", description: "The receipt was not opened so it cannot print without the saved business identity.", variant: "destructive" });
+      return;
+    }
+    if (thermalPrintSession.current?.isActive()) return;
+
     recordAuditEvent("print", "sale", id);
-    const style = document.createElement("style");
-    style.id = "__receipt-page-size";
-    style.textContent = "@page { size: 80mm auto; margin: 3mm 3mm 6mm; }";
-    document.head.appendChild(style);
-    document.body.classList.add("receipt-mode");
-    setTimeout(() => {
-      window.print();
-      document.body.classList.remove("receipt-mode");
-      document.getElementById("__receipt-page-size")?.remove();
-    }, 100);
+    setIsPrintingReceipt(true);
+    try {
+      const session = startThermalPrint({
+        onFinished: (reason) => {
+          thermalPrintSession.current = null;
+          if (!mountedRef.current) return;
+          setIsPrintingReceipt(false);
+          if (reason === "error") {
+            toast({ title: "Receipt print failed", description: "The browser could not open print preview.", variant: "destructive" });
+          }
+        },
+      });
+      if (session.isActive()) thermalPrintSession.current = session;
+    } catch {
+      thermalPrintSession.current = null;
+      setIsPrintingReceipt(false);
+      toast({ title: "Receipt print failed", description: "The browser could not open print preview.", variant: "destructive" });
+    }
   }
 
   async function handlePDF() {
@@ -156,6 +187,10 @@ export default function SaleDetail() {
   if (!sale) return <div className="text-center py-16 text-muted-foreground">Invoice not found.</div>;
 
   const items = sale.items ?? [];
+  const storedTax = sale as typeof sale & {
+    taxProfileSnapshot?: Record<string, unknown> | null;
+    taxProvinceCode?: string | null;
+  };
   const business = {
     businessName: settings?.businessName,
     businessAddress: settings?.businessAddress ?? undefined,
@@ -164,8 +199,6 @@ export default function SaleDetail() {
     logoUrl: settings?.logoUrl ?? undefined,
     thankYouMessage: settings?.thankYouMessage ?? undefined,
     invoiceFooter: settings?.invoiceFooter ?? undefined,
-    gstRate: settings?.gstRate ?? 0,
-    qstRate: settings?.qstRate ?? 0,
     taxName: settings?.taxName ?? "Tax",
     taxEnabled: settings?.taxEnabled !== false,
     currency: settings?.currency ?? "USD",
@@ -189,6 +222,8 @@ export default function SaleDetail() {
     subtotal: sale.subtotal,
     taxRate: sale.taxRate ?? 0,
     tax: sale.tax ?? 0,
+    taxName: typeof storedTax.taxProfileSnapshot?.["name"] === "string" ? storedTax.taxProfileSnapshot["name"] as string : undefined,
+    taxProvinceCode: storedTax.taxProvinceCode ?? (typeof storedTax.taxProfileSnapshot?.["provinceCode"] === "string" ? storedTax.taxProfileSnapshot["provinceCode"] as string : undefined),
     discount: sale.discount ?? 0,
     total: sale.total,
     notes: sale.notes ?? undefined,
@@ -197,7 +232,7 @@ export default function SaleDetail() {
   return (
     <div className="space-y-4">
       {/* ── Thermal receipt area (hidden on screen, shown when body.receipt-mode + @media print) ── */}
-      <div className="receipt-print-area" style={{ display: "none" }}>
+      <div className="receipt-print-area">
         <ReceiptPrint data={receiptData} business={business} mode="receipt" />
       </div>
 
@@ -217,8 +252,8 @@ export default function SaleDetail() {
           <Button size="sm" variant="outline" onClick={handlePrintInvoice} className="gap-1.5">
             <Printer className="h-3.5 w-3.5" /> Print Invoice
           </Button>
-          <Button size="sm" variant="outline" onClick={handlePrintReceipt} className="gap-1.5 border-teal-400 text-teal-700 hover:bg-teal-50">
-            <Receipt className="h-3.5 w-3.5" /> Print Receipt (TSP100)
+          <Button size="sm" variant="outline" onClick={handlePrintReceipt} disabled={isPrintingReceipt || settingsLoading} aria-busy={isPrintingReceipt} className="gap-1.5 border-teal-400 text-teal-700 hover:bg-teal-50">
+            <Receipt className="h-3.5 w-3.5" /> {isPrintingReceipt ? "Opening print preview…" : settingsLoading ? "Loading receipt…" : "Print Receipt (TSP100)"}
           </Button>
           <Button size="sm" variant="outline" onClick={handlePDF} className="gap-1.5">
             <Download className="h-3.5 w-3.5" /> PDF
