@@ -21,6 +21,17 @@ const SAFE_DETAIL_KEYS = new Set([
   "topic",
 ]);
 
+const AUDIT_EXPORT_HEADERS = [
+  "Actor ID",
+  "Actor",
+  "Location ID",
+  "Location",
+  "Action",
+  "Affected record",
+  "Timestamp",
+  "Change context",
+];
+
 /**
  * Audit details are written by many business routes. Keep the read API
  * deliberately allow-listed so a future audit writer cannot expose customer
@@ -41,6 +52,44 @@ export function toSafeAuditDetails(details: unknown): AuditDetails | null {
     }
   }
   return Object.keys(safe).length > 0 ? safe : null;
+}
+
+export interface PrivacySafeAuditExportEvent {
+  employeeId: number | null;
+  employeeName: string | null;
+  storeId: number | null;
+  action: string;
+  entityType: string;
+  entityId: string | null;
+  details: unknown;
+  createdAt: Date;
+}
+
+function csvCell(value: string | number | null) {
+  const stringValue = value === null ? "" : String(value);
+  // Quoting prevents delimiter/newline injection; the apostrophe prevents
+  // spreadsheet applications from evaluating untrusted formula prefixes.
+  const safeValue = /^[=+\-@]/.test(stringValue) ? `'${stringValue}` : stringValue;
+  return `"${safeValue.replace(/"/g, '""')}"`;
+}
+
+/**
+ * Build the compliance export from an explicit, privacy-safe column set.
+ * This must not be replaced with serializing the audit table row: audit
+ * details can contain request data that is intentionally hidden from readers.
+ */
+export function toPrivacySafeAuditCsv(events: PrivacySafeAuditExportEvent[], locationName: string | null) {
+  const rows = events.map((event) => [
+    csvCell(event.employeeId),
+    csvCell(event.employeeName ?? "system"),
+    csvCell(event.storeId),
+    csvCell(locationName ?? "Unknown location"),
+    csvCell(event.action),
+    csvCell(`${event.entityType}${event.entityId ? ` #${event.entityId}` : ""}`),
+    csvCell(event.createdAt.toISOString()),
+    csvCell(JSON.stringify(toSafeAuditDetails(event.details) ?? {})),
+  ].join(","));
+  return `${AUDIT_EXPORT_HEADERS.map((header) => csvCell(header)).join(",")}\r\n${rows.length > 0 ? `${rows.join("\r\n")}\r\n` : ""}`;
 }
 
 export async function logAudit(

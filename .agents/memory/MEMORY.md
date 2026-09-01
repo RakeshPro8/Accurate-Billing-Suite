@@ -11,3 +11,4 @@
 - [Development Schema Push](development-schema-push.md) — non-interactive Drizzle pushes can stop on legacy naming conflicts; prefer an explicit additive dev change over force-pushing.
 - [Store Scope Bootstrap](store-scope-bootstrap.md) — store-scoped requests need an active location; empty development databases require safe initial-store onboarding rather than relaxing scope checks.
 - [Expo Monorepo Resolution](expo-monorepo-resolution.md) — Expo SDK 54's default Metro config already resolves this pnpm workspace and shared API package.
+- [OpenAPI Path Blocks](openapi-path-blocks.md) — close each path's methods before adding a sibling path, or codegen can attach an operation to the wrong URL.

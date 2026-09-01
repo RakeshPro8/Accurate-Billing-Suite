@@ -47,6 +47,7 @@ import type {
   CustomerUpdate,
   DashboardSummary,
   DeviceCredentialResponse,
+  DownloadAuditLogsExportParams,
   EmailRequest,
   Employee,
   EmployeeInput,
@@ -1419,6 +1420,90 @@ export const useRecordAuditEvent = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getRecordAuditEventMutationOptions(options));
     }
+
+export const getDownloadAuditLogsExportUrl = (params?: DownloadAuditLogsExportParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/audit-logs/export?${stringifiedParams}` : `/api/audit-logs/export`
+}
+
+/**
+ * @summary Download a privacy-safe filtered audit trail CSV
+ */
+export const downloadAuditLogsExport = async (params?: DownloadAuditLogsExportParams, options?: Parameters<typeof customFetch>[1]): Promise<string> => {
+
+  return customFetch<string>(getDownloadAuditLogsExportUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getDownloadAuditLogsExportQueryKey = (params?: DownloadAuditLogsExportParams,) => {
+    return [
+    `/api/audit-logs/export`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getDownloadAuditLogsExportQueryOptions = <TData = Awaited<ReturnType<typeof downloadAuditLogsExport>>, TError = ErrorType<unknown>>(params?: DownloadAuditLogsExportParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadAuditLogsExport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getDownloadAuditLogsExportQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof downloadAuditLogsExport>>> = ({ signal }) => downloadAuditLogsExport(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof downloadAuditLogsExport>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type DownloadAuditLogsExportQueryResult = NonNullable<Awaited<ReturnType<typeof downloadAuditLogsExport>>>
+export type DownloadAuditLogsExportQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Download a privacy-safe filtered audit trail CSV
+ */
+
+export function useDownloadAuditLogsExport<TData = Awaited<ReturnType<typeof downloadAuditLogsExport>>, TError = ErrorType<unknown>>(
+ params?: DownloadAuditLogsExportParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof downloadAuditLogsExport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getDownloadAuditLogsExportQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
 
 export const getReplayOfflineOperationsUrl = () => {
 

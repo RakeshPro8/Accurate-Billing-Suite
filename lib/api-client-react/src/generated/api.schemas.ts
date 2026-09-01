@@ -1961,6 +1961,70 @@ export type RecordAuditEvent201 = {
   recorded?: boolean;
 };
 
+export type DownloadAuditLogsExportParams = {
+action?: DownloadAuditLogsExportAction;
+entityType?: DownloadAuditLogsExportEntityType;
+/**
+ * Location to inspect. If omitted, the employee's current location is used.
+ * @minimum 1
+ */
+storeId?: number;
+/**
+ * Employee name or ID to match.
+ * @maxLength 120
+ */
+actor?: string;
+/**
+ * @maxLength 40
+ */
+dateFrom?: string;
+/**
+ * @maxLength 40
+ */
+dateTo?: string;
+/**
+ * @minimum 1
+ * @maximum 500
+ */
+limit?: number;
+};
+
+export type DownloadAuditLogsExportAction = typeof DownloadAuditLogsExportAction[keyof typeof DownloadAuditLogsExportAction];
+
+
+export const DownloadAuditLogsExportAction = {
+  create: 'create',
+  update: 'update',
+  delete: 'delete',
+  login: 'login',
+  logout: 'logout',
+  print: 'print',
+  payment: 'payment',
+  store: 'store',
+  authentication: 'authentication',
+  convert: 'convert',
+  status_change: 'status_change',
+} as const;
+
+export type DownloadAuditLogsExportEntityType = typeof DownloadAuditLogsExportEntityType[keyof typeof DownloadAuditLogsExportEntityType];
+
+
+export const DownloadAuditLogsExportEntityType = {
+  sale: 'sale',
+  quotation: 'quotation',
+  repair: 'repair',
+  repair_photo: 'repair_photo',
+  customer: 'customer',
+  product: 'product',
+  service: 'service',
+  employee: 'employee',
+  settings: 'settings',
+  store: 'store',
+  backup: 'backup',
+  tax_profile: 'tax_profile',
+  guidance_entry: 'guidance_entry',
+} as const;
+
 export type GetProductsParams = {
 category?: string;
 search?: string;

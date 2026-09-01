@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { ShieldCheck, RefreshCw, Search, CalendarDays, MapPin, UserRound, SlidersHorizontal } from "lucide-react";
-import { getGetAuditLogsQueryKey, getGetCurrentStoreQueryKey, useGetAuditLogs, useGetCurrentStore, useGetStores, type AuditLog, type GetAuditLogsParams } from "@workspace/api-client-react";
+import { ShieldCheck, RefreshCw, Search, CalendarDays, MapPin, UserRound, SlidersHorizontal, Download } from "lucide-react";
+import { downloadAuditLogsExport, getGetAuditLogsQueryKey, getGetCurrentStoreQueryKey, useGetAuditLogs, useGetCurrentStore, useGetStores, type AuditLog, type GetAuditLogsParams } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { formatDateTime } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 type FilterState = { storeId: string; entityType: string; action: string; actor: string; dateFrom: string; dateTo: string };
 
@@ -35,7 +36,9 @@ function detailSummary(details: Record<string, unknown> | null | undefined) {
 export default function AuditLogs() {
   const [filters, setFilters] = useState<FilterState>(emptyFilters);
   const [applied, setApplied] = useState<FilterState>(emptyFilters);
+  const [exportLoading, setExportLoading] = useState(false);
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const { data: stores = [], isLoading: storesLoading } = useGetStores();
   const { data: currentStore, isLoading: currentStoreLoading } = useGetCurrentStore();
   const storeId = applied.storeId === "current" ? currentStore?.storeId ?? undefined : Number(applied.storeId);
@@ -57,6 +60,37 @@ export default function AuditLogs() {
   const setFilter = <K extends keyof FilterState>(key: K, value: FilterState[K]) => setFilters((current) => ({ ...current, [key]: value }));
   const applyFilters = () => setApplied({ ...filters });
   const clearFilters = () => { setFilters(emptyFilters); setApplied(emptyFilters); };
+  async function exportAuditLogs() {
+    if (!storeId) {
+      toast({ title: "Audit export unavailable", description: "Select an active location before exporting.", variant: "destructive" });
+      return;
+    }
+    if (logs.length === 0) {
+      toast({ title: "Nothing to export", description: "There are no matching audit events for the current filters." });
+      return;
+    }
+    setExportLoading(true);
+    try {
+      const csvBlob = await downloadAuditLogsExport(params, { responseType: "blob" }) as unknown as Blob;
+      const csv = await csvBlob.text();
+      const lines = csv?.trim().split(/\r?\n/) ?? [];
+      if (lines.length <= 1) {
+        toast({ title: "Nothing to export", description: "There are no matching audit events for the current filters." });
+        return;
+      }
+      const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8;" }));
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `mobilinq-audit-${new Date().toISOString().slice(0, 10)}.csv`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast({ title: "Audit export downloaded", description: `${logs.length} privacy-safe event${logs.length === 1 ? "" : "s"} exported.` });
+    } catch (error) {
+      toast({ title: "Audit export failed", description: "The filtered audit file could not be prepared. Check your connection and try again.", variant: "destructive" });
+    } finally {
+      setExportLoading(false);
+    }
+  }
   useEffect(() => {
     const onStoreChanged = () => {
       void queryClient.invalidateQueries({ queryKey: getGetCurrentStoreQueryKey() });
@@ -68,7 +102,7 @@ export default function AuditLogs() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div><div className="mb-2 flex items-center gap-2 text-primary"><ShieldCheck className="h-4 w-4" /><span className="text-xs font-semibold uppercase tracking-[0.2em]">Compliance review</span></div><h1 className="text-2xl font-bold">Audit trail</h1><p className="mt-0.5 max-w-2xl text-sm text-muted-foreground">Review tax-profile and customer-rights changes by location, actor, action, and date. Only privacy-safe change context is shown.</p></div>
-        <Button variant="outline" size="sm" onClick={() => void query.refetch()} disabled={query.isFetching || !storeId} className="gap-2"><RefreshCw className={`h-3.5 w-3.5 ${query.isFetching ? "animate-spin" : ""}`} /> Refresh</Button>
+         <div className="flex flex-wrap gap-2"><Button variant="outline" size="sm" onClick={() => void query.refetch()} disabled={query.isFetching || !storeId} className="gap-2"><RefreshCw className={`h-3.5 w-3.5 ${query.isFetching ? "animate-spin" : ""}`} /> Refresh</Button><Button variant="outline" size="sm" onClick={() => void exportAuditLogs()} disabled={exportLoading || query.isLoading || !storeId || logs.length === 0} className="gap-2"><Download className={`h-3.5 w-3.5 ${exportLoading ? "animate-pulse" : ""}`} /> {exportLoading ? "Preparing…" : "Export CSV"}</Button></div>
       </div>
       <Card>
         <CardContent className="space-y-4 p-4">

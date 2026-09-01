@@ -570,6 +570,34 @@ export const RecordAuditEventResponse = zod.object({
 
 
 /**
+ * @summary Download a privacy-safe filtered audit trail CSV
+ */
+
+export const downloadAuditLogsExportQueryActorMax = 120;
+
+export const downloadAuditLogsExportQueryDateFromMax = 40;
+
+export const downloadAuditLogsExportQueryDateToMax = 40;
+
+export const downloadAuditLogsExportQueryLimitDefault = 100;
+export const downloadAuditLogsExportQueryLimitMax = 500;
+
+
+
+export const DownloadAuditLogsExportQueryParams = zod.object({
+  "action": zod.enum(['create', 'update', 'delete', 'login', 'logout', 'print', 'payment', 'store', 'authentication', 'convert', 'status_change']).optional(),
+  "entityType": zod.enum(['sale', 'quotation', 'repair', 'repair_photo', 'customer', 'product', 'service', 'employee', 'settings', 'store', 'backup', 'tax_profile', 'guidance_entry']).optional(),
+  "storeId": zod.coerce.number().int().min(1).optional().describe('Location to inspect. If omitted, the employee\'s current location is used.'),
+  "actor": zod.coerce.string().max(downloadAuditLogsExportQueryActorMax).optional().describe('Employee name or ID to match.'),
+  "dateFrom": zod.coerce.string().max(downloadAuditLogsExportQueryDateFromMax).optional(),
+  "dateTo": zod.coerce.string().max(downloadAuditLogsExportQueryDateToMax).optional(),
+  "limit": zod.coerce.number().int().min(1).max(downloadAuditLogsExportQueryLimitMax).default(downloadAuditLogsExportQueryLimitDefault)
+})
+
+export const DownloadAuditLogsExportResponse = zod.unknown()
+
+
+/**
  * @summary Replay approved offline operations with server authority
  */
 export const replayOfflineOperationsBodyOperationsItemOperationIdMin = 8;

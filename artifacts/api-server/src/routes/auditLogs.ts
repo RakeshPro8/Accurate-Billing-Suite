@@ -1,9 +1,9 @@
 import { Router } from "express";
-import { db, auditLogsTable } from "@workspace/db";
+import { db, auditLogsTable, storesTable } from "@workspace/db";
 import { and, desc, eq, gte, ilike, lte, or } from "drizzle-orm";
 import { z } from "zod";
 import { requireAuth, requireRole } from "../lib/auth";
-import { logAudit, toSafeAuditDetails, type AuditAction, type AuditEntityType } from "../lib/audit";
+import { logAudit, toPrivacySafeAuditCsv, toSafeAuditDetails, type AuditAction, type AuditEntityType } from "../lib/audit";
 import { requireCurrentStoreId } from "../lib/stores";
 import { HttpError } from "../lib/http";
 
@@ -35,8 +35,7 @@ function escapeLike(value: string) {
   return value.replace(/[\\%_]/g, "\\$&");
 }
 
-router.get("/", requireRole("manager"), async (req, res) => {
-  const query = auditQuery.parse(req.query);
+async function findAuditLogs(req: Parameters<typeof requireCurrentStoreId>[0], query: z.infer<typeof auditQuery>) {
   const storeId = query.storeId ?? await requireCurrentStoreId(req);
   const from = parseFilterDate(query.dateFrom);
   const to = parseFilterDate(query.dateTo, true);
@@ -59,11 +58,29 @@ router.get("/", requireRole("manager"), async (req, res) => {
     .where(and(...filters))
     .orderBy(desc(auditLogsTable.createdAt))
     .limit(query.limit);
+  return { logs, storeId };
+}
+
+router.get("/", requireRole("manager"), async (req, res) => {
+  const query = auditQuery.parse(req.query);
+  const { logs } = await findAuditLogs(req, query);
   res.json(logs.map(({ details, ...log }) => ({
     ...log,
     details: toSafeAuditDetails(details),
     createdAt: log.createdAt.toISOString(),
   })));
+});
+
+router.get("/export", requireRole("manager"), async (req, res) => {
+  const query = auditQuery.parse(req.query);
+  const { logs, storeId } = await findAuditLogs(req, query);
+  const [store] = await db.select({ name: storesTable.name }).from(storesTable).where(eq(storesTable.id, storeId)).limit(1);
+  const csv = toPrivacySafeAuditCsv(logs, store?.name ?? null);
+  const date = new Date().toISOString().slice(0, 10);
+  res.setHeader("Content-Disposition", `attachment; filename="mobilinq-audit-${date}.csv"`);
+  res.setHeader("Cache-Control", "no-store");
+  res.type("text/csv");
+  res.send(csv);
 });
 
 router.post("/", requireAuth, async (req, res) => {

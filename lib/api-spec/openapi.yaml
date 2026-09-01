@@ -311,6 +311,25 @@ paths:
                 properties:
                   recorded: { type: boolean }
 
+  /audit-logs/export:
+    get:
+      operationId: downloadAuditLogsExport
+      tags: [audit]
+      summary: Download a privacy-safe filtered audit trail CSV
+      parameters:
+        - { name: action, in: query, schema: { type: string, enum: [create, update, delete, login, logout, print, payment, store, authentication, convert, status_change] } }
+        - { name: entityType, in: query, schema: { type: string, enum: [sale, quotation, repair, repair_photo, customer, product, service, employee, settings, store, backup, tax_profile, guidance_entry] } }
+        - { name: storeId, in: query, description: "Location to inspect. If omitted, the employee's current location is used.", schema: { type: integer, minimum: 1 } }
+        - { name: actor, in: query, description: "Employee name or ID to match.", schema: { type: string, maxLength: 120 } }
+        - { name: dateFrom, in: query, schema: { type: string, maxLength: 40 } }
+        - { name: dateTo, in: query, schema: { type: string, maxLength: 40 } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 500, default: 100 } }
+      responses:
+        "200":
+          description: Privacy-safe audit CSV. Empty results contain only the header row.
+          content:
+            text/csv: { schema: { type: string } }
+
   /sync/replay:
     post:
       operationId: replayOfflineOperations
