@@ -1109,6 +1109,42 @@ export interface SetCurrentStoreInput {
   storeId: number | null;
 }
 
+export type AuditLogAction = typeof AuditLogAction[keyof typeof AuditLogAction];
+
+
+export const AuditLogAction = {
+  create: 'create',
+  update: 'update',
+  delete: 'delete',
+  login: 'login',
+  logout: 'logout',
+  print: 'print',
+  payment: 'payment',
+  store: 'store',
+  authentication: 'authentication',
+  convert: 'convert',
+  status_change: 'status_change',
+} as const;
+
+export type AuditLogEntityType = typeof AuditLogEntityType[keyof typeof AuditLogEntityType];
+
+
+export const AuditLogEntityType = {
+  sale: 'sale',
+  quotation: 'quotation',
+  repair: 'repair',
+  repair_photo: 'repair_photo',
+  customer: 'customer',
+  product: 'product',
+  service: 'service',
+  employee: 'employee',
+  settings: 'settings',
+  store: 'store',
+  backup: 'backup',
+  tax_profile: 'tax_profile',
+  guidance_entry: 'guidance_entry',
+} as const;
+
 /**
  * @nullable
  */
@@ -1122,8 +1158,8 @@ export interface AuditLog {
   employeeName?: string | null;
   /** @nullable */
   storeId?: number | null;
-  action: string;
-  entityType: string;
+  action: AuditLogAction;
+  entityType: AuditLogEntityType;
   /** @nullable */
   entityId?: string | null;
   /** @nullable */
@@ -1858,10 +1894,25 @@ export const GetCustomerRightsStatus = {
 } as const;
 
 export type GetAuditLogsParams = {
-action?: string;
-entityType?: string;
+action?: GetAuditLogsAction;
+entityType?: GetAuditLogsEntityType;
+/**
+ * Location to inspect. If omitted, the employee's current location is used.
+ * @minimum 1
+ */
 storeId?: number;
+/**
+ * Employee name or ID to match.
+ * @maxLength 120
+ */
+actor?: string;
+/**
+ * @maxLength 40
+ */
 dateFrom?: string;
+/**
+ * @maxLength 40
+ */
 dateTo?: string;
 /**
  * @minimum 1
@@ -1869,6 +1920,42 @@ dateTo?: string;
  */
 limit?: number;
 };
+
+export type GetAuditLogsAction = typeof GetAuditLogsAction[keyof typeof GetAuditLogsAction];
+
+
+export const GetAuditLogsAction = {
+  create: 'create',
+  update: 'update',
+  delete: 'delete',
+  login: 'login',
+  logout: 'logout',
+  print: 'print',
+  payment: 'payment',
+  store: 'store',
+  authentication: 'authentication',
+  convert: 'convert',
+  status_change: 'status_change',
+} as const;
+
+export type GetAuditLogsEntityType = typeof GetAuditLogsEntityType[keyof typeof GetAuditLogsEntityType];
+
+
+export const GetAuditLogsEntityType = {
+  sale: 'sale',
+  quotation: 'quotation',
+  repair: 'repair',
+  repair_photo: 'repair_photo',
+  customer: 'customer',
+  product: 'product',
+  service: 'service',
+  employee: 'employee',
+  settings: 'settings',
+  store: 'store',
+  backup: 'backup',
+  tax_profile: 'tax_profile',
+  guidance_entry: 'guidance_entry',
+} as const;
 
 export type RecordAuditEvent201 = {
   recorded?: boolean;

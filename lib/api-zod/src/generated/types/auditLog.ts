@@ -5,7 +5,9 @@
  * Mobilinq store operations API
  * OpenAPI spec version: 0.2.0
  */
+import type { AuditLogAction } from './auditLogAction';
 import type { AuditLogDetails } from './auditLogDetails';
+import type { AuditLogEntityType } from './auditLogEntityType';
 
 export interface AuditLog {
   id: number;
@@ -15,8 +17,8 @@ export interface AuditLog {
   employeeName?: string | null;
   /** @nullable */
   storeId?: number | null;
-  action: string;
-  entityType: string;
+  action: AuditLogAction;
+  entityType: AuditLogEntityType;
   /** @nullable */
   entityId?: string | null;
   /** @nullable */

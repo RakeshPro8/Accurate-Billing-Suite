@@ -1,42 +1,69 @@
 import { Router } from "express";
 import { db, auditLogsTable } from "@workspace/db";
-import { and, desc, eq, gte, lte } from "drizzle-orm";
+import { and, desc, eq, gte, ilike, lte, or } from "drizzle-orm";
+import { z } from "zod";
 import { requireAuth, requireRole } from "../lib/auth";
-import { logAudit, type AuditAction, type AuditEntityType } from "../lib/audit";
+import { logAudit, toSafeAuditDetails, type AuditAction, type AuditEntityType } from "../lib/audit";
 import { requireCurrentStoreId } from "../lib/stores";
 import { HttpError } from "../lib/http";
 
 const router = Router();
 
+const actions = ["create", "update", "delete", "login", "logout", "print", "payment", "store", "authentication", "convert", "status_change"] as const;
+const entities = ["sale", "quotation", "repair", "repair_photo", "customer", "product", "service", "employee", "settings", "store", "backup", "tax_profile", "guidance_entry"] as const;
+const auditQuery = z.object({
+  action: z.enum(actions).optional(),
+  entityType: z.enum(entities).optional(),
+  storeId: z.coerce.number().int().positive().optional(),
+  actor: z.string().trim().max(120).optional(),
+  dateFrom: z.string().trim().max(40).optional(),
+  dateTo: z.string().trim().max(40).optional(),
+  limit: z.coerce.number().int().min(1).max(500).default(100),
+}).strict();
+
+function parseFilterDate(value: string | undefined, endOfDay = false) {
+  if (!value) return null;
+  const isoValue = /^\d{4}-\d{2}-\d{2}$/.test(value)
+    ? `${value}T${endOfDay ? "23:59:59.999" : "00:00:00.000"}Z`
+    : value;
+  const date = new Date(isoValue);
+  if (Number.isNaN(date.getTime())) throw new HttpError(400, "Invalid audit log date range.");
+  return date;
+}
+
+function escapeLike(value: string) {
+  return value.replace(/[\\%_]/g, "\\$&");
+}
+
 router.get("/", requireRole("manager"), async (req, res) => {
-  try {
-    const { action, entityType, entityId, dateFrom, dateTo, limit = "100" } = req.query;
-    const storeId = await requireCurrentStoreId(req);
-    const actions = new Set<AuditAction>(["create", "update", "delete", "print", "payment", "status_change", "convert", "store"]);
-    const entities = new Set<AuditEntityType>(["sale", "quotation", "repair", "backup", "customer", "product", "settings", "store"]);
-    if ((action && (!actions.has(action as AuditAction))) || (entityType && !entities.has(entityType as AuditEntityType)) || (entityId && (typeof entityId !== "string" || entityId.length > 64)) || !Number.isInteger(Number(limit)) || Number(limit) < 1 || Number(limit) > 500) throw new HttpError(400, "Invalid audit log filter.");
-    const from = dateFrom ? new Date(String(dateFrom)) : null;
-    const to = dateTo ? new Date(String(dateTo)) : null;
-    if ((from && Number.isNaN(from.getTime())) || (to && Number.isNaN(to.getTime())) || (from && to && from > to)) throw new HttpError(400, "Invalid audit log date range.");
-    let query = db.select().from(auditLogsTable).orderBy(desc(auditLogsTable.createdAt));
-    const filters = [];
-    if (action) filters.push(eq(auditLogsTable.action, String(action)));
-    if (entityType) filters.push(eq(auditLogsTable.entityType, String(entityType)));
-    if (entityId) filters.push(eq(auditLogsTable.entityId, String(entityId)));
-    filters.push(eq(auditLogsTable.storeId, storeId));
-    if (from) filters.push(gte(auditLogsTable.createdAt, from));
-    if (to) filters.push(lte(auditLogsTable.createdAt, to));
-    if (filters.length) query = query.where(and(...filters)) as typeof query;
-    const safeLimit = Math.min(500, Math.max(1, Number(limit) || 100));
-    const logs = await query.limit(safeLimit);
-    return res.json(logs.map(({ details, ...log }) => ({
-      ...log,
-      details: details && typeof details === "object" ? details : null,
-      createdAt: log.createdAt.toISOString(),
-    })));
-  } catch (e) {
-    throw e;
+  const query = auditQuery.parse(req.query);
+  const storeId = query.storeId ?? await requireCurrentStoreId(req);
+  const from = parseFilterDate(query.dateFrom);
+  const to = parseFilterDate(query.dateTo, true);
+  if (from && to && from > to) throw new HttpError(400, "Invalid audit log date range.");
+
+  const filters = [
+    eq(auditLogsTable.storeId, storeId),
+    query.action ? eq(auditLogsTable.action, query.action satisfies AuditAction) : undefined,
+    query.entityType ? eq(auditLogsTable.entityType, query.entityType satisfies AuditEntityType) : undefined,
+    from ? gte(auditLogsTable.createdAt, from) : undefined,
+    to ? lte(auditLogsTable.createdAt, to) : undefined,
+  ].filter(Boolean) as NonNullable<Parameters<typeof and>[0]>[];
+  if (query.actor) {
+    const actor = escapeLike(query.actor);
+    const actorId = /^\d+$/.test(query.actor) ? Number(query.actor) : null;
+    filters.push(or(ilike(auditLogsTable.employeeName, `%${actor}%`), actorId ? eq(auditLogsTable.employeeId, actorId) : undefined) as NonNullable<Parameters<typeof and>[0]>);
   }
+
+  const logs = await db.select().from(auditLogsTable)
+    .where(and(...filters))
+    .orderBy(desc(auditLogsTable.createdAt))
+    .limit(query.limit);
+  res.json(logs.map(({ details, ...log }) => ({
+    ...log,
+    details: toSafeAuditDetails(details),
+    createdAt: log.createdAt.toISOString(),
+  })));
 });
 
 router.post("/", requireAuth, async (req, res) => {

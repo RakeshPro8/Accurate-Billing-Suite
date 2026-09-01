@@ -9,6 +9,40 @@ export interface AuditDetails {
   [key: string]: unknown;
 }
 
+const SAFE_DETAIL_KEYS = new Set([
+  "action",
+  "effectiveFrom",
+  "fields",
+  "method",
+  "provinceCode",
+  "reviewStatus",
+  "selected",
+  "statusCode",
+  "topic",
+]);
+
+/**
+ * Audit details are written by many business routes. Keep the read API
+ * deliberately allow-listed so a future audit writer cannot expose customer
+ * contact data, PINs, credentials, or other request payload fields.
+ */
+export function toSafeAuditDetails(details: unknown): AuditDetails | null {
+  if (!details || typeof details !== "object" || Array.isArray(details)) return null;
+  const safe: AuditDetails = {};
+  for (const key of SAFE_DETAIL_KEYS) {
+    const value = (details as Record<string, unknown>)[key];
+    if (key === "fields") {
+      if (Array.isArray(value)) {
+        const fields = value.filter((field): field is string => typeof field === "string").slice(0, 30);
+        if (fields.length > 0) safe.fields = fields;
+      }
+    } else if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+      safe[key] = value;
+    }
+  }
+  return Object.keys(safe).length > 0 ? safe : null;
+}
+
 export async function logAudit(
   req: Request,
   action: AuditAction,

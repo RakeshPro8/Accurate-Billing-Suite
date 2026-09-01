@@ -519,17 +519,25 @@ export const RetireCustomerRightsEntryResponse = zod.object({
 /**
  * @summary List a privacy-safe audit trail
  */
+
+export const getAuditLogsQueryActorMax = 120;
+
+export const getAuditLogsQueryDateFromMax = 40;
+
+export const getAuditLogsQueryDateToMax = 40;
+
 export const getAuditLogsQueryLimitDefault = 100;
 export const getAuditLogsQueryLimitMax = 500;
 
 
 
 export const GetAuditLogsQueryParams = zod.object({
-  "action": zod.coerce.string().optional(),
-  "entityType": zod.coerce.string().optional(),
-  "storeId": zod.coerce.number().int().optional(),
-  "dateFrom": zod.date().optional(),
-  "dateTo": zod.date().optional(),
+  "action": zod.enum(['create', 'update', 'delete', 'login', 'logout', 'print', 'payment', 'store', 'authentication', 'convert', 'status_change']).optional(),
+  "entityType": zod.enum(['sale', 'quotation', 'repair', 'repair_photo', 'customer', 'product', 'service', 'employee', 'settings', 'store', 'backup', 'tax_profile', 'guidance_entry']).optional(),
+  "storeId": zod.coerce.number().int().min(1).optional().describe('Location to inspect. If omitted, the employee\'s current location is used.'),
+  "actor": zod.coerce.string().max(getAuditLogsQueryActorMax).optional().describe('Employee name or ID to match.'),
+  "dateFrom": zod.coerce.string().max(getAuditLogsQueryDateFromMax).optional(),
+  "dateTo": zod.coerce.string().max(getAuditLogsQueryDateToMax).optional(),
   "limit": zod.coerce.number().int().min(1).max(getAuditLogsQueryLimitMax).default(getAuditLogsQueryLimitDefault)
 })
 
@@ -538,8 +546,8 @@ export const GetAuditLogsResponseItem = zod.object({
   "employeeId": zod.number().int().nullish(),
   "employeeName": zod.string().nullish(),
   "storeId": zod.number().int().nullish(),
-  "action": zod.string(),
-  "entityType": zod.string(),
+  "action": zod.enum(['create', 'update', 'delete', 'login', 'logout', 'print', 'payment', 'store', 'authentication', 'convert', 'status_change']),
+  "entityType": zod.enum(['sale', 'quotation', 'repair', 'repair_photo', 'customer', 'product', 'service', 'employee', 'settings', 'store', 'backup', 'tax_profile', 'guidance_entry']),
   "entityId": zod.string().nullish(),
   "details": zod.record(zod.string(), zod.unknown()).nullish(),
   "createdAt": zod.coerce.date()

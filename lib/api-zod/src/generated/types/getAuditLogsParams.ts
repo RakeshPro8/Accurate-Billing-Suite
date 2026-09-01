@@ -5,13 +5,30 @@
  * Mobilinq store operations API
  * OpenAPI spec version: 0.2.0
  */
+import type { GetAuditLogsAction } from './getAuditLogsAction';
+import type { GetAuditLogsEntityType } from './getAuditLogsEntityType';
 
 export type GetAuditLogsParams = {
-action?: string;
-entityType?: string;
+action?: GetAuditLogsAction;
+entityType?: GetAuditLogsEntityType;
+/**
+ * Location to inspect. If omitted, the employee's current location is used.
+ * @minimum 1
+ */
 storeId?: number;
-dateFrom?: Date;
-dateTo?: Date;
+/**
+ * Employee name or ID to match.
+ * @maxLength 120
+ */
+actor?: string;
+/**
+ * @maxLength 40
+ */
+dateFrom?: string;
+/**
+ * @maxLength 40
+ */
+dateTo?: string;
 /**
  * @minimum 1
  * @maximum 500
