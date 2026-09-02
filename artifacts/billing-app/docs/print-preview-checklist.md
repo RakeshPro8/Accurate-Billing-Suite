@@ -1,10 +1,35 @@
 # Mobilinq print-preview verification
 
-Use a Chromium-based browser with the OS-installed thermal printer driver
-available. This verifies browser print output only; Mobilinq does not connect
-directly to USB, Bluetooth, or network printers.
+Mobilinq does not connect directly to USB, Bluetooth, or network printers. The
+checks below verify the browser print surface and lifecycle; the final printer
+selection is still made in the browser or operating system.
 
-## Thermal receipt (80 mm)
+## Automated browser matrix
+
+Run the browser-driven check from the workspace root:
+
+```sh
+pnpm --filter @workspace/billing-app exec playwright install chromium firefox webkit
+pnpm --filter @workspace/billing-app run test:browser
+```
+
+The Playwright projects cover **Chromium**, **Firefox**, and **WebKit**. The
+test harness imports the production `ReceiptPrint` component and
+`startThermalPrint` implementation, then verifies:
+
+- sale and quotation receipt previews use the 80 mm `@page` rule;
+- the receipt surface is the only visible printable surface;
+- the app shell, controls, and all A4 surfaces are hidden in thermal mode;
+- `afterprint` completion, explicit cancellation, and print-media returning to
+  screen all remove the receipt mode class and injected stylesheet;
+- A4 invoice, quotation, and repair-ticket surfaces remain static, visible, and
+  isolated when thermal mode is not active.
+
+WebKit requires its host compatibility libraries in the browser-test
+environment. On Debian-based CI images, install them with Playwright's
+`install-deps` support before running the matrix.
+
+## Manual thermal receipt (80 mm)
 
 1. Open a loaded sale or quotation detail page and click **Print Receipt
    (TSP100)**.
@@ -32,9 +57,10 @@ directly to USB, Bluetooth, or network printers.
 3. From a repair detail page, click **Print** and confirm only the repair
    ticket prints.
 
-## Edge cases
+## Edge-case fixture
 
-Repeat the thermal check with a missing logo, no customer, a zero-tax
-document, many items, a long item name, and a document that includes a QR
-code. Historical tax output must remain the amount and rate stored on the
-document even if current settings have different GST/QST values.
+The automated fixture includes a missing logo, no customer, zero tax, 14
+items, a long item name and description, a discount, and QR content for both
+the sale and quotation receipt paths. Historical tax output must remain the
+amount and rate stored on the document even if current settings have different
+GST/QST values.

@@ -723,6 +723,8 @@ html[data-ui-density="comfortable"] .app-header { min-height: 3.5rem; }
   .border.active-elevate-2:not(.no-active-interaction-elevate)::after { inset: -1px; }
 }
 
+.receipt-print-area { display: none; }
+
 @media print {
   /* Keep the authenticated shell and screen-only controls out of every print. */
   .no-print { display: none !important; }
