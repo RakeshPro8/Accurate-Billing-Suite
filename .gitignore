@@ -47,3 +47,4 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+/artifacts/billing-app/test-results/
