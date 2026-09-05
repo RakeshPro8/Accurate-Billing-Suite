@@ -5,6 +5,7 @@
  * Mobilinq store operations API
  * OpenAPI spec version: 0.2.0
  */
+import type { ReceiptContentPreferences } from './receiptContentPreferences';
 import type { ThemePreset } from './themePreset';
 
 export interface Settings {
@@ -34,6 +35,7 @@ export interface Settings {
   invoiceFooter?: string | null;
   /** @nullable */
   thankYouMessage?: string | null;
+  receiptContent: ReceiptContentPreferences;
   /** @nullable */
   smtpHost?: string | null;
   /** @nullable */

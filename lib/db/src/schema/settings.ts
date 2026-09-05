@@ -1,4 +1,4 @@
-import { pgTable, serial, text, numeric, integer, boolean } from "drizzle-orm/pg-core";
+import { pgTable, serial, text, numeric, integer, boolean, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -30,6 +30,25 @@ export const settingsTable = pgTable("settings", {
   defaultStoreId: integer("default_store_id"),
 });
 
+/**
+ * Receipt presentation is store-scoped and intentionally separate from the
+ * installation-wide invoice settings above. A missing row is a supported
+ * legacy state; the API derives the old thank-you/footer values and enables
+ * every optional section for those installations.
+ */
+export const receiptContentPreferencesTable = pgTable("receipt_content_preferences", {
+  storeId: integer("store_id").primaryKey(),
+  thankYouMessage: text("thank_you_message"),
+  footerText: text("footer_text"),
+  showBusinessContact: boolean("show_business_contact").notNull().default(true),
+  showCustomerDetails: boolean("show_customer_details").notNull().default(true),
+  showPaymentMethod: boolean("show_payment_method").notNull().default(true),
+  showTaxBreakdown: boolean("show_tax_breakdown").notNull().default(true),
+  showQrCode: boolean("show_qr_code").notNull().default(true),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const insertSettingsSchema = createInsertSchema(settingsTable).omit({ id: true });
 export type InsertSettings = z.infer<typeof insertSettingsSchema>;
 export type Settings = typeof settingsTable.$inferSelect;
+export type ReceiptContentPreferences = typeof receiptContentPreferencesTable.$inferSelect;

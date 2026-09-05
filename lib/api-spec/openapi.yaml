@@ -2531,7 +2531,7 @@ components:
 
     Settings:
       type: object
-      required: [id, appName, businessName, currency, taxRate, taxName, taxEnabled, theme]
+      required: [id, appName, businessName, currency, taxRate, taxName, taxEnabled, theme, receiptContent]
       properties:
         id:               { type: integer }
         appName:          { type: string }
@@ -2551,11 +2551,25 @@ components:
         quotePrefix:      { type: string }
         invoiceFooter:    { type: ["string", "null"] }
         thankYouMessage:  { type: ["string", "null"] }
+        receiptContent:  { $ref: "#/components/schemas/ReceiptContentPreferences" }
         smtpHost:         { type: ["string", "null"] }
         smtpPort:         { type: ["integer", "null"] }
         smtpUser:         { type: ["string", "null"] }
         smtpConfigured:   { type: boolean }
         defaultStoreId:   { type: ["integer", "null"] }
+
+    ReceiptContentPreferences:
+      type: object
+      additionalProperties: false
+      required: [thankYouMessage, footerText, showBusinessContact, showCustomerDetails, showPaymentMethod, showTaxBreakdown, showQrCode]
+      properties:
+        thankYouMessage:      { type: ["string", "null"], maxLength: 160 }
+        footerText:           { type: ["string", "null"], maxLength: 600 }
+        showBusinessContact:  { type: boolean }
+        showCustomerDetails:  { type: boolean }
+        showPaymentMethod:    { type: boolean }
+        showTaxBreakdown:     { type: boolean }
+        showQrCode:           { type: boolean }
 
     SettingsUpdate:
       type: object
@@ -2582,6 +2596,17 @@ components:
         smtpUser:         { type: string }
         smtpPass:         { type: string }
         defaultStoreId:   { type: ["integer", "null"] }
+        receiptContent:
+          type: object
+          additionalProperties: false
+          properties:
+            thankYouMessage:      { type: ["string", "null"], maxLength: 160 }
+            footerText:           { type: ["string", "null"], maxLength: 600 }
+            showBusinessContact:  { type: boolean }
+            showCustomerDetails:  { type: boolean }
+            showPaymentMethod:    { type: boolean }
+            showTaxBreakdown:     { type: boolean }
+            showQrCode:           { type: boolean }
 
     Store:
       type: object

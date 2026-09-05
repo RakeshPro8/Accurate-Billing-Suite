@@ -2996,6 +2996,12 @@ export const GetRevenueByCategoryResponse = zod.array(GetRevenueByCategoryRespon
 /**
  * @summary Get business settings
  */
+export const getSettingsResponseReceiptContentThankYouMessageMax = 160;
+
+export const getSettingsResponseReceiptContentFooterTextMax = 600;
+
+
+
 export const GetSettingsResponse = zod.object({
   "id": zod.number().int(),
   "appName": zod.string(),
@@ -3015,6 +3021,15 @@ export const GetSettingsResponse = zod.object({
   "quotePrefix": zod.string().optional(),
   "invoiceFooter": zod.string().nullish(),
   "thankYouMessage": zod.string().nullish(),
+  "receiptContent": zod.object({
+  "thankYouMessage": zod.string().max(getSettingsResponseReceiptContentThankYouMessageMax).nullable(),
+  "footerText": zod.string().max(getSettingsResponseReceiptContentFooterTextMax).nullable(),
+  "showBusinessContact": zod.boolean(),
+  "showCustomerDetails": zod.boolean(),
+  "showPaymentMethod": zod.boolean(),
+  "showTaxBreakdown": zod.boolean(),
+  "showQrCode": zod.boolean()
+}),
   "smtpHost": zod.string().nullish(),
   "smtpPort": zod.number().int().nullish(),
   "smtpUser": zod.string().nullish(),
@@ -3026,6 +3041,12 @@ export const GetSettingsResponse = zod.object({
 /**
  * @summary Update business settings
  */
+export const updateSettingsBodyReceiptContentThankYouMessageMax = 160;
+
+export const updateSettingsBodyReceiptContentFooterTextMax = 600;
+
+
+
 export const UpdateSettingsBody = zod.object({
   "appName": zod.string().optional(),
   "businessName": zod.string().optional(),
@@ -3047,8 +3068,23 @@ export const UpdateSettingsBody = zod.object({
   "smtpPort": zod.number().int().nullish(),
   "smtpUser": zod.string().optional(),
   "smtpPass": zod.string().optional(),
-  "defaultStoreId": zod.number().int().nullish()
+  "defaultStoreId": zod.number().int().nullish(),
+  "receiptContent": zod.object({
+  "thankYouMessage": zod.string().max(updateSettingsBodyReceiptContentThankYouMessageMax).nullish(),
+  "footerText": zod.string().max(updateSettingsBodyReceiptContentFooterTextMax).nullish(),
+  "showBusinessContact": zod.boolean().optional(),
+  "showCustomerDetails": zod.boolean().optional(),
+  "showPaymentMethod": zod.boolean().optional(),
+  "showTaxBreakdown": zod.boolean().optional(),
+  "showQrCode": zod.boolean().optional()
+}).optional()
 })
+
+export const updateSettingsResponseReceiptContentThankYouMessageMax = 160;
+
+export const updateSettingsResponseReceiptContentFooterTextMax = 600;
+
+
 
 export const UpdateSettingsResponse = zod.object({
   "id": zod.number().int(),
@@ -3069,6 +3105,15 @@ export const UpdateSettingsResponse = zod.object({
   "quotePrefix": zod.string().optional(),
   "invoiceFooter": zod.string().nullish(),
   "thankYouMessage": zod.string().nullish(),
+  "receiptContent": zod.object({
+  "thankYouMessage": zod.string().max(updateSettingsResponseReceiptContentThankYouMessageMax).nullable(),
+  "footerText": zod.string().max(updateSettingsResponseReceiptContentFooterTextMax).nullable(),
+  "showBusinessContact": zod.boolean(),
+  "showCustomerDetails": zod.boolean(),
+  "showPaymentMethod": zod.boolean(),
+  "showTaxBreakdown": zod.boolean(),
+  "showQrCode": zod.boolean()
+}),
   "smtpHost": zod.string().nullish(),
   "smtpPort": zod.number().int().nullish(),
   "smtpUser": zod.string().nullish(),
@@ -3083,6 +3128,12 @@ export const UpdateSettingsResponse = zod.object({
 export const ApplySettingsThemeBody = zod.object({
   "theme": zod.enum(['terminal', 'ocean', 'sunset', 'berry', 'forest', 'monochrome'])
 })
+
+export const applySettingsThemeResponseReceiptContentThankYouMessageMax = 160;
+
+export const applySettingsThemeResponseReceiptContentFooterTextMax = 600;
+
+
 
 export const ApplySettingsThemeResponse = zod.object({
   "id": zod.number().int(),
@@ -3103,6 +3154,15 @@ export const ApplySettingsThemeResponse = zod.object({
   "quotePrefix": zod.string().optional(),
   "invoiceFooter": zod.string().nullish(),
   "thankYouMessage": zod.string().nullish(),
+  "receiptContent": zod.object({
+  "thankYouMessage": zod.string().max(applySettingsThemeResponseReceiptContentThankYouMessageMax).nullable(),
+  "footerText": zod.string().max(applySettingsThemeResponseReceiptContentFooterTextMax).nullable(),
+  "showBusinessContact": zod.boolean(),
+  "showCustomerDetails": zod.boolean(),
+  "showPaymentMethod": zod.boolean(),
+  "showTaxBreakdown": zod.boolean(),
+  "showQrCode": zod.boolean()
+}),
   "smtpHost": zod.string().nullish(),
   "smtpPort": zod.number().int().nullish(),
   "smtpUser": zod.string().nullish(),

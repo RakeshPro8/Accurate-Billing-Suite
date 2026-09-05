@@ -684,6 +684,24 @@ export interface ThemeUpdate {
   theme: ThemePreset;
 }
 
+export interface ReceiptContentPreferences {
+  /**
+     * @maxLength 160
+     * @nullable
+     */
+  thankYouMessage: string | null;
+  /**
+     * @maxLength 600
+     * @nullable
+     */
+  footerText: string | null;
+  showBusinessContact: boolean;
+  showCustomerDetails: boolean;
+  showPaymentMethod: boolean;
+  showTaxBreakdown: boolean;
+  showQrCode: boolean;
+}
+
 export interface Settings {
   id: number;
   appName: string;
@@ -711,6 +729,7 @@ export interface Settings {
   invoiceFooter?: string | null;
   /** @nullable */
   thankYouMessage?: string | null;
+  receiptContent: ReceiptContentPreferences;
   /** @nullable */
   smtpHost?: string | null;
   /** @nullable */
@@ -721,6 +740,24 @@ export interface Settings {
   /** @nullable */
   defaultStoreId?: number | null;
 }
+
+export type SettingsUpdateReceiptContent = {
+  /**
+     * @maxLength 160
+     * @nullable
+     */
+  thankYouMessage?: string | null;
+  /**
+     * @maxLength 600
+     * @nullable
+     */
+  footerText?: string | null;
+  showBusinessContact?: boolean;
+  showCustomerDetails?: boolean;
+  showPaymentMethod?: boolean;
+  showTaxBreakdown?: boolean;
+  showQrCode?: boolean;
+};
 
 export interface SettingsUpdate {
   appName?: string;
@@ -746,6 +783,7 @@ export interface SettingsUpdate {
   smtpPass?: string;
   /** @nullable */
   defaultStoreId?: number | null;
+  receiptContent?: SettingsUpdateReceiptContent;
 }
 
 export type StoreProvinceCode = typeof StoreProvinceCode[keyof typeof StoreProvinceCode];

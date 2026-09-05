@@ -83,4 +83,53 @@ describe("receipt print markup", () => {
     assert.doesNotMatch(markup, /Tax \(0%\)/);
     assert.match(markup, /<svg/);
   });
+
+  it("honors saved visibility choices and allows saved copy to be cleared", () => {
+    const markup = renderToStaticMarkup(
+      React.createElement(ReceiptPrint, {
+        mode: "receipt",
+        data: {
+          invoiceNumber: "INV-0099",
+          createdAt: "2026-09-01T12:00:00.000Z",
+          customerName: "Private Customer",
+          paymentMethod: "Card",
+          items: [],
+          subtotal: 100,
+          taxRate: 13,
+          tax: 13,
+          taxProvinceCode: "ON",
+          discount: 0,
+          total: 113,
+        },
+        business: {
+          businessName: "Mobilinq",
+          businessAddress: "Private address",
+          businessPhone: "555-0100",
+          businessEmail: "hello@example.com",
+          thankYouMessage: "Legacy thank-you",
+          invoiceFooter: "Legacy footer",
+          receiptContent: {
+            thankYouMessage: null,
+            footerText: null,
+            showBusinessContact: false,
+            showCustomerDetails: false,
+            showPaymentMethod: false,
+            showTaxBreakdown: false,
+            showQrCode: false,
+          },
+        },
+      }),
+    );
+
+    assert.match(markup, /Mobilinq/);
+    assert.match(markup, /INV-0099/);
+    assert.doesNotMatch(markup, /Private address/);
+    assert.doesNotMatch(markup, /Private Customer/);
+    assert.doesNotMatch(markup, /Payment/);
+    assert.doesNotMatch(markup, /Tax profile/);
+    assert.doesNotMatch(markup, /Tax \(13%\)/);
+    assert.doesNotMatch(markup, /Legacy thank-you/);
+    assert.doesNotMatch(markup, /Legacy footer/);
+    assert.doesNotMatch(markup, /<svg/);
+  });
 });

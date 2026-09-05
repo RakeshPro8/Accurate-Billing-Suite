@@ -5,6 +5,7 @@
  * Mobilinq store operations API
  * OpenAPI spec version: 0.2.0
  */
+import type { SettingsUpdateReceiptContent } from './settingsUpdateReceiptContent';
 
 export interface SettingsUpdate {
   appName?: string;
@@ -30,4 +31,5 @@ export interface SettingsUpdate {
   smtpPass?: string;
   /** @nullable */
   defaultStoreId?: number | null;
+  receiptContent?: SettingsUpdateReceiptContent;
 }

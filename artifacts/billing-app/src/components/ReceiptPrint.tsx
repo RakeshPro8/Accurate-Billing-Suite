@@ -6,7 +6,7 @@ import React from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
-interface ReceiptItem {
+export interface ReceiptItem {
   name: string;
   description?: string;
   quantity: number;
@@ -15,7 +15,7 @@ interface ReceiptItem {
   total: number;
 }
 
-interface ReceiptData {
+export interface ReceiptData {
   invoiceNumber?: string;
   quoteNumber?: string;
   createdAt: string;
@@ -34,7 +34,27 @@ interface ReceiptData {
   status?: string;
 }
 
-interface BusinessInfo {
+export interface ReceiptContentPreferences {
+  thankYouMessage?: string | null;
+  footerText?: string | null;
+  showBusinessContact?: boolean;
+  showCustomerDetails?: boolean;
+  showPaymentMethod?: boolean;
+  showTaxBreakdown?: boolean;
+  showQrCode?: boolean;
+}
+
+export const DEFAULT_RECEIPT_CONTENT: ReceiptContentPreferences = {
+  thankYouMessage: null,
+  footerText: null,
+  showBusinessContact: true,
+  showCustomerDetails: true,
+  showPaymentMethod: true,
+  showTaxBreakdown: true,
+  showQrCode: true,
+};
+
+export interface BusinessInfo {
   businessName?: string;
   businessAddress?: string;
   businessPhone?: string;
@@ -45,6 +65,7 @@ interface BusinessInfo {
   currency?: string;
   taxName?: string;
   taxEnabled?: boolean;
+  receiptContent?: ReceiptContentPreferences | null;
 }
 
 interface ReceiptPrintProps {
@@ -58,8 +79,12 @@ interface ReceiptPrintProps {
 export function ReceiptPrint({ data, business, qrValue }: ReceiptPrintProps) {
   const docNum = data.invoiceNumber ?? data.quoteNumber ?? "";
   const qrContent = qrValue ?? docNum;
-  const showTax = data.taxRate > 0 || data.tax !== 0;
+  const content = { ...DEFAULT_RECEIPT_CONTENT, ...(business.receiptContent ?? {}) };
+  const showTax = content.showTaxBreakdown && (data.taxRate > 0 || data.tax !== 0);
   const taxLabel = data.taxName ?? business.taxName ?? "Tax";
+  const hasSavedContent = business.receiptContent !== undefined && business.receiptContent !== null;
+  const thankYouMessage = hasSavedContent ? content.thankYouMessage : business.thankYouMessage;
+  const footerText = hasSavedContent ? content.footerText : business.invoiceFooter;
 
   return (
     <div
@@ -93,13 +118,13 @@ export function ReceiptPrint({ data, business, qrValue }: ReceiptPrintProps) {
         <div style={{ fontWeight: "bold", fontSize: "13px" }}>
           {business.businessName ?? "Your Store"}
         </div>
-        {business.businessAddress && (
+        {content.showBusinessContact && business.businessAddress && (
           <div style={{ fontSize: "9px", marginTop: "0.5mm" }}>{business.businessAddress}</div>
         )}
-        {business.businessPhone && (
+        {content.showBusinessContact && business.businessPhone && (
           <div style={{ fontSize: "9px" }}>Tel: {business.businessPhone}</div>
         )}
-        {business.businessEmail && (
+        {content.showBusinessContact && business.businessEmail && (
           <div style={{ fontSize: "9px" }}>{business.businessEmail}</div>
         )}
       </div>
@@ -110,8 +135,8 @@ export function ReceiptPrint({ data, business, qrValue }: ReceiptPrintProps) {
       <div style={{ marginBottom: "2mm" }}>
         <Row label={data.invoiceNumber ? "INVOICE" : "QUOTATION"} value={docNum} bold />
         <Row label="Date" value={formatDate(data.createdAt)} />
-        <Row label="Customer" value={data.customerName || "Walk-in Customer"} />
-        {data.paymentMethod && <Row label="Payment" value={data.paymentMethod} />}
+        {content.showCustomerDetails && <Row label="Customer" value={data.customerName || "Walk-in Customer"} />}
+        {content.showPaymentMethod && data.paymentMethod && <Row label="Payment" value={data.paymentMethod} />}
       </div>
 
       <Divider />
@@ -156,7 +181,7 @@ export function ReceiptPrint({ data, business, qrValue }: ReceiptPrintProps) {
         {showTax && (
           <Row label={`${taxLabel} (${data.taxRate}%)`} value={formatCurrency(data.tax)} />
         )}
-        {data.taxProvinceCode && (
+        {content.showTaxBreakdown && data.taxProvinceCode && (
           <Row label="Tax profile" value={data.taxProvinceCode} />
         )}
       </div>
@@ -168,26 +193,29 @@ export function ReceiptPrint({ data, business, qrValue }: ReceiptPrintProps) {
       <Divider />
 
       {/* QR CODE */}
-      <div style={{ textAlign: "center", margin: "3mm 0 2mm" }}>
-        <QRCodeSVG
-          value={qrContent}
-          size={80}
-          level="M"
-          includeMargin={false}
-        />
-        <div style={{ fontSize: "8px", color: "#777", marginTop: "1mm" }}>{docNum}</div>
-      </div>
-
-      <Divider />
+      {content.showQrCode && (
+        <>
+          <div style={{ textAlign: "center", margin: "3mm 0 2mm" }}>
+            <QRCodeSVG
+              value={qrContent}
+              size={80}
+              level="M"
+              includeMargin={false}
+            />
+            <div style={{ fontSize: "8px", color: "#777", marginTop: "1mm" }}>{docNum}</div>
+          </div>
+          <Divider />
+        </>
+      )}
 
       {/* FOOTER */}
       <div style={{ textAlign: "center", marginTop: "2mm", fontSize: "10px" }}>
-        {business.thankYouMessage && (
-          <div style={{ fontWeight: "bold", marginBottom: "1mm" }}>{business.thankYouMessage}</div>
+        {thankYouMessage && (
+          <div style={{ fontWeight: "bold", marginBottom: "1mm" }}>{thankYouMessage}</div>
         )}
         {data.notes && <div style={{ marginBottom: "1mm" }}>{data.notes}</div>}
-        {business.invoiceFooter && (
-          <div style={{ fontSize: "9px", color: "#555" }}>{business.invoiceFooter}</div>
+        {footerText && (
+          <div style={{ fontSize: "9px", color: "#555" }}>{footerText}</div>
         )}
         <div style={{ marginTop: "2mm", fontSize: "8px", color: "#999" }}>
           {formatDate(data.createdAt)}

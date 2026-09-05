@@ -18,6 +18,8 @@ import { getLastSyncAt } from "@/lib/offline-store";
 import { readUiPreferences, saveUiPreferences, UI_PREFERENCES_EVENT } from "@/lib/ui-preferences";
 import { NotificationManagement } from "@/components/NotificationManagement";
 import { TaxProfileAdmin } from "@/components/TaxProfileAdmin";
+import { ReceiptContentEditor } from "@/components/ReceiptContentEditor";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 function formatDiagnosticDate(value: string | null) {
   if (!value) return "Not synced yet";
@@ -511,51 +513,59 @@ export default function Settings() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label>Currency</Label>
-                <Input {...register("currency")} placeholder="USD" />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Default Tax Rate (%)</Label>
-                <Input {...register("taxRate", { valueAsNumber: true, min: 0, max: 100 })} type="number" step="0.01" min="0" max="100" placeholder="0" disabled={!taxEnabled} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Tax display name</Label>
-                <Input {...register("taxName")} placeholder="Tax, GST, VAT…" />
-              </div>
-              <label className="flex items-center gap-2 text-sm col-span-2">
-                <input {...register("taxEnabled")} type="checkbox" className="h-4 w-4 accent-primary" />
-                <span>Apply tax to new sales and quotations</span>
-              </label>
-              <div className="space-y-1.5">
-                <Label>GST Rate (%) <span className="text-muted-foreground text-xs">e.g. 5 for Canada federal</span></Label>
-                <Input {...register("gstRate", { valueAsNumber: true })} type="number" step="0.001" placeholder="0" />
-              </div>
-              <div className="space-y-1.5">
-                <Label>QST Rate (%) <span className="text-muted-foreground text-xs">e.g. 9.975 for Quebec</span></Label>
-                <Input {...register("qstRate", { valueAsNumber: true })} type="number" step="0.0001" placeholder="0" />
-              </div>
-              <p className="text-xs text-muted-foreground col-span-2">
-                {taxEnabled ? "The server applies this rate to new sales and quotations; saved invoices keep their original totals." : "Tax is disabled for new transactions. Existing GST/QST records remain unchanged."}
-              </p>
-              <div className="space-y-1.5">
-                <Label>Invoice Prefix</Label>
-                <Input {...register("invoicePrefix")} placeholder="INV-" />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Quote Prefix</Label>
-                <Input {...register("quotePrefix")} placeholder="QUO-" />
-              </div>
-              <div className="space-y-1.5 col-span-2">
-                <Label>Invoice Footer Text</Label>
-                <Textarea {...register("invoiceFooter")} placeholder="Thank you for your business!" rows={2} />
-              </div>
-              <div className="space-y-1.5 col-span-2">
-                <Label>Thank You Message (shown on receipts)</Label>
-                <Input {...register("thankYouMessage")} placeholder="Thank you for choosing us!" />
-              </div>
-            </div>
+            <Tabs defaultValue="invoice" className="w-full">
+              <TabsList className="grid h-auto w-full grid-cols-2 sm:w-fit sm:grid-cols-2">
+                <TabsTrigger value="invoice">Invoice &amp; Tax</TabsTrigger>
+                <TabsTrigger value="receipt">Receipt Content</TabsTrigger>
+              </TabsList>
+              <TabsContent value="invoice" className="pt-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-1.5">
+                    <Label>Currency</Label>
+                    <Input {...register("currency")} placeholder="USD" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Default Tax Rate (%)</Label>
+                    <Input {...register("taxRate", { valueAsNumber: true, min: 0, max: 100 })} type="number" step="0.01" min="0" max="100" placeholder="0" disabled={!taxEnabled} />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Tax display name</Label>
+                    <Input {...register("taxName")} placeholder="Tax, GST, VAT…" />
+                  </div>
+                  <label className="flex items-center gap-2 text-sm col-span-2">
+                    <input {...register("taxEnabled")} type="checkbox" className="h-4 w-4 accent-primary" />
+                    <span>Apply tax to new sales and quotations</span>
+                  </label>
+                  <div className="space-y-1.5">
+                    <Label>GST Rate (%) <span className="text-muted-foreground text-xs">e.g. 5 for Canada federal</span></Label>
+                    <Input {...register("gstRate", { valueAsNumber: true })} type="number" step="0.001" placeholder="0" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>QST Rate (%) <span className="text-muted-foreground text-xs">e.g. 9.975 for Quebec</span></Label>
+                    <Input {...register("qstRate", { valueAsNumber: true })} type="number" step="0.0001" placeholder="0" />
+                  </div>
+                  <p className="text-xs text-muted-foreground col-span-2">
+                    {taxEnabled ? "The server applies this rate to new sales and quotations; saved invoices keep their original totals." : "Tax is disabled for new transactions. Existing GST/QST records remain unchanged."}
+                  </p>
+                  <div className="space-y-1.5">
+                    <Label>Invoice Prefix</Label>
+                    <Input {...register("invoicePrefix")} placeholder="INV-" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Quote Prefix</Label>
+                    <Input {...register("quotePrefix")} placeholder="QUO-" />
+                  </div>
+                  <div className="space-y-1.5 col-span-2">
+                    <Label>Invoice Footer Text</Label>
+                    <Textarea {...register("invoiceFooter")} placeholder="Thank you for your business!" rows={2} />
+                    <p className="text-xs text-muted-foreground">Appears on full invoice printouts. Thermal receipt footer policy text is managed in Receipt Content.</p>
+                  </div>
+                </div>
+              </TabsContent>
+              <TabsContent value="receipt" className="pt-4">
+                {settings && <ReceiptContentEditor settings={settings} />}
+              </TabsContent>
+            </Tabs>
           </CardContent>
         </Card>
 

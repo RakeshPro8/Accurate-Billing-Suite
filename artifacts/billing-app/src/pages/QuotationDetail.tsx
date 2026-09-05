@@ -167,6 +167,7 @@ export default function QuotationDetail() {
     taxName: settings?.taxName ?? "Tax",
     taxEnabled: settings?.taxEnabled !== false,
     currency: settings?.currency ?? "USD",
+    receiptContent: settings?.receiptContent,
   };
 
   const receiptData = {
