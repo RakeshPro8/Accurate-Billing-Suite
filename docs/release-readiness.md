@@ -10,8 +10,21 @@
 
 Receipt print diagnostics from the release matrix are written to
 `artifacts/billing-app/test-results/print-preview` (failed traces) and
-`artifacts/billing-app/playwright-report` (HTML report). Retain both directories
-with the release validation artifacts when a browser-specific scenario fails.
+`artifacts/billing-app/playwright-report` (HTML report). The release check
+clears those paths before each run. If the browser matrix fails, it copies both
+into a run-specific `release-evidence/<run-id>/` directory, writes a
+`README.md` manifest with links to the report and traces, and creates a
+matching `.tar.gz` bundle. The evidence is retained for at least 14 days by
+default; set `RELEASE_EVIDENCE_RETENTION_DAYS` to the release environment's
+approved retention period.
+
+The release output prints the retained directory and archive paths. When the
+validation provider exposes a stable artifact URL, set `RELEASE_EVIDENCE_URL`
+to its artifact base URL; the output will include a direct run-specific link.
+Configure the provider to retain `release-evidence/` (or the directory named
+by `RELEASE_EVIDENCE_DIR`) and to publish the generated archive. A successful
+run removes the evidence directory and the raw Playwright report/traces, so a
+green release cannot expose stale evidence from an earlier failure.
 
 ## Replit
 

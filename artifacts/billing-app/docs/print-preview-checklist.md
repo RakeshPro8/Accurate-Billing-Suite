@@ -40,9 +40,15 @@ pnpm --filter @workspace/billing-app run test:browser:release
 
 The root `pnpm run release:check` invokes that release command after the
 typecheck and API build, so a browser-specific failure blocks release
-validation. In CI, Playwright keeps failed traces under
-`test-results/print-preview` and writes the HTML report to
-`playwright-report`; retain both directories as release-check artifacts.
+validation. The release check clears old reports before starting. On failure it
+copies the traces and HTML report into a run-specific `release-evidence/`
+directory, writes a linked `README.md` manifest, and creates a matching
+archive. Configure the release validation environment to retain that directory
+and archive for at least the documented retention period. Set
+`RELEASE_EVIDENCE_URL` when the provider has an artifact URL so the release
+output includes a directly navigable link. Successful runs remove all
+release-evidence output and raw Playwright reports, preventing stale evidence
+from being surfaced.
 
 ## Manual thermal receipt (80 mm)
 
