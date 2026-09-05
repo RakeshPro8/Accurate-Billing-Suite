@@ -773,6 +773,15 @@ html[data-ui-density="comfortable"] .app-header { min-height: 3.5rem; }
     overflow: visible !important;
     background: white !important;
   }
+  /*
+   * Thermal drivers are free to cut a long roll at page boundaries. Keep a
+   * line item together so a name, description, and amount never split across
+   * two cuts or get repeated by the driver.
+   */
+  body.receipt-mode .thermal-receipt-item {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
   body.receipt-mode .invoice-print-area { display: none !important; }
 }
 

@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { expect, test } from "@playwright/test";
 
 const documentTypes = [
@@ -80,6 +81,74 @@ test.describe("receipt print preview browser matrix", () => {
     await expect(page.getByTestId("print-status")).toHaveText("media-query");
     await expect(page.locator("body")).not.toHaveClass(/receipt-mode/);
     await expect(page.locator("#mobilinq-thermal-print-style")).toHaveCount(0);
+  });
+
+  test("keeps long sale and quotation receipts paginatable in an 80 mm PDF profile", async ({ page, browserName }, testInfo) => {
+    test.skip(browserName !== "chromium", "Chromium provides Playwright's PDF output for the representative printer profile.");
+
+    for (const documentType of documentTypes) {
+      await page.goto("/print-preview-harness.html");
+      await expect(page.getByTestId("print-status")).toHaveText("ready");
+      await page.getByTestId(documentType.tab).click();
+      await page.getByTestId("print-receipt").click();
+      await page.emulateMedia({ media: "print" });
+
+      const fixture = await page.locator("[data-testid=receipt-surface]").evaluate((surface) => ({
+        itemNames: [...surface.querySelectorAll<HTMLElement>("[data-receipt-item-name]")].map(
+          (item) => item.dataset.receiptItemName ?? "",
+        ),
+        receiptBounds: (() => {
+          const box = surface.getBoundingClientRect();
+          return { left: box.left, right: box.right };
+        })(),
+        itemBoxes: [...surface.querySelectorAll<HTMLElement>("[data-receipt-item-index]")].map((item) => {
+          const box = item.getBoundingClientRect();
+          return { left: box.left, right: box.right, top: box.top, bottom: box.bottom };
+        }),
+        itemBreakInside: getComputedStyle(
+          surface.querySelector<HTMLElement>("[data-receipt-item-index]")!,
+        ).breakInside,
+      }));
+
+      expect(fixture.itemNames).toHaveLength(documentType.label === "INVOICE" ? 18 : 20);
+      expect(fixture.itemBoxes.every((box) =>
+        box.left >= fixture.receiptBounds.left - 1 && box.right <= fixture.receiptBounds.right + 1,
+      )).toBe(true);
+      expect(fixture.itemBoxes.every((box) => box.bottom > box.top)).toBe(true);
+      expect(fixture.itemBreakInside).toBe("avoid");
+
+      const pdfPath = testInfo.outputPath(`${documentType.label.toLowerCase()}-80mm.pdf`);
+      await page.pdf({
+        path: pdfPath,
+        width: "80mm",
+        height: "100mm",
+        margin: { top: "4mm", right: "4mm", bottom: "6mm", left: "4mm" },
+        printBackground: true,
+        preferCSSPageSize: false,
+      });
+
+      const pdfInfo = execFileSync("pdfinfo", [pdfPath], { encoding: "utf8" });
+      const pageCount = Number(pdfInfo.match(/^Pages:\s+(\d+)/m)?.[1] ?? 0);
+      const pageSize = pdfInfo.match(/^Page size:\s+([\d.]+) x ([\d.]+) pts/m);
+      expect(pageCount).toBeGreaterThan(1);
+      expect(pageSize).not.toBeNull();
+      expect(Number(pageSize?.[1])).toBeCloseTo(80 / 25.4 * 72, 0);
+      expect(Number(pageSize?.[2])).toBeCloseTo(100 / 25.4 * 72, 0);
+
+      const rawPdfText = execFileSync("pdftotext", [pdfPath, "-"], { encoding: "utf8" });
+      const pdfPages = rawPdfText.split("\f").map((pageText) => pageText.trim()).filter(Boolean);
+      const pdfText = rawPdfText.replace(/\s+/g, " ");
+      expect(pdfPages).toHaveLength(pageCount);
+      expect(pdfPages.every((pageText) => pageText.length > 0)).toBe(true);
+      for (const itemName of fixture.itemNames) {
+        const normalizedName = itemName.replace(/\s+/g, " ");
+        const occurrences = pdfText.split(normalizedName).length - 1;
+        expect(occurrences, `${itemName} should print exactly once`).toBe(1);
+      }
+
+      await page.evaluate(() => window.__printHarness?.cancel());
+      await page.emulateMedia({ media: "screen" });
+    }
   });
 
   test("keeps A4 invoice, quotation, and repair paths isolated from thermal mode", async ({ page }) => {

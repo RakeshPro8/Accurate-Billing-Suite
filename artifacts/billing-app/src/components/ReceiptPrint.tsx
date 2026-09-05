@@ -119,7 +119,13 @@ export function ReceiptPrint({ data, business, qrValue }: ReceiptPrintProps) {
       {/* ITEMS */}
       <div style={{ marginBottom: "2mm" }}>
         {data.items.map((item, i) => (
-          <div key={i} style={{ marginBottom: "2mm" }}>
+          <div
+            key={i}
+            className="thermal-receipt-item"
+            data-receipt-item-index={i}
+            data-receipt-item-name={item.name}
+            style={{ marginBottom: "2mm" }}
+          >
             <div style={{ fontWeight: "bold", overflowWrap: "anywhere" }}>{item.name}</div>
             {item.description && (
               <div style={{ fontSize: "9px", color: "#555", overflowWrap: "anywhere" }}>{item.description}</div>

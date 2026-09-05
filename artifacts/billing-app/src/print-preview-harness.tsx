@@ -14,18 +14,26 @@ window.print = () => {};
 
 const longItemName =
   "Ultra-long OLED replacement display assembly for Galaxy S25 Ultra 5G";
-const items = Array.from({ length: 14 }, (_, index) => ({
-  name: index === 0 ? longItemName : `Replacement part ${index + 1}`,
+const saleItems = Array.from({ length: 18 }, (_, index) => ({
+  name: index === 0 ? longItemName : `Sale replacement part ${String(index + 1).padStart(2, "0")}`,
   description: index === 0 ? "Long description that must wrap on receipt paper" : undefined,
   quantity: index % 3 === 0 ? 2 : 1,
   unitPrice: 10 + index,
   discount: index === 2 ? 5 : 0,
   total: index % 3 === 0 ? (10 + index) * 2 : 10 + index,
 }));
+const quotationItems = Array.from({ length: 20 }, (_, index) => ({
+  name: index === 19 ? `${longItemName} quotation option` : `Quotation replacement part ${String(index + 1).padStart(2, "0")}`,
+  description: index === 19 ? "Long quotation description that must wrap on receipt paper" : undefined,
+  quantity: index % 4 === 0 ? 2 : 1,
+  unitPrice: 15 + index,
+  discount: index === 6 ? 7 : 0,
+  total: index % 4 === 0 ? (15 + index) * 2 : 15 + index,
+}));
 
 const documentData = {
   createdAt: "2026-09-01T12:00:00.000Z",
-  items,
+  items: saleItems,
   subtotal: 226,
   taxRate: 0,
   tax: 0,
@@ -65,7 +73,7 @@ function A4Surface({
       <div className="a4-fixture-surface">
         <h2>{label}</h2>
         <p>{longItemName}</p>
-        {items.map((item) => (
+        {saleItems.map((item) => (
           <p key={item.name}>{item.name}</p>
         ))}
       </div>
@@ -107,7 +115,12 @@ function PrintPreviewHarness() {
   const receiptData =
     documentType === "sale"
       ? { ...documentData, invoiceNumber: "INV-0042", customerName: undefined }
-      : { ...documentData, quoteNumber: "QUO-0010", customerName: undefined };
+      : {
+          ...documentData,
+          items: quotationItems,
+          quoteNumber: "QUO-0010",
+          customerName: undefined,
+        };
 
   return (
     <main>

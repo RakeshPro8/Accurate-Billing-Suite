@@ -24,6 +24,10 @@ test harness imports the production `ReceiptPrint` component and
   screen all remove the receipt mode class and injected stylesheet;
 - A4 invoice, quotation, and repair-ticket surfaces remain static, visible, and
   isolated when thermal mode is not active.
+- long sale (18 items) and quotation (20 items) fixtures keep every item within
+  the 72 mm receipt surface; Chromium also exports each through the
+  representative 80 mm PDF profile below and checks that every item appears
+  exactly once across multiple pages.
 
 WebKit requires its host compatibility libraries in the browser-test
 environment. On Debian-based CI images, install them with Playwright's
@@ -47,6 +51,27 @@ environment. On Debian-based CI images, install them with Playwright's
 6. Cancel the preview and confirm the detail page returns to its normal screen
    state. Repeat the action and complete a second preview to verify no stale
    print mode or duplicate page remains.
+
+### Approved long-receipt profile
+
+The approved stress profile is **80 mm paper width × 100 mm fixed page height**,
+with **4 mm top/right/left margins, 6 mm bottom margin, scale 100%, and
+background printing enabled**. This is a deliberately short page height that
+forces page cuts in the PDF while retaining the physical printer's 80 mm roll
+width. The expected result for both the 18-item sale and 20-item quotation is
+multiple pages with:
+
+- each item name, description, quantity, and amount together on one page;
+- every item appearing exactly once, with no clipped text or duplicate item;
+- no content outside the 72 mm receipt surface;
+- totals, QR code, and footer appearing after the final item; and
+- no blank leading or trailing page.
+
+For a physical Star TSP100/FuturePRNT-style 80 mm roll, choose **80 mm /
+Receipt or Auto**, **scale 100%**, **4 mm left/right and 6 mm bottom margins**,
+and allow the printer driver to paginate/cut the continuous roll. The browser
+print preview should match the PDF profile's item order and page-break behavior;
+the physical driver may choose different cut points, but must not split an item.
 
 ## Invoice, quotation, and repair A4 output
 
