@@ -9,6 +9,7 @@
     "serve": "vite preview --config vite.config.ts --host 0.0.0.0",
     "test": "tsx --test src/lib/*.test.ts",
     "test:browser": "playwright test",
+    "test:browser:release": "CI=1 playwright install --with-deps chromium firefox webkit && CI=1 playwright test",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {

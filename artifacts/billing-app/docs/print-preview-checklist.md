@@ -31,7 +31,18 @@ test harness imports the production `ReceiptPrint` component and
 
 WebKit requires its host compatibility libraries in the browser-test
 environment. On Debian-based CI images, install them with Playwright's
-`install-deps` support before running the matrix.
+`install-deps` support before running the matrix. The release gate performs
+this setup and runs the complete matrix with:
+
+```sh
+pnpm --filter @workspace/billing-app run test:browser:release
+```
+
+The root `pnpm run release:check` invokes that release command after the
+typecheck and API build, so a browser-specific failure blocks release
+validation. In CI, Playwright keeps failed traces under
+`test-results/print-preview` and writes the HTML report to
+`playwright-report`; retain both directories as release-check artifacts.
 
 ## Manual thermal receipt (80 mm)
 

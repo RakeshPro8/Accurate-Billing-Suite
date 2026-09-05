@@ -12,4 +12,5 @@ done
 pnpm --filter @workspace/api-spec run codegen
 pnpm run typecheck
 pnpm --filter @workspace/api-server run build
+pnpm --filter @workspace/billing-app run test:browser:release
 echo "Release checks passed. Production deployment still requires operator approval and a reviewed backup."
