@@ -48,3 +48,4 @@ Thumbs.db
 .cache/
 .local/
 /artifacts/billing-app/test-results/
+/release-evidence/

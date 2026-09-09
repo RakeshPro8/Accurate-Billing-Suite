@@ -24,14 +24,16 @@ retain_browser_evidence() {
   mkdir -p "$run_dir"
 
   if [[ -d "$trace_dir" ]]; then
-    cp -R "$trace_dir" "$run_dir/test-results"
+    mkdir -p "$run_dir/test-results/print-preview"
+    cp -R "$trace_dir/." "$run_dir/test-results/print-preview/"
   else
-    mkdir -p "$run_dir/test-results"
-    printf '%s\n' "No Playwright trace directory was produced." > "$run_dir/test-results/README.txt"
+    mkdir -p "$run_dir/test-results/print-preview"
+    printf '%s\n' "No Playwright trace directory was produced." > "$run_dir/test-results/print-preview/README.txt"
   fi
 
   if [[ -d "$report_dir" ]]; then
-    cp -R "$report_dir" "$run_dir/playwright-report"
+    mkdir -p "$run_dir/playwright-report"
+    cp -R "$report_dir/." "$run_dir/playwright-report/"
   else
     mkdir -p "$run_dir/playwright-report"
     printf '%s\n' "No Playwright HTML report was produced." > "$run_dir/playwright-report/README.txt"
@@ -47,7 +49,7 @@ retain_browser_evidence() {
 ## Evidence
 
 - [Playwright HTML report](playwright-report/index.html)
-- [Failed traces and attachments](test-results/)
+- [Failed traces and attachments](test-results/print-preview/)
 
 The HTML report and traces are diagnostic artifacts only. They may contain
 test-fixture data and must remain in the release validation environment's
