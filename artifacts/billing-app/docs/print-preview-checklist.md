@@ -90,6 +90,26 @@ and allow the printer driver to paginate/cut the continuous roll. The browser
 print preview should match the PDF profile's item order and page-break behavior;
 the physical driver may choose different cut points, but must not split an item.
 
+### Physical Star TSP100 sign-off record
+
+**Status: pending physical hardware access.** This workspace does not expose a
+Star TSP100/FuturePRNT printer, an operating-system printer queue, or a USB/
+serial printer device. No driver version or physical output result is recorded;
+the automated browser/PDF checks must not be treated as hardware signoff.
+
+Complete this record on a representative Star TSP100/FuturePRNT setup:
+
+| Field | Signoff value |
+| --- | --- |
+| Printer model and connection | _Record exact model and USB/network connection_ |
+| Driver / FuturePRNT version | _Record installed version_ |
+| Paper profile | 80 mm / Receipt or Auto |
+| Browser scale and margins | 100%; 4 mm top/right/left; 6 mm bottom |
+| Background printing | Enabled |
+| Long sale result | _Confirm 18 items, totals, QR code, and footer; no split items or blank cuts_ |
+| Long quotation result | _Confirm 20 items, totals, QR code, and footer; no split items or blank cuts_ |
+| Operator and date | _Record signoff owner and date_ |
+
 ## Invoice, quotation, and repair A4 output
 
 1. From a sale or quotation detail page, click the normal **Print** action
