@@ -10,7 +10,7 @@ export const settingsTable = pgTable("settings", {
   businessPhone: text("business_phone"),
   businessEmail: text("business_email"),
   logoUrl: text("logo_url"),
-  theme: text("theme").notNull().default("terminal"),
+  theme: text("theme").notNull().default("berry"),
   currency: text("currency").notNull().default("USD"),
   taxRate: numeric("tax_rate", { precision: 5, scale: 2 }).notNull().default("0"),
   taxName: text("tax_name").notNull().default("Tax"),

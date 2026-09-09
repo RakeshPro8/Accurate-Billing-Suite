@@ -48,7 +48,7 @@ function parseSettings(
     businessPhone: s.businessPhone,
     businessEmail: s.businessEmail,
     logoUrl: s.logoUrl,
-     theme: (THEME_PRESETS as readonly string[]).includes(s.theme) ? s.theme : "terminal",
+     theme: (THEME_PRESETS as readonly string[]).includes(s.theme) ? s.theme : "berry",
     currency: s.currency,
     taxRate: parseFloat(String(s.taxRate)),
     taxName: s.taxName,

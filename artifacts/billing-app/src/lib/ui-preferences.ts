@@ -70,7 +70,7 @@ export function saveUiPreferences(preferences: UiPreferences) {
   window.dispatchEvent(new CustomEvent<UiPreferences>(UI_PREFERENCES_EVENT, { detail: next }));
 }
 
-export function applyUiPreferencesToDocument(preferences: UiPreferences, fallbackTheme = "terminal") {
+export function applyUiPreferencesToDocument(preferences: UiPreferences, fallbackTheme = "berry") {
   if (typeof document === "undefined") return;
   const root = document.documentElement;
   root.setAttribute("data-theme", preferences.theme ?? fallbackTheme);

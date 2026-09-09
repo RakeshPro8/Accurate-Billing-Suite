@@ -177,7 +177,7 @@ export default function Settings() {
   const { register, handleSubmit, reset, setValue, watch, formState: { errors, isDirty } } = useForm<any>({
     mode: "onBlur",
   });
-  const themeValue = (watch("theme") || settings?.theme || "terminal") as ThemePreset;
+  const themeValue = (watch("theme") || settings?.theme || "berry") as ThemePreset;
   const taxEnabled = watch("taxEnabled") !== false;
   const [themeApplied, setThemeApplied] = useState<ThemePreset | null>(null);
 
@@ -211,8 +211,8 @@ export default function Settings() {
     },
     {
       id: "berry",
-      label: "Berry",
-      desc: "Expressive plum with rounded surfaces",
+      label: "Burgundy",
+      desc: "Deep burgundy with rounded surfaces",
       color: "hsl(327 78% 62%)",
       surface: "hsl(275 32% 13%)",
       panel: "hsl(283 43% 6%)",

@@ -109,7 +109,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    applyUiPreferencesToDocument(uiPreferences, settings?.theme || "terminal");
+    applyUiPreferencesToDocument(uiPreferences, settings?.theme || "berry");
     document.title = appName;
   }, [uiPreferences, settings?.theme, appName]);
 

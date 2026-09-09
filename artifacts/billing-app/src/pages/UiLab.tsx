@@ -36,7 +36,7 @@ const themes: Array<{
   { id: "terminal", label: "Terminal", description: "Dark, technical, and compact", accent: "hsl(173 100% 45%)", surface: "hsl(240 30% 8%)", panel: "hsl(240 40% 4%)", mode: "Dark" },
   { id: "ocean", label: "Ocean", description: "Bright workspace with navy navigation", accent: "hsl(199 89% 43%)", surface: "hsl(210 40% 97%)", panel: "hsl(222 45% 15%)", mode: "Light" },
   { id: "sunset", label: "Sunset", description: "Warm, welcoming, and editorial", accent: "hsl(15 80% 51%)", surface: "hsl(34 60% 96%)", panel: "hsl(20 60% 24%)", mode: "Light" },
-  { id: "berry", label: "Berry", description: "Expressive plum with rounded surfaces", accent: "hsl(327 78% 62%)", surface: "hsl(280 30% 8%)", panel: "hsl(280 40% 5%)", mode: "Dark" },
+  { id: "berry", label: "Burgundy", description: "Deep burgundy with rounded surfaces", accent: "hsl(327 78% 62%)", surface: "hsl(280 30% 8%)", panel: "hsl(280 40% 5%)", mode: "Dark" },
   { id: "forest", label: "Forest", description: "Natural green with calm white panels", accent: "hsl(154 60% 31%)", surface: "hsl(95 28% 96%)", panel: "hsl(150 40% 16%)", mode: "Light" },
   { id: "monochrome", label: "Monochrome", description: "Focused black, white, and gray", accent: "hsl(0 0% 12%)", surface: "hsl(0 0% 97%)", panel: "hsl(0 0% 14%)", mode: "Light" },
 ];
@@ -113,7 +113,7 @@ export default function UiLab() {
   const [draft, setDraft] = useState<UiPreferences>(initialApplied);
   const [previewToggle, setPreviewToggle] = useState(true);
   const baselineRef = useRef(initialApplied);
-  const serverTheme = (settings?.theme as ThemePreset | undefined) || "terminal";
+  const serverTheme = (settings?.theme as ThemePreset | undefined) || "berry";
   const effectiveDraft = useMemo(() => ({ ...draft, theme: draft.theme ?? serverTheme }), [draft, serverTheme]);
   const effectiveApplied = useMemo(() => ({ ...applied, theme: applied.theme ?? serverTheme }), [applied, serverTheme]);
   const isDirty = JSON.stringify(effectiveDraft) !== JSON.stringify(effectiveApplied);
