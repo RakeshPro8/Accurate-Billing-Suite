@@ -1,10 +1,11 @@
 import { Router } from "express";
 import { db, guidanceEntriesTable } from "@workspace/db";
-import { and, asc, desc, eq, sql } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { z } from "zod";
 import { requireRole } from "../lib/auth";
 import { HttpError, validateRequest } from "../lib/http";
 import { logAudit } from "../lib/audit";
+import { requireCurrentStoreId } from "../lib/stores";
 
 const router = Router();
 const provinceCodes = ["AB", "BC", "MB", "NB", "NL", "NS", "NT", "NU", "ON", "PE", "QC", "SK", "YT"] as const;
@@ -17,7 +18,7 @@ const entryInput = z.object({
   title: z.string().trim().min(1).max(160),
   summary: z.string().trim().min(1).max(2_000),
   readAloudScript: z.string().trim().max(2_000).nullable().optional(),
-  sourceUrl: z.string().url().max(500),
+  sourceUrl: z.string().url().max(500).refine((value) => /^https:\/\//i.test(value), "Official sources must use HTTPS."),
   effectiveFrom: z.string().date(),
   lastReviewedAt: z.string().date(),
   reviewStatus: z.enum(statuses),
@@ -60,20 +61,24 @@ function parseEntry(entry: typeof guidanceEntriesTable.$inferSelect) {
 }
 
 async function seedDrafts() {
-  const [{ count }] = await db.select({ count: sql<number>`count(*)` }).from(guidanceEntriesTable);
-  if (Number(count) > 0) return;
+  const existing = await db.select({
+    provinceCode: guidanceEntriesTable.provinceCode,
+    topic: guidanceEntriesTable.topic,
+  }).from(guidanceEntriesTable);
+  const existingKeys = new Set(existing.map((entry) => `${entry.provinceCode}:${entry.topic}`));
   const today = new Date().toISOString().slice(0, 10);
-  const values = provinceCodes.flatMap((provinceCode) => topics.map((topic) => {
+  const values = provinceCodes.flatMap((provinceCode) => topics.filter((topic) => !existingKeys.has(`${provinceCode}:${topic}`)).map((topic) => {
     const copy = topicCopy[topic];
     return { provinceCode, topic, title: copy.title, summary: copy.summary, readAloudScript: copy.script, sourceUrl: sourceByProvince[provinceCode], effectiveFrom: today, lastReviewedAt: today, reviewStatus: "draft" as const };
   }));
-  await db.insert(guidanceEntriesTable).values(values);
+  if (values.length > 0) await db.insert(guidanceEntriesTable).values(values);
 }
 
 router.get("/", validateRequest({ query: z.object({ provinceCode: z.enum(provinceCodes).optional(), topic: z.enum(topics).optional(), status: z.enum(statuses).optional() }).strict() }), async (req, res) => {
+  await requireCurrentStoreId(req);
   const query = req.query as { provinceCode?: typeof provinceCodes[number]; topic?: typeof topics[number]; status?: typeof statuses[number] };
   const isAdmin = req.employee?.role === "admin";
-  if (isAdmin && query.status !== undefined) await seedDrafts();
+  await seedDrafts();
   const conditions = [
     query.provinceCode ? eq(guidanceEntriesTable.provinceCode, query.provinceCode) : undefined,
     query.topic ? eq(guidanceEntriesTable.topic, query.topic) : undefined,
@@ -84,6 +89,7 @@ router.get("/", validateRequest({ query: z.object({ provinceCode: z.enum(provinc
 });
 
 router.post("/", requireRole("admin"), validateRequest({ body: entryInput }), async (req, res) => {
+  await requireCurrentStoreId(req);
   const body = req.body as z.infer<typeof entryInput>;
   const [entry] = await db.insert(guidanceEntriesTable).values({ ...body, createdBy: req.employee?.id, updatedBy: req.employee?.id }).returning();
   await logAudit(req, "create", "guidance_entry", entry.id, { provinceCode: entry.provinceCode, topic: entry.topic, reviewStatus: entry.reviewStatus });
@@ -91,6 +97,7 @@ router.post("/", requireRole("admin"), validateRequest({ body: entryInput }), as
 });
 
 router.patch("/:id", requireRole("admin"), validateRequest({ params: entryId, body: entryInput.partial() }), async (req, res) => {
+  await requireCurrentStoreId(req);
   const id = Number(req.params.id);
   const [existing] = await db.select().from(guidanceEntriesTable).where(eq(guidanceEntriesTable.id, id)).limit(1);
   if (!existing) throw new HttpError(404, "Guidance entry not found.", "NOT_FOUND");
@@ -101,6 +108,7 @@ router.patch("/:id", requireRole("admin"), validateRequest({ params: entryId, bo
 });
 
 router.post("/:id/retire", requireRole("admin"), validateRequest({ params: entryId, body: z.object({}).strict() }), async (req, res) => {
+  await requireCurrentStoreId(req);
   const id = Number(req.params.id);
   const [entry] = await db.update(guidanceEntriesTable).set({ reviewStatus: "retired", updatedBy: req.employee?.id, updatedAt: new Date() }).where(eq(guidanceEntriesTable.id, id)).returning();
   if (!entry) throw new HttpError(404, "Guidance entry not found.", "NOT_FOUND");

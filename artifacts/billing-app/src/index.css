@@ -1236,6 +1236,13 @@ html[data-ui-density="comfortable"] .app-header { min-height: 3.5rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    transition-duration: .01ms !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
   .welcome-page *, .welcome-page *::before, .welcome-page *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
   .button:hover { transform: none; }
 }

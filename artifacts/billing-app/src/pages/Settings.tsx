@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { StoreAdmin } from "@/components/StoreAdmin";
-import { Building2, Mail, Percent, ImageIcon, Trash2, Upload, Type, Download, ShieldCheck, MonitorCog, RefreshCw, Printer, CheckCircle2, AlertTriangle } from "lucide-react";
+import { AlertTriangle, Bell, Building2, CheckCircle2, Download, ImageIcon, Mail, MapPin, MonitorCog, Palette, Percent, Printer, RefreshCw, Save, ShieldCheck, Trash2, Type, Upload, type LucideIcon } from "lucide-react";
 import { apiUrl, getApiEndpointStatus } from "@/lib/api-config";
 import { readDesktopDiagnostics, type DesktopDiagnostics } from "@/lib/desktop-diagnostics";
 import { getLastSyncAt } from "@/lib/offline-store";
@@ -20,6 +20,18 @@ import { NotificationManagement } from "@/components/NotificationManagement";
 import { TaxProfileAdmin } from "@/components/TaxProfileAdmin";
 import { ReceiptContentEditor } from "@/components/ReceiptContentEditor";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+type SettingsGroupId = "business" | "billing" | "notifications" | "stores" | "appearance" | "backup";
+
+const settingsGroups: Array<{ id: SettingsGroupId; label: string; description: string; icon: LucideIcon }> = [
+  { id: "business", label: "Business", description: "Identity, contact details, and email delivery", icon: Building2 },
+  { id: "billing", label: "Billing", description: "Invoices, tax, and receipt content", icon: Percent },
+  { id: "notifications", label: "Notifications", description: "Customer and staff notification rules", icon: Bell },
+  { id: "stores", label: "Stores", description: "Locations and tax profiles", icon: MapPin },
+  { id: "appearance", label: "Appearance", description: "Branding and workspace theme", icon: Palette },
+  { id: "backup", label: "Backup & recovery", description: "Redacted exports and desktop diagnostics", icon: ShieldCheck },
+];
 
 function formatDiagnosticDate(value: string | null) {
   if (!value) return "Not synced yet";
@@ -159,8 +171,12 @@ export default function Settings() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [backupLoading, setBackupLoading] = useState(false);
   const [localTheme, setLocalTheme] = useState<ThemePreset | null>(() => readUiPreferences().theme);
+  const [activeGroup, setActiveGroup] = useState<SettingsGroupId>("business");
+  const [saveFeedback, setSaveFeedback] = useState<{ kind: "success" | "error"; message: string } | null>(null);
 
-  const { register, handleSubmit, reset, setValue, watch } = useForm<any>();
+  const { register, handleSubmit, reset, setValue, watch, formState: { errors, isDirty } } = useForm<any>({
+    mode: "onBlur",
+  });
   const themeValue = (watch("theme") || settings?.theme || "terminal") as ThemePreset;
   const taxEnabled = watch("taxEnabled") !== false;
   const [themeApplied, setThemeApplied] = useState<ThemePreset | null>(null);
@@ -293,9 +309,13 @@ export default function Settings() {
     update.mutate({ data: payload }, {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getGetSettingsQueryKey() });
+         setSaveFeedback({ kind: "success", message: "Business settings saved." });
         toast({ title: "Settings saved", description: "Your business settings have been updated." });
       },
-      onError: (error) => toast({ title: "Error", description: error instanceof Error ? error.message : "Failed to save settings.", variant: "destructive" }),
+       onError: (error) => {
+         setSaveFeedback({ kind: "error", message: error instanceof Error ? error.message : "Failed to save settings." });
+         toast({ title: "Error", description: error instanceof Error ? error.message : "Failed to save settings.", variant: "destructive" });
+       },
     });
   }
 
@@ -339,291 +359,141 @@ export default function Settings() {
   );
 
   return (
-    <div className="space-y-6 max-w-2xl">
-      <div>
-        <h1 className="text-2xl font-bold">Settings</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">Configure your business profile and billing preferences</p>
+    <div className="mx-auto w-full max-w-6xl space-y-6">
+      <div className="flex flex-col gap-3 border-b pb-5 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="mb-1 text-xs font-semibold uppercase tracking-[0.2em] text-primary">Workspace control center</p>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Settings</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Manage the business, billing, locations, and devices that power Mobilinq.</p>
+        </div>
+        <span className="w-fit rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-xs text-muted-foreground">Admin only</span>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <DesktopDiagnosticsPanel />
-
-        <NotificationManagement />
-
-        {/* Logo */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <ImageIcon className="h-4 w-4 text-primary" /> Business Logo
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground mb-3">
-              Logo appears on invoices, quotations, and printed receipts. PNG or JPG under 500 KB recommended.
-            </p>
-            <div className="flex items-start gap-4">
-              {logoPreview ? (
-                <div className="relative group">
-                  <img
-                    src={logoPreview}
-                    alt="Business logo"
-                    className="h-20 max-w-[160px] object-contain rounded border bg-muted/20 p-1"
-                  />
-                  <button
-                    type="button"
-                    onClick={removeLogo}
-                    className="absolute -top-2 -right-2 bg-destructive text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </button>
-                </div>
-              ) : (
-                <div
-                  className="h-20 w-36 border-2 border-dashed border-muted-foreground/30 rounded flex flex-col items-center justify-center text-muted-foreground/50 cursor-pointer hover:border-primary/40 transition-colors"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <ImageIcon className="h-6 w-6 mb-1" />
-                  <span className="text-xs">No logo</span>
-                </div>
-              )}
-              <div className="flex flex-col gap-2">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/png,image/jpeg,image/webp,image/svg+xml"
-                  className="hidden"
-                  onChange={handleLogoUpload}
-                />
-                <Button type="button" size="sm" variant="outline" className="gap-1.5" onClick={() => fileInputRef.current?.click()}>
-                  <Upload className="h-3.5 w-3.5" /> {logoPreview ? "Change Logo" : "Upload Logo"}
-                </Button>
-                {logoPreview && (
-                  <Button type="button" size="sm" variant="ghost" className="gap-1.5 text-destructive hover:text-destructive" onClick={removeLogo}>
-                    <Trash2 className="h-3.5 w-3.5" /> Remove
-                  </Button>
-                )}
-                <p className="text-xs text-muted-foreground">PNG, JPG, SVG · max 500 KB</p>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+        <Tabs value={activeGroup} onValueChange={(value) => setActiveGroup(value as SettingsGroupId)} orientation="vertical">
+          <Card className="border-primary/15 bg-card/80">
+            <CardContent className="p-3 sm:p-4">
+              <div className="sm:hidden">
+                <Label htmlFor="settings-group">Settings section</Label>
+                <Select value={activeGroup} onValueChange={(value) => setActiveGroup(value as SettingsGroupId)}>
+                  <SelectTrigger id="settings-group" className="mt-2"><SelectValue /></SelectTrigger>
+                  <SelectContent>{settingsGroups.map((group) => <SelectItem key={group.id} value={group.id}>{group.label}</SelectItem>)}</SelectContent>
+                </Select>
               </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* App Branding */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Type className="h-4 w-4 text-primary" /> App Branding
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-1.5">
-              <Label htmlFor="appName">App Name</Label>
-              <Input id="appName" {...register("appName")} placeholder="Mobilinq" />
-              <p className="text-xs text-muted-foreground">Shown in the sidebar, mobile header, and browser tab.</p>
-            </div>
-            <div className="space-y-1.5">
-              <Label>Workspace Theme</Label>
-              <p className="text-xs text-muted-foreground mb-3">
-                Choose a complete visual style for this location. Themes change surfaces, navigation, typography, spacing, borders, shadows, and controls—not just the accent color.
-              </p>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" role="radiogroup" aria-label="Workspace theme">
-                {themes.map((t) => (
-                  <div
-                    key={t.id}
-                    role="radio"
-                    aria-label={`${t.label} theme`}
-                    aria-checked={themeValue === t.id}
-                    tabIndex={0}
-                    onClick={() => setValue("theme", t.id, { shouldDirty: true })}
-                     onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setValue("theme", t.id, { shouldDirty: true }); setThemeApplied(null); } }}
-                    className={`cursor-pointer rounded-lg border p-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${
-                      themeValue === t.id ? "border-primary bg-primary/10" : "border-border hover:border-primary/40"
-                    }`}
-                  >
-                    <div
-                      className="h-14 rounded-md border border-black/10 p-2 mb-3 overflow-hidden"
-                      style={{ background: t.surface }}
-                    >
-                      <div className="flex h-full gap-2">
-                        <div className="w-1/4 rounded-sm" style={{ background: t.panel }} />
-                        <div className="flex-1 space-y-1.5 pt-0.5">
-                          <div className="h-1.5 w-2/5 rounded-full" style={{ background: t.color }} />
-                          <div className="h-1.5 w-4/5 rounded-full opacity-20" style={{ background: t.color }} />
-                          <div className="h-1.5 w-3/5 rounded-full opacity-20" style={{ background: t.color }} />
-                        </div>
-               <div className="mt-4 flex flex-wrap items-center gap-3">
-                 <Button type="button" onClick={onApplyTheme} disabled={applyTheme.isPending} className="gap-2">
-                   <CheckCircle2 className="h-4 w-4" /> {applyTheme.isPending ? "Applying…" : "Apply Theme"}
-                 </Button>
-                 <span className="text-xs text-muted-foreground" role="status">
-                   {applyTheme.isPending ? "Saving the selected preset…" : themeApplied === themeValue ? "Applied to server and this device." : localTheme && settings?.theme && localTheme !== settings.theme ? `This device is using ${localTheme}; Apply Theme will reconcile it.` : "Theme changes are separate from Save Settings."}
-                 </span>
-               </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center justify-between gap-2 mb-1">
-                      <div className="flex items-center gap-2">
-                        <div className="w-3 h-3 rounded-full border border-black/10" style={{ background: t.color }} />
-                        <span className="text-sm font-medium">{t.label}</span>
-                      </div>
-                      <span className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.mode}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{t.desc}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Business Info */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-primary" /> Business Information
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5 col-span-2">
-                <Label>Business Name</Label>
-                <Input {...register("businessName")} placeholder="My Store" />
-              </div>
-              <div className="space-y-1.5 col-span-2">
-                <Label>Address</Label>
-                <Textarea {...register("businessAddress")} placeholder="123 Main St, City, State, ZIP" rows={2} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Phone</Label>
-                <Input {...register("businessPhone")} placeholder="+1 (555) 000-0000" />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Email</Label>
-                <Input {...register("businessEmail")} type="email" placeholder="hello@mystore.com" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Billing Settings */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Percent className="h-4 w-4 text-primary" /> Billing Settings
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Tabs defaultValue="invoice" className="w-full">
-              <TabsList className="grid h-auto w-full grid-cols-2 sm:w-fit sm:grid-cols-2">
-                <TabsTrigger value="invoice">Invoice &amp; Tax</TabsTrigger>
-                <TabsTrigger value="receipt">Receipt Content</TabsTrigger>
+              <TabsList className="hidden h-auto w-full grid-cols-3 gap-1 bg-muted/60 p-1 sm:grid lg:grid-cols-6">
+                {settingsGroups.map((group) => {
+                  const Icon = group.icon;
+                  return <TabsTrigger key={group.id} value={group.id} className="h-auto min-h-16 flex-col items-start justify-center gap-1 px-3 py-2 text-left data-[state=active]:border-primary/20 data-[state=active]:bg-background">
+                    <span className="flex items-center gap-2"><Icon className="h-4 w-4 text-primary" /><span>{group.label}</span></span>
+                    <span className="hidden text-[11px] font-normal text-muted-foreground lg:block">{group.description}</span>
+                  </TabsTrigger>;
+                })}
               </TabsList>
-              <TabsContent value="invoice" className="pt-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <Label>Currency</Label>
-                    <Input {...register("currency")} placeholder="USD" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Default Tax Rate (%)</Label>
-                    <Input {...register("taxRate", { valueAsNumber: true, min: 0, max: 100 })} type="number" step="0.01" min="0" max="100" placeholder="0" disabled={!taxEnabled} />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Tax display name</Label>
-                    <Input {...register("taxName")} placeholder="Tax, GST, VAT…" />
-                  </div>
-                  <label className="flex items-center gap-2 text-sm col-span-2">
-                    <input {...register("taxEnabled")} type="checkbox" className="h-4 w-4 accent-primary" />
-                    <span>Apply tax to new sales and quotations</span>
-                  </label>
-                  <div className="space-y-1.5">
-                    <Label>GST Rate (%) <span className="text-muted-foreground text-xs">e.g. 5 for Canada federal</span></Label>
-                    <Input {...register("gstRate", { valueAsNumber: true })} type="number" step="0.001" placeholder="0" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>QST Rate (%) <span className="text-muted-foreground text-xs">e.g. 9.975 for Quebec</span></Label>
-                    <Input {...register("qstRate", { valueAsNumber: true })} type="number" step="0.0001" placeholder="0" />
-                  </div>
-                  <p className="text-xs text-muted-foreground col-span-2">
-                    {taxEnabled ? "The server applies this rate to new sales and quotations; saved invoices keep their original totals." : "Tax is disabled for new transactions. Existing GST/QST records remain unchanged."}
-                  </p>
-                  <div className="space-y-1.5">
-                    <Label>Invoice Prefix</Label>
-                    <Input {...register("invoicePrefix")} placeholder="INV-" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label>Quote Prefix</Label>
-                    <Input {...register("quotePrefix")} placeholder="QUO-" />
-                  </div>
-                  <div className="space-y-1.5 col-span-2">
-                    <Label>Invoice Footer Text</Label>
-                    <Textarea {...register("invoiceFooter")} placeholder="Thank you for your business!" rows={2} />
-                    <p className="text-xs text-muted-foreground">Appears on full invoice printouts. Thermal receipt footer policy text is managed in Receipt Content.</p>
-                  </div>
+            </CardContent>
+          </Card>
+
+          <TabsContent forceMount value="business" className="space-y-5 pt-1">
+            <Card>
+              <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><Building2 className="h-4 w-4 text-primary" /> Business information</CardTitle><p className="text-xs text-muted-foreground">This information appears on invoices, quotations, and receipts.</p></CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-1.5"><Label htmlFor="businessName">Business name</Label><Input id="businessName" {...register("businessName")} placeholder="My Store" /></div>
+                <div className="space-y-1.5"><Label htmlFor="businessAddress">Address</Label><Textarea id="businessAddress" {...register("businessAddress")} placeholder="123 Main St, City, Province" rows={2} /></div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5"><Label htmlFor="businessPhone">Phone</Label><Input id="businessPhone" {...register("businessPhone")} placeholder="+1 (555) 000-0000" /></div>
+                  <div className="space-y-1.5"><Label htmlFor="businessEmail">Email</Label><Input id="businessEmail" {...register("businessEmail", { pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: "Enter a valid email address." } })} type="email" placeholder="hello@mystore.com" aria-invalid={Boolean(errors.businessEmail)} />{errors.businessEmail && <p className="text-xs text-destructive">{String(errors.businessEmail.message)}</p>}</div>
                 </div>
-              </TabsContent>
-              <TabsContent value="receipt" className="pt-4">
-                {settings && <ReceiptContentEditor settings={settings} />}
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
 
-        <Card className="border-primary/20">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <ShieldCheck className="h-4 w-4 text-primary" /> Backup &amp; recovery
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <p className="text-sm text-muted-foreground">
-              Download a versioned, redacted JSON backup of operational data: catalog, customers, sales, quotations, repairs (without unlock codes), stores, tax/business settings, and audit metadata.
-            </p>
-            <p className="text-xs text-muted-foreground">
-              Never included: employee PINs or hashes, sessions, SMTP passwords, device passwords, repair photos, or other credentials. Backups are for operators; restore is intentionally approval-gated and not available in the browser.
-            </p>
-            <Button type="button" variant="outline" className="gap-2" onClick={downloadBackup} disabled={backupLoading}>
-              <Download className="h-4 w-4" /> {backupLoading ? "Preparing backup…" : "Download redacted backup"}
-            </Button>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><Mail className="h-4 w-4 text-primary" /> Email delivery</CardTitle><p className="text-xs text-muted-foreground">Optional SMTP settings are used when staff send invoices by email. Passwords are never shown in the backup export.</p></CardHeader>
+              <CardContent className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5"><Label htmlFor="smtpHost">SMTP host</Label><Input id="smtpHost" {...register("smtpHost")} placeholder="smtp.gmail.com" /></div>
+                <div className="space-y-1.5"><Label htmlFor="smtpPort">SMTP port</Label><Input id="smtpPort" {...register("smtpPort", { valueAsNumber: true })} type="number" min="1" max="65535" placeholder="587" /></div>
+                <div className="space-y-1.5"><Label htmlFor="smtpUser">SMTP username</Label><Input id="smtpUser" {...register("smtpUser")} placeholder="user@gmail.com" /></div>
+                <div className="space-y-1.5"><Label htmlFor="smtpPass">SMTP password</Label><Input id="smtpPass" {...register("smtpPass")} type="password" placeholder="Leave blank to keep current password" autoComplete="new-password" /></div>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        <StoreAdmin />
-        <TaxProfileAdmin />
+          <TabsContent forceMount value="billing" className="space-y-5 pt-1">
+            <Card>
+              <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><Percent className="h-4 w-4 text-primary" /> Billing</CardTitle><p className="text-xs text-muted-foreground">Invoice settings and thermal receipt content are separated so financial totals stay predictable.</p></CardHeader>
+              <CardContent>
+                <Tabs defaultValue="invoice" className="w-full">
+                  <TabsList className="grid h-auto w-full grid-cols-2 sm:w-fit">
+                    <TabsTrigger value="invoice">Invoice &amp; tax</TabsTrigger>
+                    <TabsTrigger value="receipt">Receipt content</TabsTrigger>
+                  </TabsList>
+                  <TabsContent forceMount value="invoice" className="pt-4">
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-1.5"><Label htmlFor="currency">Currency</Label><Input id="currency" {...register("currency")} placeholder="CAD" /></div>
+                      <div className="space-y-1.5"><Label htmlFor="taxRate">Default tax rate (%)</Label><Input id="taxRate" {...register("taxRate", { valueAsNumber: true, min: 0, max: 100 })} type="number" step="0.01" min="0" max="100" placeholder="0" disabled={!taxEnabled} /></div>
+                      <div className="space-y-1.5"><Label htmlFor="taxName">Tax display name</Label><Input id="taxName" {...register("taxName")} placeholder="Tax, GST, VAT…" /></div>
+                      <label className="flex items-center gap-2 text-sm sm:col-span-2"><input {...register("taxEnabled")} type="checkbox" className="h-4 w-4 accent-primary" /><span>Apply tax to new sales and quotations</span></label>
+                      <div className="space-y-1.5"><Label htmlFor="gstRate">GST rate (%) <span className="text-xs text-muted-foreground">e.g. 5</span></Label><Input id="gstRate" {...register("gstRate", { valueAsNumber: true })} type="number" step="0.001" min="0" max="100" placeholder="0" /></div>
+                      <div className="space-y-1.5"><Label htmlFor="qstRate">QST rate (%) <span className="text-xs text-muted-foreground">e.g. 9.975</span></Label><Input id="qstRate" {...register("qstRate", { valueAsNumber: true })} type="number" step="0.0001" min="0" max="100" placeholder="0" /></div>
+                      <p className="text-xs text-muted-foreground sm:col-span-2">{taxEnabled ? "The server applies this rate to new sales and quotations; saved invoices keep their original totals." : "Tax is disabled for new transactions. Existing records remain unchanged."}</p>
+                      <div className="space-y-1.5"><Label htmlFor="invoicePrefix">Invoice prefix</Label><Input id="invoicePrefix" {...register("invoicePrefix")} placeholder="INV-" /></div>
+                      <div className="space-y-1.5"><Label htmlFor="quotePrefix">Quote prefix</Label><Input id="quotePrefix" {...register("quotePrefix")} placeholder="QUO-" /></div>
+                      <div className="space-y-1.5 sm:col-span-2"><Label htmlFor="invoiceFooter">Invoice footer text</Label><Textarea id="invoiceFooter" {...register("invoiceFooter")} placeholder="Thank you for your business!" rows={2} /><p className="text-xs text-muted-foreground">Used on full invoice printouts. Thermal receipt policy text is managed in Receipt content.</p></div>
+                    </div>
+                  </TabsContent>
+                  <TabsContent forceMount value="receipt" className="pt-4">{settings && <ReceiptContentEditor settings={settings} />}</TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        {/* SMTP */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Mail className="h-4 w-4 text-primary" /> Email Configuration (SMTP)
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-xs text-muted-foreground">Configure your SMTP server to send invoices by email.</p>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label>SMTP Host</Label>
-                <Input {...register("smtpHost")} placeholder="smtp.gmail.com" />
-              </div>
-              <div className="space-y-1.5">
-                <Label>SMTP Port</Label>
-                <Input {...register("smtpPort", { valueAsNumber: true })} type="number" placeholder="587" />
-              </div>
-              <div className="space-y-1.5">
-                <Label>SMTP Username</Label>
-                <Input {...register("smtpUser")} placeholder="user@gmail.com" />
-              </div>
-              <div className="space-y-1.5">
-                <Label>SMTP Password</Label>
-                <Input {...register("smtpPass")} type="password" placeholder="••••••••" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          <TabsContent forceMount value="notifications" className="space-y-5 pt-1">
+            <NotificationManagement />
+          </TabsContent>
 
-        <Button type="submit" disabled={update.isPending} className="w-full sm:w-auto">
-          {update.isPending ? "Saving..." : "Save Settings"}
-        </Button>
+          <TabsContent forceMount value="stores" className="space-y-5 pt-1">
+            <StoreAdmin />
+            <TaxProfileAdmin />
+          </TabsContent>
+
+          <TabsContent forceMount value="appearance" className="space-y-5 pt-1">
+            <Card>
+              <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><Type className="h-4 w-4 text-primary" /> App branding</CardTitle><p className="text-xs text-muted-foreground">Branding is shared by the sidebar, mobile header, browser tab, invoices, and printed receipts.</p></CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-1.5"><Label htmlFor="appName">App name</Label><Input id="appName" {...register("appName")} placeholder="Mobilinq" /></div>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                  {logoPreview ? <div className="group relative"><img src={logoPreview} alt="Business logo preview" className="h-20 max-w-[160px] rounded border bg-muted/20 object-contain p-1" /><button type="button" onClick={removeLogo} aria-label="Remove business logo" className="absolute -right-2 -top-2 rounded-full bg-destructive p-1 text-white opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"><Trash2 className="h-3 w-3" /></button></div> : <button type="button" onClick={() => fileInputRef.current?.click()} className="flex h-20 w-36 flex-col items-center justify-center rounded border-2 border-dashed border-muted-foreground/30 text-muted-foreground/60 transition-colors hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><ImageIcon className="mb-1 h-6 w-6" /><span className="text-xs">No logo</span></button>}
+                  <div className="flex flex-col gap-2"><input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" className="hidden" onChange={handleLogoUpload} /><Button type="button" size="sm" variant="outline" className="gap-1.5" onClick={() => fileInputRef.current?.click()}><Upload className="h-3.5 w-3.5" /> {logoPreview ? "Change logo" : "Upload logo"}</Button>{logoPreview && <Button type="button" size="sm" variant="ghost" className="justify-start gap-1.5 text-destructive hover:text-destructive" onClick={removeLogo}><Trash2 className="h-3.5 w-3.5" /> Remove</Button>}<p className="text-xs text-muted-foreground">PNG, JPG, SVG · max 500 KB</p></div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><Palette className="h-4 w-4 text-primary" /> Workspace theme</CardTitle><p className="text-xs text-muted-foreground">Themes change surfaces, navigation, typography, spacing, borders, shadows, and controls—not just the accent color.</p></CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3" role="radiogroup" aria-label="Workspace theme">
+                  {themes.map((t) => <div key={t.id} role="radio" aria-label={`${t.label} theme`} aria-checked={themeValue === t.id} tabIndex={0} onClick={() => { setValue("theme", t.id, { shouldDirty: true }); setThemeApplied(null); }} onKeyDown={(event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); setValue("theme", t.id, { shouldDirty: true }); setThemeApplied(null); } }} className={`cursor-pointer rounded-lg border p-3 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring ${themeValue === t.id ? "border-primary bg-primary/10" : "border-border hover:border-primary/40"}`}>
+                    <div className="mb-3 h-14 overflow-hidden rounded-md border border-black/10 p-2" style={{ background: t.surface }}><div className="flex h-full gap-2"><div className="w-1/4 rounded-sm" style={{ background: t.panel }} /><div className="flex-1 space-y-1.5 pt-0.5"><div className="h-1.5 w-2/5 rounded-full" style={{ background: t.color }} /><div className="h-1.5 w-4/5 rounded-full opacity-20" style={{ background: t.color }} /><div className="h-1.5 w-3/5 rounded-full opacity-20" style={{ background: t.color }} /></div></div></div>
+                    <div className="mb-1 flex items-center justify-between gap-2"><span className="flex items-center gap-2 text-sm font-medium"><span className="h-3 w-3 rounded-full border border-black/10" style={{ background: t.color }} />{t.label}</span><span className="text-[10px] uppercase tracking-wider text-muted-foreground">{t.mode}</span></div><p className="text-xs text-muted-foreground">{t.desc}</p>
+                  </div>)}
+                </div>
+                <div className="mt-4 flex flex-wrap items-center gap-3 border-t pt-4"><Button type="button" onClick={onApplyTheme} disabled={applyTheme.isPending} className="gap-2"><CheckCircle2 className="h-4 w-4" />{applyTheme.isPending ? "Applying…" : "Apply theme"}</Button><span className="text-xs text-muted-foreground" role="status">{applyTheme.isPending ? "Saving the selected preset…" : themeApplied === themeValue ? "Applied to server and this device." : localTheme && settings?.theme && localTheme !== settings.theme ? `This device is using ${localTheme}; apply theme to reconcile it.` : "Theme changes are separate from Save settings."}</span></div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent forceMount value="backup" className="space-y-5 pt-1">
+            <DesktopDiagnosticsPanel />
+            <Card className="border-primary/20">
+              <CardHeader className="pb-3"><CardTitle className="flex items-center gap-2 text-base"><ShieldCheck className="h-4 w-4 text-primary" /> Backup &amp; recovery</CardTitle></CardHeader>
+              <CardContent className="space-y-3"><p className="text-sm text-muted-foreground">Download a versioned, redacted JSON backup of operational data: catalog, customers, sales, quotations, repairs without unlock codes, stores, tax/business settings, and audit metadata.</p><p className="text-xs text-muted-foreground">Never included: employee PINs, sessions, SMTP passwords, device passwords, repair photos, or other credentials. Restore is approval-gated and not available in the browser.</p><Button type="button" variant="outline" className="gap-2" onClick={downloadBackup} disabled={backupLoading}><Download className="h-4 w-4" />{backupLoading ? "Preparing backup…" : "Download redacted backup"}</Button></CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        {saveFeedback && <Alert className={saveFeedback.kind === "success" ? "border-emerald-500/30 bg-emerald-500/5" : "border-destructive/40"} role={saveFeedback.kind === "error" ? "alert" : "status"}><AlertDescription className="flex items-center gap-2">{saveFeedback.kind === "success" ? <CheckCircle2 className="h-4 w-4 text-emerald-400" /> : <AlertTriangle className="h-4 w-4 text-destructive" />}{saveFeedback.message}</AlertDescription></Alert>}
+        <div className="sticky bottom-3 z-10 flex flex-col gap-3 rounded-lg border border-primary/20 bg-card/95 p-3 shadow-lg backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-xs text-muted-foreground" role="status">{isDirty ? "You have unsaved settings changes." : "Settings are saved. Receipt content has its own save action."}</div>
+          <Button type="submit" disabled={update.isPending || Boolean(errors.businessEmail)} className="w-full gap-2 sm:w-auto"><Save className="h-4 w-4" />{update.isPending ? "Saving…" : "Save settings"}</Button>
+        </div>
       </form>
     </div>
   );

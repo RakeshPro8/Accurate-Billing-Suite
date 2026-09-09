@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { ExternalLink, Megaphone, Search, Volume2, ShieldAlert, Save } from "lucide-react";
 import {
   useGetCustomerRights,
@@ -18,6 +18,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 const provinces = ["AB", "BC", "MB", "NB", "NL", "NS", "NT", "NU", "ON", "PE", "QC", "SK", "YT"];
+const provinceLabels: Record<string, string> = {
+  AB: "Alberta", BC: "British Columbia", MB: "Manitoba", NB: "New Brunswick", NL: "Newfoundland and Labrador",
+  NS: "Nova Scotia", NT: "Northwest Territories", NU: "Nunavut", ON: "Ontario", PE: "Prince Edward Island",
+  QC: "Quebec", SK: "Saskatchewan", YT: "Yukon",
+};
 const topicLabels: Record<string, string> = {
   "authorization-estimates": "Authorization & estimates",
   diagnostics: "Diagnostics",
@@ -42,6 +47,7 @@ export default function CustomerRights() {
   const [topic, setTopic] = useState("all");
   const [status, setStatus] = useState(isAdmin ? "published" : "published");
   const [search, setSearch] = useState("");
+  const [isOnline, setIsOnline] = useState(() => typeof navigator === "undefined" || navigator.onLine);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [draft, setDraft] = useState({ title: "", summary: "", readAloudScript: "", sourceUrl: "", effectiveFrom: "", lastReviewedAt: "" });
   const queryClient = useQueryClient();
@@ -56,6 +62,17 @@ export default function CustomerRights() {
     const needle = search.trim().toLowerCase();
     return !needle || `${entry.title} ${entry.summary} ${entry.provinceCode}`.toLowerCase().includes(needle);
   }), [query.data?.entries, search]);
+
+  useEffect(() => {
+    const onOnline = () => setIsOnline(true);
+    const onOffline = () => setIsOnline(false);
+    window.addEventListener("online", onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      window.removeEventListener("online", onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, []);
 
   function refresh() {
     void queryClient.invalidateQueries({ queryKey: getGetCustomerRightsQueryKey({ provinceCode: province === "all" ? undefined : province, topic: topic === "all" ? undefined : topic, status: isAdmin ? status as "draft" | "published" | "retired" : undefined }) });
@@ -99,13 +116,20 @@ export default function CustomerRights() {
         <AlertDescription>Do not present these cards as legal advice or promise an outcome. Guidance is only usable when marked published; confirm the official source and escalate uncertain questions.</AlertDescription>
       </Alert>
 
+      {!isOnline && <Alert className="border-amber-500/40 bg-amber-500/10"><ShieldAlert className="h-4 w-4 text-amber-400" /><AlertTitle>Offline read-only mode</AlertTitle><AlertDescription>Showing the last cached published guide. Do not rely on a stale entry for a new legal or payment question; reconnect or ask a manager.</AlertDescription></Alert>}
+
       <Card>
-        <CardContent className="grid gap-3 p-4 sm:grid-cols-[1fr_180px_220px]">
+        <CardContent className="grid gap-3 p-4 sm:grid-cols-[1fr_200px_220px]">
           <div className="relative"><Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" /><Input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search the guide…" className="pl-9" /></div>
-          <Select value={province} onValueChange={setProvince}><SelectTrigger><SelectValue placeholder="All jurisdictions" /></SelectTrigger><SelectContent><SelectItem value="all">All jurisdictions</SelectItem>{provinces.map((code) => <SelectItem key={code} value={code}>{code}</SelectItem>)}</SelectContent></Select>
+          <Select value={province} onValueChange={setProvince}><SelectTrigger aria-label="Filter by jurisdiction"><SelectValue placeholder="All jurisdictions" /></SelectTrigger><SelectContent><SelectItem value="all">All jurisdictions</SelectItem>{provinces.map((code) => <SelectItem key={code} value={code}>{code} · {provinceLabels[code]}</SelectItem>)}</SelectContent></Select>
           <Select value={topic} onValueChange={setTopic}><SelectTrigger><SelectValue placeholder="All topics" /></SelectTrigger><SelectContent><SelectItem value="all">All topics</SelectItem>{Object.entries(topicLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}</SelectContent></Select>
         </CardContent>
       </Card>
+      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground" aria-live="polite">
+        <span className="rounded-full border bg-muted/30 px-2.5 py-1">{province === "all" ? "All jurisdictions" : `${province} · ${provinceLabels[province]}`}</span>
+        <span className="rounded-full border bg-muted/30 px-2.5 py-1">{topic === "all" ? "All topics" : topicLabels[topic]}</span>
+        <span>{entries.length} published {entries.length === 1 ? "entry" : "entries"}</span>
+      </div>
 
       {isAdmin && <Card className="border-amber-500/30">
         <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -116,7 +140,7 @@ export default function CustomerRights() {
 
       {query.isLoading ? <p className="py-12 text-center text-sm text-muted-foreground">Loading reviewed guidance…</p> : query.isError ? <Alert variant="destructive"><AlertTitle>Guide unavailable</AlertTitle><AlertDescription>There is no safe legal-content fallback. Reconnect or ask a manager for the approved source.</AlertDescription></Alert> : entries.length === 0 ? <Card><CardContent className="p-10 text-center"><ShieldAlert className="mx-auto h-8 w-8 text-muted-foreground" /><p className="mt-3 font-medium">No {isAdmin && status !== "published" ? status : "published"} guidance matches.</p><p className="mt-1 text-sm text-muted-foreground">{isAdmin ? "Review draft entries or adjust the filters. Nothing is invented or fetched from an unreviewed source." : "This jurisdiction or topic has no published guidance yet. Ask a manager rather than relying on an unreviewed claim."}</p></CardContent></Card> :
         <div className="grid gap-4 md:grid-cols-2">{entries.map((entry) => <Card key={entry.id} className={entry.stale ? "border-destructive/50" : ""}>
-          <CardHeader className="space-y-3 pb-3"><div className="flex items-start justify-between gap-3"><CardTitle className="text-base leading-snug">{entry.title}</CardTitle><Badge variant={statusVariant(entry)}>{entry.stale ? "Stale review" : entry.reviewStatus}</Badge></div><div className="flex flex-wrap gap-2 text-xs text-muted-foreground"><Badge variant="outline">{entry.provinceCode}</Badge><span>{topicLabels[entry.topic] ?? entry.topic}</span></div></CardHeader>
+           <CardHeader className="space-y-3 pb-3"><div className="flex items-start justify-between gap-3"><CardTitle className="text-base leading-snug">{entry.title}</CardTitle><Badge variant={statusVariant(entry)}>{entry.stale ? "Stale review" : entry.reviewStatus}</Badge></div><div className="flex flex-wrap gap-2 text-xs text-muted-foreground"><Badge variant="outline">{entry.provinceCode} · {provinceLabels[entry.provinceCode]}</Badge><span>{topicLabels[entry.topic] ?? entry.topic}</span></div></CardHeader>
            <CardContent className="space-y-4 text-sm">
              {isAdmin && editingId === entry.id ? <div className="space-y-2 rounded-md border border-primary/30 bg-primary/5 p-3">
                <Input value={draft.title} onChange={(event) => setDraft({ ...draft, title: event.target.value })} placeholder="Title" />

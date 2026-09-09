@@ -9,6 +9,11 @@ import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const provinces = ['All', 'AB', 'BC', 'MB', 'NB', 'NL', 'NS', 'NT', 'NU', 'ON', 'PE', 'QC', 'SK', 'YT'];
+const provinceLabels: Record<string, string> = {
+  AB: 'Alberta', BC: 'British Columbia', MB: 'Manitoba', NB: 'New Brunswick', NL: 'Newfoundland and Labrador',
+  NS: 'Nova Scotia', NT: 'Northwest Territories', NU: 'Nunavut', ON: 'Ontario', PE: 'Prince Edward Island',
+  QC: 'Quebec', SK: 'Saskatchewan', YT: 'Yukon',
+};
 const topics = [
   ['All', 'All topics'],
   ['authorization-estimates', 'Authorization & estimates'],
@@ -37,6 +42,8 @@ export default function RightsGuideScreen() {
     const needle = search.trim().toLowerCase();
     return !needle || `${entry.title} ${entry.summary} ${entry.provinceCode}`.toLowerCase().includes(needle);
   }), [query.data?.entries, search]);
+  const selectedTopicLabel = topics.find(([value]) => value === topic)?.[1] ?? 'All topics';
+  const selectedProvinceLabel = province === 'All' ? 'All jurisdictions' : `${province} · ${provinceLabels[province]}`;
 
   const refresh = async () => {
     await query.refetch();
@@ -68,6 +75,11 @@ export default function RightsGuideScreen() {
         placeholderTextColor={colors.mutedForeground}
         style={[styles.search, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
       />
+      <View style={styles.selectionSummary} accessibilityLiveRegion="polite">
+        <View style={[styles.selectionPill, { backgroundColor: colors.accent, borderColor: colors.border }]}><Text style={[styles.selectionText, { color: colors.primary }]}>{selectedProvinceLabel}</Text></View>
+        <View style={[styles.selectionPill, { backgroundColor: colors.accent, borderColor: colors.border }]}><Text style={[styles.selectionText, { color: colors.primary }]}>{selectedTopicLabel}</Text></View>
+        <Text style={[styles.resultCount, { color: colors.mutedForeground }]}>{entries.length} published {entries.length === 1 ? 'entry' : 'entries'}</Text>
+      </View>
       <Text style={[styles.filterLabel, { color: colors.mutedForeground }]}>JURISDICTION</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
         {provinces.map((value) => <FilterChip key={value} value={value} selected={province === value} onPress={() => setProvince(value)} colors={colors} />)}
@@ -91,7 +103,7 @@ function FilterChip({ value, selected, onPress, colors }: { value: string; selec
 
 function GuidanceCard({ entry, colors }: { entry: CustomerRightsEntry; colors: ReturnType<typeof useColors> }) {
   return <View style={[styles.card, { backgroundColor: colors.card, borderColor: entry.stale ? colors.destructive : colors.border }]}>
-    <View style={styles.cardHeader}><View style={{ flex: 1 }}><Text style={[styles.cardTitle, { color: colors.foreground }]}>{entry.title}</Text><Text style={[styles.meta, { color: colors.mutedForeground }]}>{entry.provinceCode} · {entry.topic.replaceAll('-', ' ')}</Text></View><View style={[styles.status, { backgroundColor: entry.stale ? colors.destructive : colors.accent }]}><Text style={{ color: entry.stale ? colors.primaryForeground : colors.primary, fontSize: 10, fontWeight: '700' }}>{entry.stale ? 'STALE' : 'PUBLISHED'}</Text></View></View>
+    <View style={styles.cardHeader}><View style={{ flex: 1 }}><Text style={[styles.cardTitle, { color: colors.foreground }]}>{entry.title}</Text><Text style={[styles.meta, { color: colors.mutedForeground }]}>{entry.provinceCode} · {provinceLabels[entry.provinceCode]} · {topics.find(([value]) => value === entry.topic)?.[1] ?? entry.topic}</Text></View><View style={[styles.status, { backgroundColor: entry.stale ? colors.destructive : colors.accent }]}><Text style={{ color: entry.stale ? colors.primaryForeground : colors.primary, fontSize: 10, fontWeight: '700' }}>{entry.stale ? 'STALE' : 'PUBLISHED'}</Text></View></View>
     <Text style={[styles.summary, { color: colors.foreground }]}>{entry.summary}</Text>
     {entry.readAloudScript ? <View style={[styles.script, { backgroundColor: colors.accent }]}><Text style={[styles.scriptLabel, { color: colors.primary }]}><Feather name="volume-2" size={13} color={colors.primary} /> READ ALOUD</Text><Text style={[styles.scriptText, { color: colors.mutedForeground }]}>{entry.readAloudScript}</Text></View> : null}
     <Text style={[styles.meta, { color: colors.mutedForeground }]}>Effective {entry.effectiveFrom} · reviewed {entry.lastReviewedAt}</Text>
@@ -110,6 +122,10 @@ const styles = StyleSheet.create({
   disclaimer: { borderWidth: 1, borderRadius: 12, padding: 12, flexDirection: 'row', gap: 9, alignItems: 'center', marginBottom: 12 },
   disclaimerText: { flex: 1, fontSize: 12, lineHeight: 17, fontWeight: '600' },
   search: { borderWidth: 1, borderRadius: 10, height: 44, paddingHorizontal: 13, fontSize: 14, marginBottom: 16 },
+  selectionSummary: { flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 7, marginBottom: 15 },
+  selectionPill: { borderWidth: 1, borderRadius: 14, paddingHorizontal: 9, paddingVertical: 5 },
+  selectionText: { fontSize: 11, fontWeight: '700' },
+  resultCount: { fontSize: 11, marginLeft: 2 },
   filterLabel: { fontSize: 10, letterSpacing: 1.5, fontWeight: '700', marginBottom: 8 },
   chips: { gap: 8, paddingBottom: 15 },
   chip: { borderWidth: 1, borderRadius: 18, paddingHorizontal: 12, paddingVertical: 8 },
