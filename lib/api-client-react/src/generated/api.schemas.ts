@@ -504,6 +504,179 @@ export interface SaleUpdate {
   items?: LineItemInput[];
 }
 
+export type RecyclingReceiptDeclaredCondition = typeof RecyclingReceiptDeclaredCondition[keyof typeof RecyclingReceiptDeclaredCondition];
+
+
+export const RecyclingReceiptDeclaredCondition = {
+  working: 'working',
+  damaged: 'damaged',
+  bricked: 'bricked',
+  unknown: 'unknown',
+} as const;
+
+export type RecyclingReceiptStatus = typeof RecyclingReceiptStatus[keyof typeof RecyclingReceiptStatus];
+
+
+export const RecyclingReceiptStatus = {
+  draft: 'draft',
+  finalized: 'finalized',
+} as const;
+
+export interface RecyclingReceipt {
+  id: number;
+  /** @nullable */
+  documentNumber?: string | null;
+  storeId: number;
+  /** @nullable */
+  saleId?: number | null;
+  /** @nullable */
+  customerId?: number | null;
+  customerName: string;
+  customerPhone: string;
+  /** @nullable */
+  customerEmail?: string | null;
+  deviceType: string;
+  deviceBrand: string;
+  deviceModel: string;
+  deviceColour: string;
+  declaredCondition: RecyclingReceiptDeclaredCondition;
+  accessories: string;
+  /** @nullable */
+  serialOrImei?: string | null;
+  handoffDate: string;
+  /** @nullable */
+  receivedByEmployeeId?: number | null;
+  /** @nullable */
+  receivedByEmployeeName?: string | null;
+  status: RecyclingReceiptStatus;
+  createdAt: string;
+  /** @nullable */
+  finalizedAt?: string | null;
+}
+
+export type RecyclingReceiptInputDeclaredCondition = typeof RecyclingReceiptInputDeclaredCondition[keyof typeof RecyclingReceiptInputDeclaredCondition];
+
+
+export const RecyclingReceiptInputDeclaredCondition = {
+  working: 'working',
+  damaged: 'damaged',
+  bricked: 'bricked',
+  unknown: 'unknown',
+} as const;
+
+export interface RecyclingReceiptInput {
+  /** @minimum 1 */
+  saleId?: number;
+  /** @minimum 1 */
+  customerId?: number;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  customerName: string;
+  /**
+     * @minLength 1
+     * @maxLength 50
+     */
+  customerPhone: string;
+  /** @maxLength 254 */
+  customerEmail?: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  deviceType: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  deviceBrand: string;
+  /**
+     * @minLength 1
+     * @maxLength 150
+     */
+  deviceModel: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  deviceColour: string;
+  declaredCondition: RecyclingReceiptInputDeclaredCondition;
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  accessories: string;
+  /** @maxLength 150 */
+  serialOrImei?: string;
+  handoffDate: string;
+}
+
+export type RecyclingReceiptUpdateDeclaredCondition = typeof RecyclingReceiptUpdateDeclaredCondition[keyof typeof RecyclingReceiptUpdateDeclaredCondition];
+
+
+export const RecyclingReceiptUpdateDeclaredCondition = {
+  working: 'working',
+  damaged: 'damaged',
+  bricked: 'bricked',
+  unknown: 'unknown',
+} as const;
+
+export interface RecyclingReceiptUpdate {
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  customerId?: number | null;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  customerName?: string;
+  /**
+     * @minLength 1
+     * @maxLength 50
+     */
+  customerPhone?: string;
+  /**
+     * @maxLength 254
+     * @nullable
+     */
+  customerEmail?: string | null;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  deviceType?: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  deviceBrand?: string;
+  /**
+     * @minLength 1
+     * @maxLength 150
+     */
+  deviceModel?: string;
+  /**
+     * @minLength 1
+     * @maxLength 100
+     */
+  deviceColour?: string;
+  declaredCondition?: RecyclingReceiptUpdateDeclaredCondition;
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  accessories?: string;
+  /**
+     * @maxLength 150
+     * @nullable
+     */
+  serialOrImei?: string | null;
+  handoffDate?: string;
+}
+
 export interface PaymentInput {
   /** @minimum 0.01 */
   amount: number;
@@ -1172,6 +1345,7 @@ export const AuditLogEntityType = {
   quotation: 'quotation',
   repair: 'repair',
   repair_photo: 'repair_photo',
+  recycling_receipt: 'recycling_receipt',
   customer: 'customer',
   product: 'product',
   service: 'service',
@@ -1221,6 +1395,7 @@ export const AuditEventInputEntityType = {
   sale: 'sale',
   quotation: 'quotation',
   repair: 'repair',
+  recycling_receipt: 'recycling_receipt',
   backup: 'backup',
 } as const;
 
@@ -1984,6 +2159,7 @@ export const GetAuditLogsEntityType = {
   quotation: 'quotation',
   repair: 'repair',
   repair_photo: 'repair_photo',
+  recycling_receipt: 'recycling_receipt',
   customer: 'customer',
   product: 'product',
   service: 'service',
@@ -2052,6 +2228,7 @@ export const DownloadAuditLogsExportEntityType = {
   quotation: 'quotation',
   repair: 'repair',
   repair_photo: 'repair_photo',
+  recycling_receipt: 'recycling_receipt',
   customer: 'customer',
   product: 'product',
   service: 'service',
@@ -2165,6 +2342,13 @@ export const GetSalesDirection = {
   asc: 'asc',
   desc: 'desc',
 } as const;
+
+export type GetRecyclingReceiptsParams = {
+/**
+ * @minimum 1
+ */
+saleId?: number;
+};
 
 export type GetQuotationsParams = {
 status?: string;

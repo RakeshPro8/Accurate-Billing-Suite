@@ -2,7 +2,7 @@ import { Router } from "express";
 import { and, asc, desc, eq, exists, gte, ilike, inArray, lte, or, sql } from "drizzle-orm";
 import nodemailer from "nodemailer";
 import { z } from "zod";
-import { db, customersTable, productsTable, saleEventsTable, saleLineItemsTable, salePaymentsTable, salesTable, settingsTable, inventoryMovementsTable } from "@workspace/db";
+import { db, customersTable, productsTable, recyclingReceiptsTable, saleEventsTable, saleLineItemsTable, salePaymentsTable, salesTable, settingsTable, inventoryMovementsTable } from "@workspace/db";
 import {
   CreateSaleBody, DeleteSaleParams, GetSaleParams, GetSalesQueryParams,
   SendSaleEmailParams, UpdateSaleBody, UpdateSaleParams,
@@ -255,6 +255,11 @@ router.delete("/:id", validateRequest({ params: DeleteSaleParams }), async (req,
       if (!sale) throw new HttpError(404, "Invoice not found.", "NOT_FOUND");
       if (["voided", "refunded"].includes(sale.status)) throw new HttpError(409, "A voided or refunded sale cannot receive a payment.", "SALE_CONFLICT");
       if (sale.status !== "draft" || (current.role !== "admin" && current.role !== "manager")) throw new HttpError(409, "Posted sales are never deleted. Void or refund the invoice instead.", "SALE_NOT_DELETABLE");
+      const [recyclingReceipt] = await tx.select({ id: recyclingReceiptsTable.id }).from(recyclingReceiptsTable).where(and(
+        eq(recyclingReceiptsTable.storeId, storeId),
+        eq(recyclingReceiptsTable.saleId, sale.id),
+      ));
+      if (recyclingReceipt) throw new HttpError(409, "This invoice has a recycling receipt and cannot be deleted.", "SALE_HAS_RECYCLING_RECEIPT");
       await tx.delete(saleLineItemsTable).where(eq(saleLineItemsTable.saleId, sale.id));
       await tx.delete(saleEventsTable).where(eq(saleEventsTable.saleId, sale.id));
       await tx.delete(salesTable).where(eq(salesTable.id, sale.id));

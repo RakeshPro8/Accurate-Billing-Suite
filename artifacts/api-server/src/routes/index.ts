@@ -20,6 +20,7 @@ import operationsRouter from "./operations";
 import financeRouter, { publicCustomerAccessRouter } from "./finance";
 import taxProfilesRouter from "./taxProfiles";
 import customerRightsRouter from "./customerRights";
+import recyclingReceiptsRouter from "./recyclingReceipts";
 
 const router: IRouter = Router();
 
@@ -36,6 +37,7 @@ router.use("/products", productsRouter);
 router.use("/services", servicesRouter);
 router.use("/customers", customersRouter);
 router.use("/sales", salesRouter);
+router.use("/recycling-receipts", recyclingReceiptsRouter);
 router.use("/quotations", quotationsRouter);
 router.use("/reports", reportsRouter);
 router.use("/settings", requireRole("admin"), settingsRouter);

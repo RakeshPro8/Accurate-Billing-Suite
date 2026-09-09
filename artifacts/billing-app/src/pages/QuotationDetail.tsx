@@ -18,6 +18,7 @@ import { ReceiptPrint } from "@/components/ReceiptPrint";
 import { startThermalPrint, type ThermalPrintSession } from "@/lib/thermal-print";
 import { recordAuditEvent } from "@/lib/audit-client";
 import { ArrowLeft, Printer, Download, ChevronDown, Check, Edit, FileText, RefreshCw, Receipt } from "lucide-react";
+import { A4DocumentFrame, A4Section } from "@/components/A4DocumentFrame";
 
 export default function QuotationDetail() {
   const params = useParams<{ id: string }>();
@@ -238,37 +239,13 @@ export default function QuotationDetail() {
 
       {/* A4 Quotation — hidden in receipt-mode print via CSS */}
       <div ref={quoteRef} className="invoice-print-area">
-        <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
-          <div className="bg-[#1e3a5f] text-white p-8">
-            <div className="flex items-start justify-between">
-              <div>
-                {settings?.logoUrl && (
-                  <img
-                    src={settings.logoUrl}
-                    alt="logo"
-                    className="mb-3 max-h-16 max-w-[140px] object-contain brightness-0 invert"
-                  />
-                )}
-                <div className="text-2xl font-bold mb-0.5">{settings?.businessName ?? "Your Business"}</div>
-                {settings?.businessAddress && <div className="text-sm text-blue-200">{settings.businessAddress}</div>}
-                {settings?.businessPhone && <div className="text-sm text-blue-200">{settings.businessPhone}</div>}
-                {settings?.businessEmail && <div className="text-sm text-blue-200">{settings.businessEmail}</div>}
-              </div>
-              <div className="text-right">
-                <div className="text-3xl font-bold text-blue-300">QUOTATION</div>
-                <div className="text-lg font-mono mt-1">{quote.quoteNumber}</div>
-                <div className="text-sm text-blue-200 mt-1">Date: {formatDate(quote.createdAt)}</div>
-                {quote.expiresAt && <div className="text-sm text-blue-200">Valid Until: {formatDate(quote.expiresAt)}</div>}
-              </div>
-            </div>
-          </div>
-
-          <div className="p-8">
-            <div className="mb-8">
-              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Prepared For</div>
+        <A4DocumentFrame business={business} title="Soumission" documentNumber={quote.quoteNumber} dateLabel="Date" dateValue={formatDate(quote.createdAt)} secondaryDate={quote.expiresAt ? { label: "Valide jusqu’au", value: formatDate(quote.expiresAt) } : null}>
+          <A4Section title="Préparée pour">
+            <div>
               <div className="font-semibold text-lg">{quote.customerName || "Customer"}</div>
               {quote.customerEmail && <div className="text-sm text-muted-foreground">{quote.customerEmail}</div>}
             </div>
+          </A4Section>
 
             <table className="w-full text-sm mb-6">
               <thead>
@@ -318,8 +295,7 @@ export default function QuotationDetail() {
                 {settings?.thankYouMessage && <p className="font-medium text-[#1e3a5f]">{settings.thankYouMessage}</p>}
               </div>
             )}
-          </div>
-        </div>
+        </A4DocumentFrame>
       </div>
     </div>
   );

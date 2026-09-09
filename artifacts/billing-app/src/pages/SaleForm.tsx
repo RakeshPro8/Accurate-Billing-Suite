@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useParams } from "wouter";
-import { useGetSale, useCreateSale, useUpdateSale, useGetProducts, useGetServices, useGetCustomers, useGetSettings, useCreateCustomer, getGetSaleQueryKey, getGetSalesQueryKey, getGetCustomersQueryKey } from "@workspace/api-client-react";
+import { useGetSale, useCreateSale, useUpdateSale, useGetProducts, useGetServices, useGetCustomers, useGetSettings, useCreateCustomer, createRecyclingReceipt, getGetSaleQueryKey, getGetSalesQueryKey, getGetCustomersQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatCurrency } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +16,7 @@ import { useEmployee, ROLE_COLORS, ROLE_LABELS } from "@/context/EmployeeContext
 import { ArrowLeft, Plus, Trash2, Search, ShieldCheck, Star, AlertTriangle } from "lucide-react";
 import { queueOfflineOperation } from "@/lib/offline-store";
 import { apiUrl } from "@/lib/api-config";
+import { RecyclingIntakeFields, emptyRecyclingDraft, type RecyclingDraft } from "@/components/RecyclingIntakeFields";
 
 interface LineItemForm {
   type: "product" | "service" | "custom";
@@ -63,6 +64,8 @@ export default function SaleForm({ isQuote = false }: { isQuote?: boolean }) {
   const [saveStatus, setSaveStatus] = useState<"draft" | "invoice">("invoice");
   const [items, setItems] = useState<LineItemForm[]>([{ type: "custom", name: "", description: "", quantity: 1, unitPrice: 0, discount: 0 }]);
   const [isCreatingCustomer, setIsCreatingCustomer] = useState(false);
+  const [includeRecycling, setIncludeRecycling] = useState(false);
+  const [recyclingDraft, setRecyclingDraft] = useState<RecyclingDraft>(emptyRecyclingDraft);
   const createCustomer = useCreateCustomer();
   const draftKey = useRef(crypto.randomUUID());
 
@@ -208,9 +211,23 @@ export default function SaleForm({ isQuote = false }: { isQuote?: boolean }) {
         quantity: i.quantity, unitPrice: i.unitPrice, discount: i.discount || 0,
       })),
     };
-    const onSuccess = (s: any) => {
+    const onSuccess = async (s: any) => {
       localStorage.removeItem("mobilinq.sale-draft");
       queryClient.invalidateQueries({ queryKey: getGetSalesQueryKey() });
+      if (!isEdit && includeRecycling) {
+        try {
+          await createRecyclingReceipt({
+            ...recyclingDraft,
+            saleId: s.id,
+            customerId,
+            customerEmail: recyclingDraft.customerEmail || undefined,
+            serialOrImei: recyclingDraft.serialOrImei || undefined,
+          });
+          toast({ title: "Recycling draft added", description: "Review and finalize it from the invoice." });
+        } catch (error: any) {
+          toast({ title: "Invoice created, but recycling details need attention", description: error?.message, variant: "destructive" });
+        }
+      }
       toast({ title: isEdit ? "Invoice updated" : "Invoice created", description: s.invoiceNumber });
       navigate(`/sales/${s.id}`);
     };
@@ -387,20 +404,31 @@ export default function SaleForm({ isQuote = false }: { isQuote?: boolean }) {
           <Button type="button" size="sm" variant="outline" onClick={() => addItem()} className="h-7 text-xs gap-1"><Plus className="h-3 w-3" /> Add Line</Button>
         </CardHeader>
         <CardContent className="space-y-2">
+          <div className="hidden sm:grid grid-cols-12 gap-2 px-2 text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+            <div className="col-span-5">Item / description</div>
+            <div className="col-span-2">Quantity</div>
+            <div className="col-span-2">Unit price</div>
+            <div className="col-span-2">Discount</div>
+            <div className="col-span-1 text-right">Line total</div>
+          </div>
           {items.map((item, i) => (
             <div key={i} className="grid grid-cols-12 gap-2 items-start p-2 rounded border bg-muted/20">
               <div className="col-span-5 space-y-1">
-                <Input className="h-7 text-xs" placeholder="Item name" value={item.name} onChange={e => updateItem(i, "name", e.target.value)} />
-                <Input className="h-7 text-xs text-muted-foreground" placeholder="Description (optional)" value={item.description} onChange={e => updateItem(i, "description", e.target.value)} />
+                <Label className="text-[10px] text-muted-foreground sm:hidden">Item / description</Label>
+                <Input aria-label={`Line ${i + 1} item name`} className="h-7 text-xs" placeholder="Item name" value={item.name} onChange={e => updateItem(i, "name", e.target.value)} />
+                <Input aria-label={`Line ${i + 1} description`} className="h-7 text-xs text-muted-foreground" placeholder="Description (optional)" value={item.description} onChange={e => updateItem(i, "description", e.target.value)} />
               </div>
               <div className="col-span-2">
-                <Input className="h-7 text-xs" type="number" step="0.01" min="0.01" placeholder="Qty" value={item.quantity} onChange={e => updateItem(i, "quantity", parseFloat(e.target.value) || 1)} />
+                <Label className="text-[10px] text-muted-foreground sm:hidden">Qty</Label>
+                <Input aria-label={`Line ${i + 1} quantity`} className="h-7 text-xs" type="number" step="0.01" min="0.01" placeholder="Qty" value={item.quantity} onChange={e => updateItem(i, "quantity", parseFloat(e.target.value) || 1)} />
               </div>
               <div className="col-span-2">
-                <Input className="h-7 text-xs" type="number" step="0.01" min="0" placeholder="Price" value={item.unitPrice} onChange={e => updateItem(i, "unitPrice", parseFloat(e.target.value) || 0)} />
+                <Label className="text-[10px] text-muted-foreground sm:hidden">Price</Label>
+                <Input aria-label={`Line ${i + 1} unit price`} className="h-7 text-xs" type="number" step="0.01" min="0" placeholder="Price" value={item.unitPrice} onChange={e => updateItem(i, "unitPrice", parseFloat(e.target.value) || 0)} />
               </div>
               <div className="col-span-2">
-                <Input className="h-7 text-xs" type="number" step="0.01" min="0" placeholder="Disc" value={item.discount} onChange={e => updateItem(i, "discount", parseFloat(e.target.value) || 0)} />
+                <Label className="text-[10px] text-muted-foreground sm:hidden">Discount</Label>
+                <Input aria-label={`Line ${i + 1} discount`} className="h-7 text-xs" type="number" step="0.01" min="0" placeholder="Discount" value={item.discount} onChange={e => updateItem(i, "discount", parseFloat(e.target.value) || 0)} />
               </div>
               <div className="col-span-1 flex items-center">
                 <div className="text-xs font-semibold text-right w-full">{formatCurrency(lineSubtotals[i] || 0)}</div>
@@ -419,6 +447,38 @@ export default function SaleForm({ isQuote = false }: { isQuote?: boolean }) {
           </div>
         </CardContent>
       </Card>
+
+      {!isEdit && (
+        <Card>
+          <CardHeader className="pb-3">
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <CardTitle className="text-sm font-semibold">Recycling handoff (optional)</CardTitle>
+                <p className="text-xs text-muted-foreground mt-1">Create a separate zero-value French recycling receipt linked to this invoice.</p>
+              </div>
+              <Button
+                type="button"
+                size="sm"
+                variant={includeRecycling ? "default" : "outline"}
+                onClick={() => {
+                  const next = !includeRecycling;
+                  setIncludeRecycling(next);
+                  if (next) setRecyclingDraft(current => ({
+                    ...current,
+                    customerId,
+                    customerName: current.customerName || customerName,
+                    customerPhone: current.customerPhone || selectedCustomer?.phone || "",
+                    customerEmail: current.customerEmail || customerEmail || undefined,
+                  }));
+                }}
+              >
+                {includeRecycling ? "Included" : "Add recycling"}
+              </Button>
+            </div>
+          </CardHeader>
+          {includeRecycling && <CardContent><RecyclingIntakeFields value={recyclingDraft} onChange={setRecyclingDraft} /></CardContent>}
+        </Card>
+      )}
 
       <div className="space-y-1.5">
         <Label className="text-sm">Notes (optional)</Label>

@@ -15,6 +15,7 @@ import {
   repairPhotosTable,
   repairPartsTable,
   auditLogsTable,
+  recyclingReceiptsTable,
 } from "@workspace/db";
 import { requireRole } from "../lib/auth";
 import { logAudit } from "../lib/audit";
@@ -26,7 +27,7 @@ const router = Router();
 router.get("/backup", requireRole("admin"), async (req, res) => {
   try {
     const storeId = await requireCurrentStoreId(req);
-    const [products, services, customers, employees, settings, stores, sales, saleLineItems, quotations, quotationLineItems, repairs, repairPhotos, repairParts, auditLogs] = await Promise.all([
+    const [products, services, customers, employees, settings, stores, sales, saleLineItems, quotations, quotationLineItems, repairs, repairPhotos, repairParts, recyclingReceipts, auditLogs] = await Promise.all([
        db.select().from(productsTable).where(eq(productsTable.storeId, storeId)),
       db.select().from(servicesTable),
        db.select().from(customersTable).where(eq(customersTable.storeId, storeId)),
@@ -80,6 +81,7 @@ router.get("/backup", requireRole("admin"), async (req, res) => {
        }).from(repairsTable).where(eq(repairsTable.storeId, storeId)),
       db.select({ id: repairPhotosTable.id, repairId: repairPhotosTable.repairId, caption: repairPhotosTable.caption, createdAt: repairPhotosTable.createdAt }).from(repairPhotosTable),
       db.select().from(repairPartsTable),
+       db.select().from(recyclingReceiptsTable).where(eq(recyclingReceiptsTable.storeId, storeId)),
        db.select().from(auditLogsTable).where(eq(auditLogsTable.storeId, storeId)),
     ]);
 
@@ -88,7 +90,7 @@ router.get("/backup", requireRole("admin"), async (req, res) => {
       version: "2.0",
       included: [
         "catalog, customers, sales and line items, quotations and line items",
-        "repair records without device unlock credentials, repair parts, stores",
+         "repair records without device unlock credentials, repair parts, recycling receipts, stores",
         "business/tax configuration without SMTP secrets, and privacy-safe audit metadata",
       ],
       excluded: [
@@ -112,6 +114,7 @@ router.get("/backup", requireRole("admin"), async (req, res) => {
         repairs,
          repairPhotos: repairPhotos.filter((photo) => repairs.some((repair) => repair.id === photo.repairId)),
          repairParts: repairParts.filter((part) => repairs.some((repair) => repair.id === part.repairId)),
+         recyclingReceipts,
         auditLogs,
       },
     };

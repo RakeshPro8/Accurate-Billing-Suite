@@ -28,6 +28,8 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { A4DocumentFrame, A4Section } from "@/components/A4DocumentFrame";
+import { RecyclingReceiptPanel } from "@/components/RecyclingReceiptPanel";
 
 export default function SaleDetail() {
   const params = useParams<{ id: string }>();
@@ -285,43 +287,14 @@ export default function SaleDetail() {
 
       {/* ── A4 Invoice — hidden in receipt mode via CSS ── */}
       <div ref={invoiceRef} className="invoice-print-area">
-        <div className="bg-white rounded-xl border shadow-sm overflow-hidden">
-          {/* Header */}
-          <div className="bg-[#0d4d47] text-white p-8">
-            <div className="flex items-start justify-between">
-              <div>
-                <div className="flex items-center gap-4 mb-3">
-                  {settings?.logoUrl && (
-                    <div className="bg-white rounded p-2">
-                      <img
-                        src={settings.logoUrl}
-                        alt="logo"
-                        className="max-h-14 max-w-[140px] object-contain"
-                      />
-                    </div>
-                  )}
-                  <div className="text-2xl font-bold mb-0.5">{settings?.businessName ?? "Mobilinq"}</div>
-                </div>
-                {settings?.businessAddress && <div className="text-sm text-teal-200">{settings.businessAddress}</div>}
-                {settings?.businessPhone && <div className="text-sm text-teal-200">{settings.businessPhone}</div>}
-                {settings?.businessEmail && <div className="text-sm text-teal-200">{settings.businessEmail}</div>}
-              </div>
-              <div className="text-right">
-                <div className="text-3xl font-bold text-teal-300">INVOICE</div>
-                <div className="text-lg font-mono mt-1">{sale.invoiceNumber}</div>
-                <div className="text-sm text-teal-200 mt-1">Date: {formatDate(sale.createdAt)}</div>
-                {sale.dueDate && <div className="text-sm text-teal-200">Due: {formatDate(sale.dueDate)}</div>}
-              </div>
-            </div>
-          </div>
-
-          <div className="p-8">
+        <A4DocumentFrame business={business} title="Facture" documentNumber={sale.invoiceNumber} dateLabel="Date" dateValue={formatDate(sale.createdAt)} secondaryDate={sale.dueDate ? { label: "Échéance", value: formatDate(sale.dueDate) } : null}>
+          <A4Section title="Facturé à">
             {/* Bill To */}
-            <div className="mb-8">
-              <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Bill To</div>
+            <div>
               <div className="font-semibold text-lg">{sale.customerName || "Walk-in Customer"}</div>
               {sale.customerEmail && <div className="text-sm text-muted-foreground">{sale.customerEmail}</div>}
             </div>
+          </A4Section>
 
             {/* Items Table */}
             <table className="w-full text-sm mb-6">
@@ -374,16 +347,16 @@ export default function SaleDetail() {
             </div>
 
             {/* Footer */}
-            {(sale.notes || settings?.invoiceFooter || settings?.thankYouMessage) && (
+            {(sale.notes || settings?.thankYouMessage) && (
               <div className="mt-8 pt-6 border-t text-sm text-muted-foreground">
                 {sale.notes && <p className="mb-2"><span className="font-medium">Notes:</span> {sale.notes}</p>}
                 {settings?.thankYouMessage && <p className="font-medium text-[#0d4d47]">{settings.thankYouMessage}</p>}
-                {settings?.invoiceFooter && <p className="text-xs mt-1">{settings.invoiceFooter}</p>}
               </div>
             )}
-          </div>
-        </div>
+        </A4DocumentFrame>
       </div>
+
+      <RecyclingReceiptPanel sale={sale} business={business} />
 
       {/* ── TSP100 tip card (screen only) ── */}
       <Card className="no-print border-teal-200 bg-teal-50/50">

@@ -39,6 +39,8 @@ tags:
     description: Canadian store tax profiles
   - name: customer-rights
     description: Reviewed internal customer-rights guidance
+  - name: recycling
+    description: Zero-value device recycling handoff receipts
 
 paths:
   /healthz:
@@ -276,7 +278,7 @@ paths:
       summary: List a privacy-safe audit trail
       parameters:
         - { name: action, in: query, schema: { type: string, enum: [create, update, delete, login, logout, print, payment, store, authentication, convert, status_change] } }
-        - { name: entityType, in: query, schema: { type: string, enum: [sale, quotation, repair, repair_photo, customer, product, service, employee, settings, store, backup, tax_profile, guidance_entry] } }
+        - { name: entityType, in: query, schema: { type: string, enum: [sale, quotation, repair, repair_photo, recycling_receipt, customer, product, service, employee, settings, store, backup, tax_profile, guidance_entry] } }
         - { name: storeId, in: query, description: "Location to inspect. If omitted, the employee's current location is used.", schema: { type: integer, minimum: 1 } }
         - { name: actor, in: query, description: "Employee name or ID to match.", schema: { type: string, maxLength: 120 } }
         - { name: dateFrom, in: query, schema: { type: string, maxLength: 40 } }
@@ -318,7 +320,7 @@ paths:
       summary: Download a privacy-safe filtered audit trail CSV
       parameters:
         - { name: action, in: query, schema: { type: string, enum: [create, update, delete, login, logout, print, payment, store, authentication, convert, status_change] } }
-        - { name: entityType, in: query, schema: { type: string, enum: [sale, quotation, repair, repair_photo, customer, product, service, employee, settings, store, backup, tax_profile, guidance_entry] } }
+        - { name: entityType, in: query, schema: { type: string, enum: [sale, quotation, repair, repair_photo, recycling_receipt, customer, product, service, employee, settings, store, backup, tax_profile, guidance_entry] } }
         - { name: storeId, in: query, description: "Location to inspect. If omitted, the employee's current location is used.", schema: { type: integer, minimum: 1 } }
         - { name: actor, in: query, description: "Employee name or ID to match.", schema: { type: string, maxLength: 120 } }
         - { name: dateFrom, in: query, schema: { type: string, maxLength: 40 } }
@@ -1186,6 +1188,89 @@ paths:
       responses:
         "204":
           description: Deleted
+
+  /recycling-receipts:
+    get:
+      operationId: getRecyclingReceipts
+      tags: [recycling]
+      summary: List recycling receipts for the current store
+      parameters:
+        - { name: saleId, in: query, schema: { type: integer, minimum: 1 } }
+      responses:
+        "200":
+          description: Recycling receipts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RecyclingReceipt"
+    post:
+      operationId: createRecyclingReceipt
+      tags: [recycling]
+      summary: Create a draft zero-value recycling receipt
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecyclingReceiptInput"
+      responses:
+        "201":
+          description: Draft recycling receipt
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecyclingReceipt"
+
+  /recycling-receipts/{id}:
+    get:
+      operationId: getRecyclingReceipt
+      tags: [recycling]
+      summary: Get a recycling receipt
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, minimum: 1 } }
+      responses:
+        "200":
+          description: Recycling receipt
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecyclingReceipt"
+    patch:
+      operationId: updateRecyclingReceipt
+      tags: [recycling]
+      summary: Update a draft recycling receipt
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, minimum: 1 } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecyclingReceiptUpdate"
+      responses:
+        "200":
+          description: Updated draft recycling receipt
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecyclingReceipt"
+
+  /recycling-receipts/{id}/finalize:
+    post:
+      operationId: finalizeRecyclingReceipt
+      tags: [recycling]
+      summary: Finalize and number a recycling receipt
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, minimum: 1 } }
+      responses:
+        "200":
+          description: Finalized recycling receipt
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecyclingReceipt"
 
   /sales/{id}/send-email:
     post:
@@ -2327,6 +2412,68 @@ components:
           items:
             $ref: "#/components/schemas/LineItemInput"
 
+    RecyclingReceipt:
+      type: object
+      required: [id, storeId, customerName, customerPhone, deviceType, deviceBrand, deviceModel, deviceColour, declaredCondition, accessories, handoffDate, status, createdAt]
+      properties:
+        id: { type: integer }
+        documentNumber: { type: ["string", "null"] }
+        storeId: { type: integer }
+        saleId: { type: ["integer", "null"] }
+        customerId: { type: ["integer", "null"] }
+        customerName: { type: string }
+        customerPhone: { type: string }
+        customerEmail: { type: ["string", "null"] }
+        deviceType: { type: string }
+        deviceBrand: { type: string }
+        deviceModel: { type: string }
+        deviceColour: { type: string }
+        declaredCondition: { type: string, enum: [working, damaged, bricked, unknown] }
+        accessories: { type: string }
+        serialOrImei: { type: ["string", "null"] }
+        handoffDate: { type: string, format: date }
+        receivedByEmployeeId: { type: ["integer", "null"] }
+        receivedByEmployeeName: { type: ["string", "null"] }
+        status: { type: string, enum: [draft, finalized] }
+        createdAt: { type: string, format: date-time }
+        finalizedAt: { type: ["string", "null"], format: date-time }
+
+    RecyclingReceiptInput:
+      type: object
+      required: [customerName, customerPhone, deviceType, deviceBrand, deviceModel, deviceColour, declaredCondition, accessories, handoffDate]
+      additionalProperties: false
+      properties:
+        saleId: { type: integer, minimum: 1 }
+        customerId: { type: integer, minimum: 1 }
+        customerName: { type: string, minLength: 1, maxLength: 200 }
+        customerPhone: { type: string, minLength: 1, maxLength: 50 }
+        customerEmail: { type: string, format: email, maxLength: 254 }
+        deviceType: { type: string, minLength: 1, maxLength: 100 }
+        deviceBrand: { type: string, minLength: 1, maxLength: 100 }
+        deviceModel: { type: string, minLength: 1, maxLength: 150 }
+        deviceColour: { type: string, minLength: 1, maxLength: 100 }
+        declaredCondition: { type: string, enum: [working, damaged, bricked, unknown] }
+        accessories: { type: string, minLength: 1, maxLength: 500 }
+        serialOrImei: { type: string, maxLength: 150 }
+        handoffDate: { type: string, format: date }
+
+    RecyclingReceiptUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        customerId: { type: ["integer", "null"], minimum: 1 }
+        customerName: { type: string, minLength: 1, maxLength: 200 }
+        customerPhone: { type: string, minLength: 1, maxLength: 50 }
+        customerEmail: { type: ["string", "null"], format: email, maxLength: 254 }
+        deviceType: { type: string, minLength: 1, maxLength: 100 }
+        deviceBrand: { type: string, minLength: 1, maxLength: 100 }
+        deviceModel: { type: string, minLength: 1, maxLength: 150 }
+        deviceColour: { type: string, minLength: 1, maxLength: 100 }
+        declaredCondition: { type: string, enum: [working, damaged, bricked, unknown] }
+        accessories: { type: string, minLength: 1, maxLength: 500 }
+        serialOrImei: { type: ["string", "null"], maxLength: 150 }
+        handoffDate: { type: string, format: date }
+
     PaymentInput:
       type: object
       required: [amount, method]
@@ -2778,7 +2925,7 @@ components:
         employeeName: { type: ["string", "null"] }
         storeId: { type: ["integer", "null"] }
         action: { type: string, enum: [create, update, delete, login, logout, print, payment, store, authentication, convert, status_change] }
-        entityType: { type: string, enum: [sale, quotation, repair, repair_photo, customer, product, service, employee, settings, store, backup, tax_profile, guidance_entry] }
+        entityType: { type: string, enum: [sale, quotation, repair, repair_photo, recycling_receipt, customer, product, service, employee, settings, store, backup, tax_profile, guidance_entry] }
         entityId: { type: ["string", "null"] }
         details: { type: ["object", "null"], additionalProperties: true }
         createdAt: { type: string, format: date-time }
@@ -2789,7 +2936,7 @@ components:
       additionalProperties: false
       properties:
         action: { type: string, enum: [print, payment, status_change] }
-        entityType: { type: string, enum: [sale, quotation, repair, backup] }
+        entityType: { type: string, enum: [sale, quotation, repair, recycling_receipt, backup] }
         entityId: { type: string }
 
     SyncOperation:

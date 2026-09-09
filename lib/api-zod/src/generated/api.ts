@@ -533,7 +533,7 @@ export const getAuditLogsQueryLimitMax = 500;
 
 export const GetAuditLogsQueryParams = zod.object({
   "action": zod.enum(['create', 'update', 'delete', 'login', 'logout', 'print', 'payment', 'store', 'authentication', 'convert', 'status_change']).optional(),
-  "entityType": zod.enum(['sale', 'quotation', 'repair', 'repair_photo', 'customer', 'product', 'service', 'employee', 'settings', 'store', 'backup', 'tax_profile', 'guidance_entry']).optional(),
+  "entityType": zod.enum(['sale', 'quotation', 'repair', 'repair_photo', 'recycling_receipt', 'customer', 'product', 'service', 'employee', 'settings', 'store', 'backup', 'tax_profile', 'guidance_entry']).optional(),
   "storeId": zod.coerce.number().int().min(1).optional().describe('Location to inspect. If omitted, the employee\'s current location is used.'),
   "actor": zod.coerce.string().max(getAuditLogsQueryActorMax).optional().describe('Employee name or ID to match.'),
   "dateFrom": zod.coerce.string().max(getAuditLogsQueryDateFromMax).optional(),
@@ -547,7 +547,7 @@ export const GetAuditLogsResponseItem = zod.object({
   "employeeName": zod.string().nullish(),
   "storeId": zod.number().int().nullish(),
   "action": zod.enum(['create', 'update', 'delete', 'login', 'logout', 'print', 'payment', 'store', 'authentication', 'convert', 'status_change']),
-  "entityType": zod.enum(['sale', 'quotation', 'repair', 'repair_photo', 'customer', 'product', 'service', 'employee', 'settings', 'store', 'backup', 'tax_profile', 'guidance_entry']),
+  "entityType": zod.enum(['sale', 'quotation', 'repair', 'repair_photo', 'recycling_receipt', 'customer', 'product', 'service', 'employee', 'settings', 'store', 'backup', 'tax_profile', 'guidance_entry']),
   "entityId": zod.string().nullish(),
   "details": zod.record(zod.string(), zod.unknown()).nullish(),
   "createdAt": zod.coerce.date()
@@ -560,7 +560,7 @@ export const GetAuditLogsResponse = zod.array(GetAuditLogsResponseItem)
  */
 export const RecordAuditEventBody = zod.object({
   "action": zod.enum(['print', 'payment', 'status_change']),
-  "entityType": zod.enum(['sale', 'quotation', 'repair', 'backup']),
+  "entityType": zod.enum(['sale', 'quotation', 'repair', 'recycling_receipt', 'backup']),
   "entityId": zod.string().optional()
 })
 
@@ -586,7 +586,7 @@ export const downloadAuditLogsExportQueryLimitMax = 500;
 
 export const DownloadAuditLogsExportQueryParams = zod.object({
   "action": zod.enum(['create', 'update', 'delete', 'login', 'logout', 'print', 'payment', 'store', 'authentication', 'convert', 'status_change']).optional(),
-  "entityType": zod.enum(['sale', 'quotation', 'repair', 'repair_photo', 'customer', 'product', 'service', 'employee', 'settings', 'store', 'backup', 'tax_profile', 'guidance_entry']).optional(),
+  "entityType": zod.enum(['sale', 'quotation', 'repair', 'repair_photo', 'recycling_receipt', 'customer', 'product', 'service', 'employee', 'settings', 'store', 'backup', 'tax_profile', 'guidance_entry']).optional(),
   "storeId": zod.coerce.number().int().min(1).optional().describe('Location to inspect. If omitted, the employee\'s current location is used.'),
   "actor": zod.coerce.string().max(downloadAuditLogsExportQueryActorMax).optional().describe('Employee name or ID to match.'),
   "dateFrom": zod.coerce.string().max(downloadAuditLogsExportQueryDateFromMax).optional(),
@@ -2169,6 +2169,249 @@ export const DeleteSaleParams = zod.object({
 })
 
 export const DeleteSaleResponse = zod.void()
+
+
+/**
+ * @summary List recycling receipts for the current store
+ */
+
+
+
+export const GetRecyclingReceiptsQueryParams = zod.object({
+  "saleId": zod.coerce.number().int().min(1).optional()
+})
+
+export const GetRecyclingReceiptsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "documentNumber": zod.string().nullish(),
+  "storeId": zod.number().int(),
+  "saleId": zod.number().int().nullish(),
+  "customerId": zod.number().int().nullish(),
+  "customerName": zod.string(),
+  "customerPhone": zod.string(),
+  "customerEmail": zod.string().nullish(),
+  "deviceType": zod.string(),
+  "deviceBrand": zod.string(),
+  "deviceModel": zod.string(),
+  "deviceColour": zod.string(),
+  "declaredCondition": zod.enum(['working', 'damaged', 'bricked', 'unknown']),
+  "accessories": zod.string(),
+  "serialOrImei": zod.string().nullish(),
+  "handoffDate": zod.coerce.date(),
+  "receivedByEmployeeId": zod.number().int().nullish(),
+  "receivedByEmployeeName": zod.string().nullish(),
+  "status": zod.enum(['draft', 'finalized']),
+  "createdAt": zod.coerce.date(),
+  "finalizedAt": zod.coerce.date().nullish()
+})
+export const GetRecyclingReceiptsResponse = zod.array(GetRecyclingReceiptsResponseItem)
+
+
+/**
+ * @summary Create a draft zero-value recycling receipt
+ */
+
+
+export const createRecyclingReceiptBodyCustomerNameMax = 200;
+
+export const createRecyclingReceiptBodyCustomerPhoneMax = 50;
+
+export const createRecyclingReceiptBodyCustomerEmailMax = 254;
+
+export const createRecyclingReceiptBodyDeviceTypeMax = 100;
+
+export const createRecyclingReceiptBodyDeviceBrandMax = 100;
+
+export const createRecyclingReceiptBodyDeviceModelMax = 150;
+
+export const createRecyclingReceiptBodyDeviceColourMax = 100;
+
+export const createRecyclingReceiptBodyAccessoriesMax = 500;
+
+export const createRecyclingReceiptBodySerialOrImeiMax = 150;
+
+
+
+export const CreateRecyclingReceiptBody = zod.object({
+  "saleId": zod.number().int().min(1).optional(),
+  "customerId": zod.number().int().min(1).optional(),
+  "customerName": zod.string().min(1).max(createRecyclingReceiptBodyCustomerNameMax),
+  "customerPhone": zod.string().min(1).max(createRecyclingReceiptBodyCustomerPhoneMax),
+  "customerEmail": zod.string().email().max(createRecyclingReceiptBodyCustomerEmailMax).optional(),
+  "deviceType": zod.string().min(1).max(createRecyclingReceiptBodyDeviceTypeMax),
+  "deviceBrand": zod.string().min(1).max(createRecyclingReceiptBodyDeviceBrandMax),
+  "deviceModel": zod.string().min(1).max(createRecyclingReceiptBodyDeviceModelMax),
+  "deviceColour": zod.string().min(1).max(createRecyclingReceiptBodyDeviceColourMax),
+  "declaredCondition": zod.enum(['working', 'damaged', 'bricked', 'unknown']),
+  "accessories": zod.string().min(1).max(createRecyclingReceiptBodyAccessoriesMax),
+  "serialOrImei": zod.string().max(createRecyclingReceiptBodySerialOrImeiMax).optional(),
+  "handoffDate": zod.coerce.date()
+})
+
+export const CreateRecyclingReceiptResponse = zod.object({
+  "id": zod.number().int(),
+  "documentNumber": zod.string().nullish(),
+  "storeId": zod.number().int(),
+  "saleId": zod.number().int().nullish(),
+  "customerId": zod.number().int().nullish(),
+  "customerName": zod.string(),
+  "customerPhone": zod.string(),
+  "customerEmail": zod.string().nullish(),
+  "deviceType": zod.string(),
+  "deviceBrand": zod.string(),
+  "deviceModel": zod.string(),
+  "deviceColour": zod.string(),
+  "declaredCondition": zod.enum(['working', 'damaged', 'bricked', 'unknown']),
+  "accessories": zod.string(),
+  "serialOrImei": zod.string().nullish(),
+  "handoffDate": zod.coerce.date(),
+  "receivedByEmployeeId": zod.number().int().nullish(),
+  "receivedByEmployeeName": zod.string().nullish(),
+  "status": zod.enum(['draft', 'finalized']),
+  "createdAt": zod.coerce.date(),
+  "finalizedAt": zod.coerce.date().nullish()
+})
+
+
+/**
+ * @summary Get a recycling receipt
+ */
+
+
+
+export const GetRecyclingReceiptParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+export const GetRecyclingReceiptResponse = zod.object({
+  "id": zod.number().int(),
+  "documentNumber": zod.string().nullish(),
+  "storeId": zod.number().int(),
+  "saleId": zod.number().int().nullish(),
+  "customerId": zod.number().int().nullish(),
+  "customerName": zod.string(),
+  "customerPhone": zod.string(),
+  "customerEmail": zod.string().nullish(),
+  "deviceType": zod.string(),
+  "deviceBrand": zod.string(),
+  "deviceModel": zod.string(),
+  "deviceColour": zod.string(),
+  "declaredCondition": zod.enum(['working', 'damaged', 'bricked', 'unknown']),
+  "accessories": zod.string(),
+  "serialOrImei": zod.string().nullish(),
+  "handoffDate": zod.coerce.date(),
+  "receivedByEmployeeId": zod.number().int().nullish(),
+  "receivedByEmployeeName": zod.string().nullish(),
+  "status": zod.enum(['draft', 'finalized']),
+  "createdAt": zod.coerce.date(),
+  "finalizedAt": zod.coerce.date().nullish()
+})
+
+
+/**
+ * @summary Update a draft recycling receipt
+ */
+
+
+
+export const UpdateRecyclingReceiptParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+
+export const updateRecyclingReceiptBodyCustomerNameMax = 200;
+
+export const updateRecyclingReceiptBodyCustomerPhoneMax = 50;
+
+export const updateRecyclingReceiptBodyCustomerEmailMax = 254;
+
+export const updateRecyclingReceiptBodyDeviceTypeMax = 100;
+
+export const updateRecyclingReceiptBodyDeviceBrandMax = 100;
+
+export const updateRecyclingReceiptBodyDeviceModelMax = 150;
+
+export const updateRecyclingReceiptBodyDeviceColourMax = 100;
+
+export const updateRecyclingReceiptBodyAccessoriesMax = 500;
+
+export const updateRecyclingReceiptBodySerialOrImeiMax = 150;
+
+
+
+export const UpdateRecyclingReceiptBody = zod.object({
+  "customerId": zod.number().int().min(1).nullish(),
+  "customerName": zod.string().min(1).max(updateRecyclingReceiptBodyCustomerNameMax).optional(),
+  "customerPhone": zod.string().min(1).max(updateRecyclingReceiptBodyCustomerPhoneMax).optional(),
+  "customerEmail": zod.string().email().max(updateRecyclingReceiptBodyCustomerEmailMax).nullish(),
+  "deviceType": zod.string().min(1).max(updateRecyclingReceiptBodyDeviceTypeMax).optional(),
+  "deviceBrand": zod.string().min(1).max(updateRecyclingReceiptBodyDeviceBrandMax).optional(),
+  "deviceModel": zod.string().min(1).max(updateRecyclingReceiptBodyDeviceModelMax).optional(),
+  "deviceColour": zod.string().min(1).max(updateRecyclingReceiptBodyDeviceColourMax).optional(),
+  "declaredCondition": zod.enum(['working', 'damaged', 'bricked', 'unknown']).optional(),
+  "accessories": zod.string().min(1).max(updateRecyclingReceiptBodyAccessoriesMax).optional(),
+  "serialOrImei": zod.string().max(updateRecyclingReceiptBodySerialOrImeiMax).nullish(),
+  "handoffDate": zod.coerce.date().optional()
+})
+
+export const UpdateRecyclingReceiptResponse = zod.object({
+  "id": zod.number().int(),
+  "documentNumber": zod.string().nullish(),
+  "storeId": zod.number().int(),
+  "saleId": zod.number().int().nullish(),
+  "customerId": zod.number().int().nullish(),
+  "customerName": zod.string(),
+  "customerPhone": zod.string(),
+  "customerEmail": zod.string().nullish(),
+  "deviceType": zod.string(),
+  "deviceBrand": zod.string(),
+  "deviceModel": zod.string(),
+  "deviceColour": zod.string(),
+  "declaredCondition": zod.enum(['working', 'damaged', 'bricked', 'unknown']),
+  "accessories": zod.string(),
+  "serialOrImei": zod.string().nullish(),
+  "handoffDate": zod.coerce.date(),
+  "receivedByEmployeeId": zod.number().int().nullish(),
+  "receivedByEmployeeName": zod.string().nullish(),
+  "status": zod.enum(['draft', 'finalized']),
+  "createdAt": zod.coerce.date(),
+  "finalizedAt": zod.coerce.date().nullish()
+})
+
+
+/**
+ * @summary Finalize and number a recycling receipt
+ */
+
+
+
+export const FinalizeRecyclingReceiptParams = zod.object({
+  "id": zod.coerce.number().int().min(1)
+})
+
+export const FinalizeRecyclingReceiptResponse = zod.object({
+  "id": zod.number().int(),
+  "documentNumber": zod.string().nullish(),
+  "storeId": zod.number().int(),
+  "saleId": zod.number().int().nullish(),
+  "customerId": zod.number().int().nullish(),
+  "customerName": zod.string(),
+  "customerPhone": zod.string(),
+  "customerEmail": zod.string().nullish(),
+  "deviceType": zod.string(),
+  "deviceBrand": zod.string(),
+  "deviceModel": zod.string(),
+  "deviceColour": zod.string(),
+  "declaredCondition": zod.enum(['working', 'damaged', 'bricked', 'unknown']),
+  "accessories": zod.string(),
+  "serialOrImei": zod.string().nullish(),
+  "handoffDate": zod.coerce.date(),
+  "receivedByEmployeeId": zod.number().int().nullish(),
+  "receivedByEmployeeName": zod.string().nullish(),
+  "status": zod.enum(['draft', 'finalized']),
+  "createdAt": zod.coerce.date(),
+  "finalizedAt": zod.coerce.date().nullish()
+})
 
 
 /**

@@ -14,6 +14,7 @@ export const AuditLogEntityType = {
   quotation: 'quotation',
   repair: 'repair',
   repair_photo: 'repair_photo',
+  recycling_receipt: 'recycling_receipt',
   customer: 'customer',
   product: 'product',
   service: 'service',

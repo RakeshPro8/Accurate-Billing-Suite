@@ -10,7 +10,7 @@ import { HttpError } from "../lib/http";
 const router = Router();
 
 const actions = ["create", "update", "delete", "login", "logout", "print", "payment", "store", "authentication", "convert", "status_change"] as const;
-const entities = ["sale", "quotation", "repair", "repair_photo", "customer", "product", "service", "employee", "settings", "store", "backup", "tax_profile", "guidance_entry"] as const;
+const entities = ["sale", "quotation", "repair", "repair_photo", "recycling_receipt", "customer", "product", "service", "employee", "settings", "store", "backup", "tax_profile", "guidance_entry"] as const;
 const auditQuery = z.object({
   action: z.enum(actions).optional(),
   entityType: z.enum(entities).optional(),
@@ -85,7 +85,7 @@ router.get("/export", requireRole("manager"), async (req, res) => {
 
 router.post("/", requireAuth, async (req, res) => {
   const actions = new Set<AuditAction>(["print", "payment", "status_change"]);
-  const entities = new Set<AuditEntityType>(["sale", "quotation", "repair", "backup"]);
+  const entities = new Set<AuditEntityType>(["sale", "quotation", "repair", "recycling_receipt", "backup"]);
   const { action, entityType, entityId } = req.body ?? {};
   if (!actions.has(action) || !entities.has(entityType)) return res.status(400).json({ error: "Unsupported audit event." });
   if (entityId !== undefined && (typeof entityId !== "string" && !Number.isSafeInteger(entityId) || String(entityId).length > 64)) return res.status(400).json({ error: "Invalid audit event." });

@@ -725,6 +725,19 @@ html[data-ui-density="comfortable"] .app-header { min-height: 3.5rem; }
 
 .receipt-print-area { display: none; }
 
+.a4-document {
+  max-width: 210mm;
+  margin-inline: auto;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+.a4-document table tr,
+.a4-section,
+.a4-document-footer {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
 @media print {
   /* Keep the authenticated shell and screen-only controls out of every print. */
   .no-print { display: none !important; }
@@ -740,6 +753,27 @@ html[data-ui-density="comfortable"] .app-header { min-height: 3.5rem; }
     min-height: 0 !important;
     margin: 0 !important;
     overflow: visible !important;
+  }
+  .recycling-print-area {
+    display: none !important;
+  }
+  .a4-document {
+    width: 210mm !important;
+    max-width: 210mm !important;
+    min-height: 297mm;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+  .a4-document-header {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  body.recycling-mode #root .invoice-print-area:not(.recycling-print-area) {
+    display: none !important;
+  }
+  body.recycling-mode #root .recycling-print-area {
+    display: block !important;
   }
 
   /*
@@ -783,6 +817,7 @@ html[data-ui-density="comfortable"] .app-header { min-height: 3.5rem; }
     page-break-inside: avoid;
   }
   body.receipt-mode .invoice-print-area { display: none !important; }
+  body.receipt-mode .recycling-print-area { display: none !important; }
 }
 
 /* ─── PUBLIC SALES PAGE / SIGNAL COUNTER ─────────────────────

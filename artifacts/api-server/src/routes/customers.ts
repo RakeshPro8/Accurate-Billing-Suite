@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { customersTable, salesTable } from "@workspace/db";
+import { customersTable, salesTable, recyclingReceiptsTable } from "@workspace/db";
 import { and, eq, ilike, or, sql, sum, count } from "drizzle-orm";
 import { requireCurrentStoreId } from "../lib/stores";
 import { HttpError } from "../lib/http";
@@ -143,7 +143,14 @@ router.delete("/:id", async (req, res) => {
     const storeId = await requireCurrentStoreId(req);
     const id = Number(req.params.id);
     if (!Number.isSafeInteger(id) || id < 1) throw new HttpError(400, "Invalid customer id.");
-    await db.delete(customersTable).where(and(eq(customersTable.id, id), eq(customersTable.storeId, storeId)));
+     await db.transaction(async (tx) => {
+       await tx.update(recyclingReceiptsTable).set({ customerId: null }).where(and(
+         eq(recyclingReceiptsTable.customerId, id),
+         eq(recyclingReceiptsTable.storeId, storeId),
+         eq(recyclingReceiptsTable.status, "draft"),
+       ));
+       await tx.delete(customersTable).where(and(eq(customersTable.id, id), eq(customersTable.storeId, storeId)));
+     });
     return res.status(204).send();
   } catch (e) {
     throw e;

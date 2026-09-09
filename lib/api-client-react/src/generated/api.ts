@@ -65,6 +65,7 @@ import type {
   GetProductsParams,
   GetPurchaseOrders200Item,
   GetQuotationsParams,
+  GetRecyclingReceiptsParams,
   GetRepairsParams,
   GetSalesParams,
   GetSuppliers200Item,
@@ -97,6 +98,9 @@ import type {
   ReceivablesReport,
   ReceivePurchaseOrder201,
   RecordAuditEvent201,
+  RecyclingReceipt,
+  RecyclingReceiptInput,
+  RecyclingReceiptUpdate,
   RefundInput,
   ReleaseInventoryReservation200,
   Repair,
@@ -5372,6 +5376,396 @@ export const useDeleteSale = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getDeleteSaleMutationOptions(options));
+    }
+
+export const getGetRecyclingReceiptsUrl = (params?: GetRecyclingReceiptsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/recycling-receipts?${stringifiedParams}` : `/api/recycling-receipts`
+}
+
+/**
+ * @summary List recycling receipts for the current store
+ */
+export const getRecyclingReceipts = async (params?: GetRecyclingReceiptsParams, options?: Parameters<typeof customFetch>[1]): Promise<RecyclingReceipt[]> => {
+
+  return customFetch<RecyclingReceipt[]>(getGetRecyclingReceiptsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRecyclingReceiptsQueryKey = (params?: GetRecyclingReceiptsParams,) => {
+    return [
+    `/api/recycling-receipts`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetRecyclingReceiptsQueryOptions = <TData = Awaited<ReturnType<typeof getRecyclingReceipts>>, TError = ErrorType<unknown>>(params?: GetRecyclingReceiptsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRecyclingReceipts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRecyclingReceiptsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRecyclingReceipts>>> = ({ signal }) => getRecyclingReceipts(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRecyclingReceipts>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRecyclingReceiptsQueryResult = NonNullable<Awaited<ReturnType<typeof getRecyclingReceipts>>>
+export type GetRecyclingReceiptsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List recycling receipts for the current store
+ */
+
+export function useGetRecyclingReceipts<TData = Awaited<ReturnType<typeof getRecyclingReceipts>>, TError = ErrorType<unknown>>(
+ params?: GetRecyclingReceiptsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRecyclingReceipts>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRecyclingReceiptsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateRecyclingReceiptUrl = () => {
+
+
+
+
+  return `/api/recycling-receipts`
+}
+
+/**
+ * @summary Create a draft zero-value recycling receipt
+ */
+export const createRecyclingReceipt = async (recyclingReceiptInput: RecyclingReceiptInput, options?: Parameters<typeof customFetch>[1]): Promise<RecyclingReceipt> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return customFetch<RecyclingReceipt>(getCreateRecyclingReceiptUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(recyclingReceiptInput)
+  }
+);}
+
+
+
+
+
+export const getCreateRecyclingReceiptMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createRecyclingReceipt>>, TError,CreateRecyclingReceiptMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createRecyclingReceipt>>, TError,CreateRecyclingReceiptMutationVariables, TContext> => {
+
+const mutationKey = ['createRecyclingReceipt'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createRecyclingReceipt>>, CreateRecyclingReceiptMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createRecyclingReceipt(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateRecyclingReceiptMutationResult = NonNullable<Awaited<ReturnType<typeof createRecyclingReceipt>>>
+    export type CreateRecyclingReceiptMutationBody = BodyType<RecyclingReceiptInput>
+    export type CreateRecyclingReceiptMutationError = ErrorType<unknown>
+    export type CreateRecyclingReceiptMutationVariables = {data: BodyType<RecyclingReceiptInput>}
+
+    /**
+ * @summary Create a draft zero-value recycling receipt
+ */
+export const useCreateRecyclingReceipt = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createRecyclingReceipt>>, TError,CreateRecyclingReceiptMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createRecyclingReceipt>>,
+        TError,
+        CreateRecyclingReceiptMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreateRecyclingReceiptMutationOptions(options));
+    }
+
+export const getGetRecyclingReceiptUrl = (id: number,) => {
+
+
+
+
+  return `/api/recycling-receipts/${id}`
+}
+
+/**
+ * @summary Get a recycling receipt
+ */
+export const getRecyclingReceipt = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<RecyclingReceipt> => {
+
+  return customFetch<RecyclingReceipt>(getGetRecyclingReceiptUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRecyclingReceiptQueryKey = (id: number,) => {
+    return [
+    `/api/recycling-receipts/${id}`
+    ] as const;
+    }
+
+
+export const getGetRecyclingReceiptQueryOptions = <TData = Awaited<ReturnType<typeof getRecyclingReceipt>>, TError = ErrorType<unknown>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRecyclingReceipt>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRecyclingReceiptQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRecyclingReceipt>>> = ({ signal }) => getRecyclingReceipt(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRecyclingReceipt>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRecyclingReceiptQueryResult = NonNullable<Awaited<ReturnType<typeof getRecyclingReceipt>>>
+export type GetRecyclingReceiptQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get a recycling receipt
+ */
+
+export function useGetRecyclingReceipt<TData = Awaited<ReturnType<typeof getRecyclingReceipt>>, TError = ErrorType<unknown>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRecyclingReceipt>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRecyclingReceiptQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateRecyclingReceiptUrl = (id: number,) => {
+
+
+
+
+  return `/api/recycling-receipts/${id}`
+}
+
+/**
+ * @summary Update a draft recycling receipt
+ */
+export const updateRecyclingReceipt = async (id: number,
+    recyclingReceiptUpdate: RecyclingReceiptUpdate, options?: Parameters<typeof customFetch>[1]): Promise<RecyclingReceipt> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return customFetch<RecyclingReceipt>(getUpdateRecyclingReceiptUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(recyclingReceiptUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateRecyclingReceiptMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRecyclingReceipt>>, TError,UpdateRecyclingReceiptMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateRecyclingReceipt>>, TError,UpdateRecyclingReceiptMutationVariables, TContext> => {
+
+const mutationKey = ['updateRecyclingReceipt'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateRecyclingReceipt>>, UpdateRecyclingReceiptMutationVariables> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateRecyclingReceipt(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateRecyclingReceiptMutationResult = NonNullable<Awaited<ReturnType<typeof updateRecyclingReceipt>>>
+    export type UpdateRecyclingReceiptMutationBody = BodyType<RecyclingReceiptUpdate>
+    export type UpdateRecyclingReceiptMutationError = ErrorType<unknown>
+    export type UpdateRecyclingReceiptMutationVariables = {id: number;data: BodyType<RecyclingReceiptUpdate>}
+
+    /**
+ * @summary Update a draft recycling receipt
+ */
+export const useUpdateRecyclingReceipt = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRecyclingReceipt>>, TError,UpdateRecyclingReceiptMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateRecyclingReceipt>>,
+        TError,
+        UpdateRecyclingReceiptMutationVariables,
+        TContext
+      > => {
+      return useMutation(getUpdateRecyclingReceiptMutationOptions(options));
+    }
+
+export const getFinalizeRecyclingReceiptUrl = (id: number,) => {
+
+
+
+
+  return `/api/recycling-receipts/${id}/finalize`
+}
+
+/**
+ * @summary Finalize and number a recycling receipt
+ */
+export const finalizeRecyclingReceipt = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<RecyclingReceipt> => {
+
+  return customFetch<RecyclingReceipt>(getFinalizeRecyclingReceiptUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getFinalizeRecyclingReceiptMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof finalizeRecyclingReceipt>>, TError,FinalizeRecyclingReceiptMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof finalizeRecyclingReceipt>>, TError,FinalizeRecyclingReceiptMutationVariables, TContext> => {
+
+const mutationKey = ['finalizeRecyclingReceipt'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof finalizeRecyclingReceipt>>, FinalizeRecyclingReceiptMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  finalizeRecyclingReceipt(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type FinalizeRecyclingReceiptMutationResult = NonNullable<Awaited<ReturnType<typeof finalizeRecyclingReceipt>>>
+
+    export type FinalizeRecyclingReceiptMutationError = ErrorType<unknown>
+    export type FinalizeRecyclingReceiptMutationVariables = {id: number}
+
+    /**
+ * @summary Finalize and number a recycling receipt
+ */
+export const useFinalizeRecyclingReceipt = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof finalizeRecyclingReceipt>>, TError,FinalizeRecyclingReceiptMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof finalizeRecyclingReceipt>>,
+        TError,
+        FinalizeRecyclingReceiptMutationVariables,
+        TContext
+      > => {
+      return useMutation(getFinalizeRecyclingReceiptMutationOptions(options));
     }
 
 export const getSendSaleEmailUrl = (id: number,) => {

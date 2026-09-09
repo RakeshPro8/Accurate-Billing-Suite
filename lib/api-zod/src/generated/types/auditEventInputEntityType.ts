@@ -13,5 +13,6 @@ export const AuditEventInputEntityType = {
   sale: 'sale',
   quotation: 'quotation',
   repair: 'repair',
+  recycling_receipt: 'recycling_receipt',
   backup: 'backup',
 } as const;
