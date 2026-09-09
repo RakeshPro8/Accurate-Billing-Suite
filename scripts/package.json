@@ -4,8 +4,13 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "db:sync": "tsx ./src/dev-schema.ts sync",
+    "db:verify": "tsx ./src/dev-schema.ts verify",
     "hello": "tsx ./src/hello.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@workspace/db": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "catalog:",

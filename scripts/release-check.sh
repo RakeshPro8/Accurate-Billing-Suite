@@ -84,6 +84,7 @@ rm -rf "$evidence_root" "$trace_dir" "$report_dir"
 
 pnpm --filter @workspace/api-spec run codegen
 pnpm run typecheck
+pnpm --filter @workspace/scripts run db:verify -- --require-default-location
 pnpm --filter @workspace/api-server run build
 
 if pnpm --filter @workspace/billing-app run test:browser:release; then

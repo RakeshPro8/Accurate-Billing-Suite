@@ -3,10 +3,11 @@
 ## Release gates
 
 1. Review the OpenAPI contract and run `pnpm --filter @workspace/api-spec run codegen`.
-2. Run `pnpm run typecheck`, `pnpm --filter @workspace/api-server run build`, the web/mobile builds, and the billing-app receipt print matrix. The release check installs Chromium, Firefox, and WebKit with Playwright's compatible host dependencies before running that matrix; a browser failure blocks promotion.
-3. Confirm `SESSION_SECRET`, `DATABASE_URL`, and (when email is enabled) the SMTP settings are present. Never put any of these values in a backup, log, mobile bundle, or support ticket.
-4. Take and inspect an admin redacted backup from Settings. It is an operational export, not a database restore.
-5. Review the backup and restore plan with an operator before applying a production schema or deployment change.
+2. Run `pnpm --filter @workspace/scripts run db:verify -- --require-default-location` after development schema setup and store onboarding. This fails before store-scoped checks when the Drizzle contract is incomplete or there is no active default location.
+3. Run `pnpm run typecheck`, `pnpm --filter @workspace/api-server run build`, the web/mobile builds, and the billing-app receipt print matrix. The release check installs Chromium, Firefox, and WebKit with Playwright's compatible host dependencies before running that matrix; a browser failure blocks promotion.
+4. Confirm `SESSION_SECRET`, `DATABASE_URL`, and (when email is enabled) the SMTP settings are present. Never put any of these values in a backup, log, mobile bundle, or support ticket.
+5. Take and inspect an admin redacted backup from Settings. It is an operational export, not a database restore.
+6. Review the backup and restore plan with an operator before applying a production schema or deployment change.
 
 Receipt print diagnostics from the release matrix are written to
 `artifacts/billing-app/test-results/print-preview` (failed traces) and
@@ -28,7 +29,7 @@ green release cannot expose stale evidence from an earlier failure.
 
 ## Replit
 
-The API and web artifacts are managed by their registered workflows. Replit Publish is the approved production path: it builds the API with `NODE_ENV=production`, serves it on the configured artifact port, and probes `/api/healthz`. Do not apply development schema changes directly to production. Use the Publish workflow's reviewed schema step and retain the pre-release backup.
+The API and web artifacts are managed by their registered workflows. The post-merge hook applies the current Drizzle export to development with additive `CREATE TABLE IF NOT EXISTS` and `ALTER TABLE ... ADD COLUMN IF NOT EXISTS` statements, then verifies the table/column contract. It does not force-rename legacy objects, drop data, or run against production. Replit Publish is the approved production path: it builds the API with `NODE_ENV=production`, serves it on the configured artifact port, probes `/api/healthz`, and presents the reviewed schema diff. Resolve any rename prompts in Publish and retain the pre-release backup; do not apply development schema changes directly to production.
 
 Health checks:
 
