@@ -215,6 +215,7 @@ paths:
       parameters:
         - { name: provinceCode, in: query, schema: { type: string } }
         - { name: topic, in: query, schema: { type: string } }
+        - { name: language, in: query, description: "Published content language. Defaults to English.", schema: { type: string, enum: [en, fr], default: en } }
         - { name: status, in: query, schema: { type: string, enum: [draft, published, retired] } }
       responses:
         "200":
@@ -3031,14 +3032,16 @@ components:
 
     CustomerRightsEntry:
       type: object
-      required: [id, provinceCode, topic, title, summary, sourceUrl, effectiveFrom, lastReviewedAt, reviewStatus, stale, disclaimer]
+      required: [id, provinceCode, topic, language, title, summary, infographic, sourceUrl, effectiveFrom, lastReviewedAt, reviewStatus, stale, disclaimer]
       properties:
         id: { type: integer }
         provinceCode: { type: string, enum: [AB, BC, MB, NB, NL, NS, NT, NU, ON, PE, QC, SK, YT] }
         topic: { type: string }
+        language: { type: string, enum: [en, fr] }
         title: { type: string }
         summary: { type: string }
         readAloudScript: { type: ["string", "null"] }
+        infographic: { $ref: "#/components/schemas/CustomerRightsInfographic" }
         sourceUrl: { type: string, format: uri }
         effectiveFrom: { type: string, format: date }
         lastReviewedAt: { type: string, format: date }
@@ -3050,17 +3053,40 @@ components:
 
     CustomerRightsInput:
       type: object
-      required: [provinceCode, topic, title, summary, sourceUrl, effectiveFrom, lastReviewedAt, reviewStatus]
+      required: [provinceCode, topic, language, title, summary, infographic, sourceUrl, effectiveFrom, lastReviewedAt, reviewStatus]
       properties:
         provinceCode: { type: string }
         topic: { type: string }
+        language: { type: string, enum: [en, fr] }
         title: { type: string }
         summary: { type: string }
         readAloudScript: { type: ["string", "null"] }
+        infographic: { $ref: "#/components/schemas/CustomerRightsInfographic" }
         sourceUrl: { type: string, format: uri }
         effectiveFrom: { type: string, format: date }
         lastReviewedAt: { type: string, format: date }
         reviewStatus: { type: string, enum: [draft, published, retired] }
+
+    CustomerRightsInfographic:
+      type: object
+      required: [steps, do, avoid, escalation]
+      properties:
+        steps:
+          type: array
+          minItems: 3
+          maxItems: 5
+          items: { type: string, minLength: 1, maxLength: 240 }
+        do:
+          type: array
+          minItems: 1
+          maxItems: 4
+          items: { type: string, minLength: 1, maxLength: 240 }
+        avoid:
+          type: array
+          minItems: 1
+          maxItems: 4
+          items: { type: string, minLength: 1, maxLength: 240 }
+        escalation: { type: string, minLength: 1, maxLength: 500 }
 
     CustomerRightsUpdate:
       allOf:

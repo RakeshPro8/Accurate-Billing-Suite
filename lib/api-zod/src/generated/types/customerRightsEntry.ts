@@ -5,17 +5,21 @@
  * Mobilinq store operations API
  * OpenAPI spec version: 0.2.0
  */
+import type { CustomerRightsEntryLanguage } from './customerRightsEntryLanguage';
 import type { CustomerRightsEntryProvinceCode } from './customerRightsEntryProvinceCode';
 import type { CustomerRightsEntryReviewStatus } from './customerRightsEntryReviewStatus';
+import type { CustomerRightsInfographic } from './customerRightsInfographic';
 
 export interface CustomerRightsEntry {
   id: number;
   provinceCode: CustomerRightsEntryProvinceCode;
   topic: string;
+  language: CustomerRightsEntryLanguage;
   title: string;
   summary: string;
   /** @nullable */
   readAloudScript?: string | null;
+  infographic: CustomerRightsInfographic;
   sourceUrl: string;
   effectiveFrom: Date;
   lastReviewedAt: Date;

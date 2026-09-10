@@ -5,10 +5,15 @@
  * Mobilinq store operations API
  * OpenAPI spec version: 0.2.0
  */
+import type { GetCustomerRightsLanguage } from './getCustomerRightsLanguage';
 import type { GetCustomerRightsStatus } from './getCustomerRightsStatus';
 
 export type GetCustomerRightsParams = {
 provinceCode?: string;
 topic?: string;
+/**
+ * Published content language. Defaults to English.
+ */
+language?: GetCustomerRightsLanguage;
 status?: GetCustomerRightsStatus;
 };

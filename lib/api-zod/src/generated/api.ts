@@ -393,20 +393,47 @@ export const RetireTaxProfileResponse = zod.object({
 /**
  * @summary List reviewed customer-rights guidance
  */
+export const getCustomerRightsQueryLanguageDefault = `en`;
+
 export const GetCustomerRightsQueryParams = zod.object({
   "provinceCode": zod.coerce.string().optional(),
   "topic": zod.coerce.string().optional(),
+  "language": zod.enum(['en', 'fr']).default(getCustomerRightsQueryLanguageDefault).describe('Published content language. Defaults to English.'),
   "status": zod.enum(['draft', 'published', 'retired']).optional()
 })
+
+export const getCustomerRightsResponseEntriesItemInfographicStepsItemMax = 240;
+
+export const getCustomerRightsResponseEntriesItemInfographicStepsMin = 3;
+export const getCustomerRightsResponseEntriesItemInfographicStepsMax = 5;
+
+export const getCustomerRightsResponseEntriesItemInfographicDoItemMax = 240;
+
+export const getCustomerRightsResponseEntriesItemInfographicDoMax = 4;
+
+export const getCustomerRightsResponseEntriesItemInfographicAvoidItemMax = 240;
+
+export const getCustomerRightsResponseEntriesItemInfographicAvoidMax = 4;
+
+export const getCustomerRightsResponseEntriesItemInfographicEscalationMax = 500;
+
+
 
 export const GetCustomerRightsResponse = zod.object({
   "entries": zod.array(zod.object({
   "id": zod.number().int(),
   "provinceCode": zod.enum(['AB', 'BC', 'MB', 'NB', 'NL', 'NS', 'NT', 'NU', 'ON', 'PE', 'QC', 'SK', 'YT']),
   "topic": zod.string(),
+  "language": zod.enum(['en', 'fr']),
   "title": zod.string(),
   "summary": zod.string(),
   "readAloudScript": zod.string().nullish(),
+  "infographic": zod.object({
+  "steps": zod.array(zod.string().min(1).max(getCustomerRightsResponseEntriesItemInfographicStepsItemMax)).min(getCustomerRightsResponseEntriesItemInfographicStepsMin).max(getCustomerRightsResponseEntriesItemInfographicStepsMax),
+  "do": zod.array(zod.string().min(1).max(getCustomerRightsResponseEntriesItemInfographicDoItemMax)).min(1).max(getCustomerRightsResponseEntriesItemInfographicDoMax),
+  "avoid": zod.array(zod.string().min(1).max(getCustomerRightsResponseEntriesItemInfographicAvoidItemMax)).min(1).max(getCustomerRightsResponseEntriesItemInfographicAvoidMax),
+  "escalation": zod.string().min(1).max(getCustomerRightsResponseEntriesItemInfographicEscalationMax)
+}),
   "sourceUrl": zod.string().url(),
   "effectiveFrom": zod.coerce.date(),
   "lastReviewedAt": zod.coerce.date(),
@@ -424,25 +451,73 @@ export const GetCustomerRightsResponse = zod.object({
 /**
  * @summary Create a customer-rights guidance entry (admin only)
  */
+export const createCustomerRightsEntryBodyInfographicStepsItemMax = 240;
+
+export const createCustomerRightsEntryBodyInfographicStepsMin = 3;
+export const createCustomerRightsEntryBodyInfographicStepsMax = 5;
+
+export const createCustomerRightsEntryBodyInfographicDoItemMax = 240;
+
+export const createCustomerRightsEntryBodyInfographicDoMax = 4;
+
+export const createCustomerRightsEntryBodyInfographicAvoidItemMax = 240;
+
+export const createCustomerRightsEntryBodyInfographicAvoidMax = 4;
+
+export const createCustomerRightsEntryBodyInfographicEscalationMax = 500;
+
+
+
 export const CreateCustomerRightsEntryBody = zod.object({
   "provinceCode": zod.string(),
   "topic": zod.string(),
+  "language": zod.enum(['en', 'fr']),
   "title": zod.string(),
   "summary": zod.string(),
   "readAloudScript": zod.string().nullish(),
+  "infographic": zod.object({
+  "steps": zod.array(zod.string().min(1).max(createCustomerRightsEntryBodyInfographicStepsItemMax)).min(createCustomerRightsEntryBodyInfographicStepsMin).max(createCustomerRightsEntryBodyInfographicStepsMax),
+  "do": zod.array(zod.string().min(1).max(createCustomerRightsEntryBodyInfographicDoItemMax)).min(1).max(createCustomerRightsEntryBodyInfographicDoMax),
+  "avoid": zod.array(zod.string().min(1).max(createCustomerRightsEntryBodyInfographicAvoidItemMax)).min(1).max(createCustomerRightsEntryBodyInfographicAvoidMax),
+  "escalation": zod.string().min(1).max(createCustomerRightsEntryBodyInfographicEscalationMax)
+}),
   "sourceUrl": zod.string().url(),
   "effectiveFrom": zod.coerce.date(),
   "lastReviewedAt": zod.coerce.date(),
   "reviewStatus": zod.enum(['draft', 'published', 'retired'])
 })
 
+export const createCustomerRightsEntryResponseInfographicStepsItemMax = 240;
+
+export const createCustomerRightsEntryResponseInfographicStepsMin = 3;
+export const createCustomerRightsEntryResponseInfographicStepsMax = 5;
+
+export const createCustomerRightsEntryResponseInfographicDoItemMax = 240;
+
+export const createCustomerRightsEntryResponseInfographicDoMax = 4;
+
+export const createCustomerRightsEntryResponseInfographicAvoidItemMax = 240;
+
+export const createCustomerRightsEntryResponseInfographicAvoidMax = 4;
+
+export const createCustomerRightsEntryResponseInfographicEscalationMax = 500;
+
+
+
 export const CreateCustomerRightsEntryResponse = zod.object({
   "id": zod.number().int(),
   "provinceCode": zod.enum(['AB', 'BC', 'MB', 'NB', 'NL', 'NS', 'NT', 'NU', 'ON', 'PE', 'QC', 'SK', 'YT']),
   "topic": zod.string(),
+  "language": zod.enum(['en', 'fr']),
   "title": zod.string(),
   "summary": zod.string(),
   "readAloudScript": zod.string().nullish(),
+  "infographic": zod.object({
+  "steps": zod.array(zod.string().min(1).max(createCustomerRightsEntryResponseInfographicStepsItemMax)).min(createCustomerRightsEntryResponseInfographicStepsMin).max(createCustomerRightsEntryResponseInfographicStepsMax),
+  "do": zod.array(zod.string().min(1).max(createCustomerRightsEntryResponseInfographicDoItemMax)).min(1).max(createCustomerRightsEntryResponseInfographicDoMax),
+  "avoid": zod.array(zod.string().min(1).max(createCustomerRightsEntryResponseInfographicAvoidItemMax)).min(1).max(createCustomerRightsEntryResponseInfographicAvoidMax),
+  "escalation": zod.string().min(1).max(createCustomerRightsEntryResponseInfographicEscalationMax)
+}),
   "sourceUrl": zod.string().url(),
   "effectiveFrom": zod.coerce.date(),
   "lastReviewedAt": zod.coerce.date(),
@@ -461,25 +536,73 @@ export const UpdateCustomerRightsEntryParams = zod.object({
   "id": zod.coerce.number().int()
 })
 
+export const updateCustomerRightsEntryBodyOneInfographicStepsItemMax = 240;
+
+export const updateCustomerRightsEntryBodyOneInfographicStepsMin = 3;
+export const updateCustomerRightsEntryBodyOneInfographicStepsMax = 5;
+
+export const updateCustomerRightsEntryBodyOneInfographicDoItemMax = 240;
+
+export const updateCustomerRightsEntryBodyOneInfographicDoMax = 4;
+
+export const updateCustomerRightsEntryBodyOneInfographicAvoidItemMax = 240;
+
+export const updateCustomerRightsEntryBodyOneInfographicAvoidMax = 4;
+
+export const updateCustomerRightsEntryBodyOneInfographicEscalationMax = 500;
+
+
+
 export const UpdateCustomerRightsEntryBody = zod.object({
   "provinceCode": zod.string(),
   "topic": zod.string(),
+  "language": zod.enum(['en', 'fr']),
   "title": zod.string(),
   "summary": zod.string(),
   "readAloudScript": zod.string().nullish(),
+  "infographic": zod.object({
+  "steps": zod.array(zod.string().min(1).max(updateCustomerRightsEntryBodyOneInfographicStepsItemMax)).min(updateCustomerRightsEntryBodyOneInfographicStepsMin).max(updateCustomerRightsEntryBodyOneInfographicStepsMax),
+  "do": zod.array(zod.string().min(1).max(updateCustomerRightsEntryBodyOneInfographicDoItemMax)).min(1).max(updateCustomerRightsEntryBodyOneInfographicDoMax),
+  "avoid": zod.array(zod.string().min(1).max(updateCustomerRightsEntryBodyOneInfographicAvoidItemMax)).min(1).max(updateCustomerRightsEntryBodyOneInfographicAvoidMax),
+  "escalation": zod.string().min(1).max(updateCustomerRightsEntryBodyOneInfographicEscalationMax)
+}),
   "sourceUrl": zod.string().url(),
   "effectiveFrom": zod.coerce.date(),
   "lastReviewedAt": zod.coerce.date(),
   "reviewStatus": zod.enum(['draft', 'published', 'retired'])
 })
 
+export const updateCustomerRightsEntryResponseInfographicStepsItemMax = 240;
+
+export const updateCustomerRightsEntryResponseInfographicStepsMin = 3;
+export const updateCustomerRightsEntryResponseInfographicStepsMax = 5;
+
+export const updateCustomerRightsEntryResponseInfographicDoItemMax = 240;
+
+export const updateCustomerRightsEntryResponseInfographicDoMax = 4;
+
+export const updateCustomerRightsEntryResponseInfographicAvoidItemMax = 240;
+
+export const updateCustomerRightsEntryResponseInfographicAvoidMax = 4;
+
+export const updateCustomerRightsEntryResponseInfographicEscalationMax = 500;
+
+
+
 export const UpdateCustomerRightsEntryResponse = zod.object({
   "id": zod.number().int(),
   "provinceCode": zod.enum(['AB', 'BC', 'MB', 'NB', 'NL', 'NS', 'NT', 'NU', 'ON', 'PE', 'QC', 'SK', 'YT']),
   "topic": zod.string(),
+  "language": zod.enum(['en', 'fr']),
   "title": zod.string(),
   "summary": zod.string(),
   "readAloudScript": zod.string().nullish(),
+  "infographic": zod.object({
+  "steps": zod.array(zod.string().min(1).max(updateCustomerRightsEntryResponseInfographicStepsItemMax)).min(updateCustomerRightsEntryResponseInfographicStepsMin).max(updateCustomerRightsEntryResponseInfographicStepsMax),
+  "do": zod.array(zod.string().min(1).max(updateCustomerRightsEntryResponseInfographicDoItemMax)).min(1).max(updateCustomerRightsEntryResponseInfographicDoMax),
+  "avoid": zod.array(zod.string().min(1).max(updateCustomerRightsEntryResponseInfographicAvoidItemMax)).min(1).max(updateCustomerRightsEntryResponseInfographicAvoidMax),
+  "escalation": zod.string().min(1).max(updateCustomerRightsEntryResponseInfographicEscalationMax)
+}),
   "sourceUrl": zod.string().url(),
   "effectiveFrom": zod.coerce.date(),
   "lastReviewedAt": zod.coerce.date(),
@@ -498,13 +621,37 @@ export const RetireCustomerRightsEntryParams = zod.object({
   "id": zod.coerce.number().int()
 })
 
+export const retireCustomerRightsEntryResponseInfographicStepsItemMax = 240;
+
+export const retireCustomerRightsEntryResponseInfographicStepsMin = 3;
+export const retireCustomerRightsEntryResponseInfographicStepsMax = 5;
+
+export const retireCustomerRightsEntryResponseInfographicDoItemMax = 240;
+
+export const retireCustomerRightsEntryResponseInfographicDoMax = 4;
+
+export const retireCustomerRightsEntryResponseInfographicAvoidItemMax = 240;
+
+export const retireCustomerRightsEntryResponseInfographicAvoidMax = 4;
+
+export const retireCustomerRightsEntryResponseInfographicEscalationMax = 500;
+
+
+
 export const RetireCustomerRightsEntryResponse = zod.object({
   "id": zod.number().int(),
   "provinceCode": zod.enum(['AB', 'BC', 'MB', 'NB', 'NL', 'NS', 'NT', 'NU', 'ON', 'PE', 'QC', 'SK', 'YT']),
   "topic": zod.string(),
+  "language": zod.enum(['en', 'fr']),
   "title": zod.string(),
   "summary": zod.string(),
   "readAloudScript": zod.string().nullish(),
+  "infographic": zod.object({
+  "steps": zod.array(zod.string().min(1).max(retireCustomerRightsEntryResponseInfographicStepsItemMax)).min(retireCustomerRightsEntryResponseInfographicStepsMin).max(retireCustomerRightsEntryResponseInfographicStepsMax),
+  "do": zod.array(zod.string().min(1).max(retireCustomerRightsEntryResponseInfographicDoItemMax)).min(1).max(retireCustomerRightsEntryResponseInfographicDoMax),
+  "avoid": zod.array(zod.string().min(1).max(retireCustomerRightsEntryResponseInfographicAvoidItemMax)).min(1).max(retireCustomerRightsEntryResponseInfographicAvoidMax),
+  "escalation": zod.string().min(1).max(retireCustomerRightsEntryResponseInfographicEscalationMax)
+}),
   "sourceUrl": zod.string().url(),
   "effectiveFrom": zod.coerce.date(),
   "lastReviewedAt": zod.coerce.date(),

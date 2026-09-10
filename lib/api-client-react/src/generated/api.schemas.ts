@@ -1324,6 +1324,14 @@ export const CustomerRightsEntryProvinceCode = {
   YT: 'YT',
 } as const;
 
+export type CustomerRightsEntryLanguage = typeof CustomerRightsEntryLanguage[keyof typeof CustomerRightsEntryLanguage];
+
+
+export const CustomerRightsEntryLanguage = {
+  en: 'en',
+  fr: 'fr',
+} as const;
+
 export type CustomerRightsEntryReviewStatus = typeof CustomerRightsEntryReviewStatus[keyof typeof CustomerRightsEntryReviewStatus];
 
 
@@ -1333,14 +1341,45 @@ export const CustomerRightsEntryReviewStatus = {
   retired: 'retired',
 } as const;
 
+export interface CustomerRightsInfographic {
+  /**
+     * @minItems 3
+     * @maxItems 5
+     * @items.minLength 1
+     * @items.maxLength 240
+     */
+  steps: string[];
+  /**
+     * @minItems 1
+     * @maxItems 4
+     * @items.minLength 1
+     * @items.maxLength 240
+     */
+  do: string[];
+  /**
+     * @minItems 1
+     * @maxItems 4
+     * @items.minLength 1
+     * @items.maxLength 240
+     */
+  avoid: string[];
+  /**
+     * @minLength 1
+     * @maxLength 500
+     */
+  escalation: string;
+}
+
 export interface CustomerRightsEntry {
   id: number;
   provinceCode: CustomerRightsEntryProvinceCode;
   topic: string;
+  language: CustomerRightsEntryLanguage;
   title: string;
   summary: string;
   /** @nullable */
   readAloudScript?: string | null;
+  infographic: CustomerRightsInfographic;
   sourceUrl: string;
   effectiveFrom: string;
   lastReviewedAt: string;
@@ -1350,6 +1389,14 @@ export interface CustomerRightsEntry {
   createdAt?: string;
   updatedAt?: string;
 }
+
+export type CustomerRightsInputLanguage = typeof CustomerRightsInputLanguage[keyof typeof CustomerRightsInputLanguage];
+
+
+export const CustomerRightsInputLanguage = {
+  en: 'en',
+  fr: 'fr',
+} as const;
 
 export type CustomerRightsInputReviewStatus = typeof CustomerRightsInputReviewStatus[keyof typeof CustomerRightsInputReviewStatus];
 
@@ -1363,10 +1410,12 @@ export const CustomerRightsInputReviewStatus = {
 export interface CustomerRightsInput {
   provinceCode: string;
   topic: string;
+  language: CustomerRightsInputLanguage;
   title: string;
   summary: string;
   /** @nullable */
   readAloudScript?: string | null;
+  infographic: CustomerRightsInfographic;
   sourceUrl: string;
   effectiveFrom: string;
   lastReviewedAt: string;
@@ -2166,8 +2215,20 @@ includeDisabled?: boolean;
 export type GetCustomerRightsParams = {
 provinceCode?: string;
 topic?: string;
+/**
+ * Published content language. Defaults to English.
+ */
+language?: GetCustomerRightsLanguage;
 status?: GetCustomerRightsStatus;
 };
+
+export type GetCustomerRightsLanguage = typeof GetCustomerRightsLanguage[keyof typeof GetCustomerRightsLanguage];
+
+
+export const GetCustomerRightsLanguage = {
+  en: 'en',
+  fr: 'fr',
+} as const;
 
 export type GetCustomerRightsStatus = typeof GetCustomerRightsStatus[keyof typeof GetCustomerRightsStatus];
 
