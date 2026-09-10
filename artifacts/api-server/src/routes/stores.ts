@@ -54,8 +54,11 @@ router.post("/", requireRole("admin"), async (req, res) => {
     const { name, address, phone, email, isDefault, provinceCode = "ON", currency = "CAD" } = req.body ?? {};
     if (typeof name !== "string" || !name.trim() || name.length > 200 || !provinceCodes.has(provinceCode) || currency !== "CAD" || (email && (typeof email !== "string" || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) || (isDefault !== undefined && typeof isDefault !== "boolean")) throw new HttpError(400, "Invalid store.");
     const store = await db.transaction(async (tx) => {
-      if (isDefault) await tx.update(storesTable).set({ isDefault: false }).where(sql`${storesTable.isDefault} = true`);
-      const [created] = await tx.insert(storesTable).values({ name: name.trim(), address: address || null, phone: phone || null, email: email || null, isDefault: isDefault === true, provinceCode, currency }).returning();
+      const [activeDefault] = await tx.select({ id: storesTable.id }).from(storesTable)
+        .where(sql`${storesTable.active} = true AND ${storesTable.isDefault} = true`).limit(1);
+      const shouldBeDefault = isDefault === true || !activeDefault;
+      if (shouldBeDefault) await tx.update(storesTable).set({ isDefault: false }).where(sql`${storesTable.isDefault} = true`);
+      const [created] = await tx.insert(storesTable).values({ name: name.trim(), address: address || null, phone: phone || null, email: email || null, isDefault: shouldBeDefault, provinceCode, currency }).returning();
       return created;
     });
     await logAudit(req, "create", "store", store.id, { name: store.name });

@@ -3,7 +3,7 @@
 ## Release gates
 
 1. Review the OpenAPI contract and run `pnpm --filter @workspace/api-spec run codegen`.
-2. Run `pnpm --filter @workspace/scripts run db:verify -- --require-default-location` after development schema setup and store onboarding. This fails before store-scoped checks when the Drizzle contract is incomplete or there is no active default location.
+2. After a clean development install, sign in as an administrator and complete the in-app **First-run setup** by creating an active default location. The app keeps store-scoped pages blocked until this prerequisite is complete. Then run `pnpm --filter @workspace/scripts run db:verify -- --require-default-location`; this fails before store-scoped checks when the Drizzle contract is incomplete or there is no active default location.
 3. Run `pnpm run typecheck`, `pnpm --filter @workspace/api-server run build`, the web/mobile builds, and the billing-app receipt print matrix. The release check installs Chromium, Firefox, and WebKit with Playwright's compatible host dependencies before running that matrix; a browser failure blocks promotion.
 4. Confirm `SESSION_SECRET`, `DATABASE_URL`, and (when email is enabled) the SMTP settings are present. Never put any of these values in a backup, log, mobile bundle, or support ticket.
 5. Take and inspect an admin redacted backup from Settings. It is an operational export, not a database restore.

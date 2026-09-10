@@ -32,6 +32,8 @@ import Operations from "@/pages/Operations";
 import CustomerAccess from "@/pages/CustomerAccess";
 import Welcome from "@/pages/Welcome";
 import CustomerRights from "@/pages/CustomerRights";
+import LocationSetup from "@/pages/LocationSetup";
+import { useGetCurrentStore, useGetStores } from "@workspace/api-client-react";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,6 +47,29 @@ const queryClient = new QueryClient({
 function Router() {
   const { activeEmployee } = useEmployee();
   const isAdmin = activeEmployee?.role === "admin";
+  const storesQuery = useGetStores();
+  const currentStoreQuery = useGetCurrentStore();
+  const hasActiveDefault = Boolean(
+    storesQuery.data?.some((store) => store.active && store.isDefault) || currentStoreQuery.data?.storeId,
+  );
+  const isLocationSetupRequired = !storesQuery.isLoading && !storesQuery.isError && !hasActiveDefault;
+
+  if (storesQuery.isLoading || currentStoreQuery.isLoading) {
+    return (
+      <AppLayout>
+        <div className="py-20 text-center text-sm text-muted-foreground">Checking location setup…</div>
+      </AppLayout>
+    );
+  }
+
+  if (isLocationSetupRequired) {
+    return (
+      <AppLayout>
+        <LocationSetup />
+      </AppLayout>
+    );
+  }
+
   return (
     <AppLayout>
       <Switch>

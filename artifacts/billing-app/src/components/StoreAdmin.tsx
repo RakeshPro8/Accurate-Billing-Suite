@@ -13,11 +13,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { MapPin, Plus, Save, Power } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import type { Store } from "@workspace/api-client-react";
 
 const provinces = ["AB", "BC", "MB", "NB", "NL", "NS", "NT", "NU", "ON", "PE", "QC", "SK", "YT"] as const;
 type ProvinceCode = typeof provinces[number];
 
-export function StoreAdmin() {
+export function StoreAdmin({ onStoreCreated }: { onStoreCreated?: (store: Store) => void }) {
   const { data: stores = [] } = useGetStores();
   const create = useCreateStore();
   const update = useUpdateStore();
@@ -37,9 +38,10 @@ export function StoreAdmin() {
 
   function addStore() {
     if (!name.trim()) return;
-    create.mutate({ data: { name: name.trim(), address: address || null, phone: phone || null, email: email || null, isDefault: stores.length === 0, provinceCode, currency: "CAD" } }, {
-      onSuccess: () => {
+    create.mutate({ data: { name: name.trim(), address: address || null, phone: phone || null, email: email || null, isDefault: !stores.some((store) => store.active && store.isDefault), provinceCode, currency: "CAD" } }, {
+      onSuccess: (store) => {
         setName(""); setAddress(""); setPhone(""); setEmail(""); setProvinceCode("ON"); refresh();
+        onStoreCreated?.(store);
         toast({ title: "Location added" });
       },
       onError: () => toast({ title: "Could not add location", variant: "destructive" }),
