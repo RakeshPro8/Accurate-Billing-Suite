@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useEmployees, useCreateEmployee, useUpdateEmployee, useDeleteEmployee, Employee } from "@/lib/employees-api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,14 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { ROLE_LABELS, ROLE_COLORS } from "@/context/EmployeeContext";
 import { Plus, Pencil, Trash2, ShieldCheck, UserX, UserCheck, KeyRound, Percent } from "lucide-react";
+import {
+  approvePinResetRequest,
+  denyPinResetRequest,
+  getPinResetRequests,
+  rotateAdminRecoveryCode,
+  type PinResetApproval,
+  type PinResetRequest,
+} from "@workspace/api-client-react";
 
 const ROLES: Array<"admin" | "manager" | "staff"> = ["admin", "manager", "staff"];
 
@@ -44,6 +52,53 @@ export default function Employees() {
   const [editId, setEditId] = useState<number | null>(null);
   const [form, setForm] = useState<FormState>(DEFAULT_FORM);
   const [deleteConfirmId, setDeleteConfirmId] = useState<number | null>(null);
+  const [resetRequests, setResetRequests] = useState<PinResetRequest[]>([]);
+  const [resetRequestsLoading, setResetRequestsLoading] = useState(true);
+  const [temporaryPin, setTemporaryPin] = useState<PinResetApproval | null>(null);
+  const [recoveryCode, setRecoveryCode] = useState<string | null>(null);
+
+  async function loadResetRequests() {
+    setResetRequestsLoading(true);
+    try {
+      setResetRequests(await getPinResetRequests());
+    } catch (error: any) {
+      toast({ title: error?.message ?? "Unable to load PIN requests.", variant: "destructive" });
+    } finally {
+      setResetRequestsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadResetRequests();
+  }, []);
+
+  async function approveRequest(id: number) {
+    try {
+      const result = await approvePinResetRequest(id);
+      setTemporaryPin(result);
+      await loadResetRequests();
+    } catch (error: any) {
+      toast({ title: error?.message ?? "Unable to approve PIN request.", variant: "destructive" });
+    }
+  }
+
+  async function denyRequest(id: number) {
+    try {
+      await denyPinResetRequest(id);
+      await loadResetRequests();
+    } catch (error: any) {
+      toast({ title: error?.message ?? "Unable to deny PIN request.", variant: "destructive" });
+    }
+  }
+
+  async function createRecoveryCode() {
+    try {
+      const result = await rotateAdminRecoveryCode();
+      setRecoveryCode(result.recoveryCode);
+    } catch (error: any) {
+      toast({ title: error?.message ?? "Unable to create recovery code.", variant: "destructive" });
+    }
+  }
 
   function openCreate() {
     setEditId(null);
@@ -125,8 +180,59 @@ export default function Employees() {
           </h1>
           <p className="text-muted-foreground text-sm">Manage staff, roles, and discount authorizations</p>
         </div>
-        <Button onClick={openCreate} className="gap-1.5"><Plus className="h-4 w-4" /> Add Employee</Button>
+         <div className="flex gap-2">
+           <Button variant="outline" onClick={() => void createRecoveryCode()} className="gap-1.5"><KeyRound className="h-4 w-4" /> Recovery code</Button>
+           <Button onClick={openCreate} className="gap-1.5"><Plus className="h-4 w-4" /> Add Employee</Button>
+         </div>
       </div>
+
+       {recoveryCode && (
+         <Card className="border-amber-500/40 bg-amber-500/5">
+           <CardHeader className="pb-3"><CardTitle className="text-base text-amber-300">Save this one-time administrator recovery code</CardTitle></CardHeader>
+           <CardContent className="space-y-3">
+             <p className="text-sm text-muted-foreground">It is shown only once. Store it outside Mobilinq. Rotating it invalidates the previous code.</p>
+             <div className="rounded border bg-background p-3 text-center font-mono tracking-[0.18em] break-all select-all">{recoveryCode}</div>
+             <Button variant="outline" size="sm" onClick={() => setRecoveryCode(null)}>I saved it</Button>
+           </CardContent>
+         </Card>
+       )}
+
+       <Card className="border-primary/20">
+         <CardHeader className="pb-3">
+           <CardTitle className="flex items-center gap-2 text-base"><KeyRound className="h-4 w-4 text-primary" /> PIN recovery requests</CardTitle>
+         </CardHeader>
+         <CardContent>
+           {resetRequestsLoading ? <p className="text-sm text-muted-foreground">Loading requests…</p> : resetRequests.filter((request) => request.status === "pending").length === 0 ? (
+             <p className="text-sm text-muted-foreground">No pending requests.</p>
+           ) : (
+             <div className="space-y-2">
+               {resetRequests.filter((request) => request.status === "pending").map((request) => (
+                 <div key={request.id} className="flex flex-col gap-3 rounded-md border p-3 sm:flex-row sm:items-center sm:justify-between">
+                   <div>
+                     <p className="text-sm font-semibold">{request.employeeName} <span className="text-xs font-normal text-muted-foreground">({request.employeeRole})</span></p>
+                     <p className="text-xs text-muted-foreground">{new Date(request.requestedAt).toLocaleString()} {request.note ? `· ${request.note}` : ""}</p>
+                   </div>
+                   <div className="flex gap-2">
+                     <Button size="sm" onClick={() => void approveRequest(request.id)}>Issue temporary PIN</Button>
+                     <Button size="sm" variant="outline" onClick={() => void denyRequest(request.id)}>Deny</Button>
+                   </div>
+                 </div>
+               ))}
+             </div>
+           )}
+         </CardContent>
+       </Card>
+
+       {temporaryPin && (
+         <Card className="border-primary/40 bg-primary/5">
+           <CardHeader className="pb-3"><CardTitle className="text-base text-primary">Temporary PIN for the employee</CardTitle></CardHeader>
+           <CardContent className="space-y-3">
+             <p className="text-sm text-muted-foreground">Share this PIN directly with the employee. It expires at {new Date(temporaryPin.expiresAt).toLocaleTimeString()} and must be replaced immediately after sign-in. It will not be shown again.</p>
+             <div className="rounded border bg-background p-3 text-center font-mono text-2xl tracking-[0.35em] select-all">{temporaryPin.temporaryPin}</div>
+             <Button variant="outline" size="sm" onClick={() => setTemporaryPin(null)}>I shared it</Button>
+           </CardContent>
+         </Card>
+       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         {(["admin", "manager", "staff"] as const).map(role => (

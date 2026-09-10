@@ -20,6 +20,7 @@ export interface AuthedEmployee {
   role: string;
   maxDiscountPct: number;
   active: boolean;
+  requiresPinChange: boolean;
 }
 
 export async function getEmployeeById(id: number): Promise<AuthedEmployee | null> {
@@ -32,6 +33,7 @@ export async function getEmployeeById(id: number): Promise<AuthedEmployee | null
     role: emp.role,
     maxDiscountPct: parseFloat(String(emp.maxDiscountPct)),
     active: emp.active,
+    requiresPinChange: Boolean(emp.pinMustChange),
   };
 }
 

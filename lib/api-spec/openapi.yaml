@@ -428,6 +428,69 @@ paths:
         "429":
           description: Sign-in attempts temporarily throttled
 
+  /auth/pin-reset-requests:
+    post:
+      operationId: createPinResetRequest
+      tags: [auth]
+      summary: Ask an administrator to review a forgotten PIN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PinResetRequestInput"
+      responses:
+        "202":
+          description: Request accepted without revealing account state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PinResetRequestSubmitted"
+        "429":
+          description: Requests temporarily throttled
+
+  /auth/change-pin:
+    post:
+      operationId: changeEmployeePin
+      tags: [auth]
+      summary: Replace the current PIN after a temporary PIN sign-in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePinInput"
+      responses:
+        "200":
+          description: PIN changed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthenticatedSession"
+        "401":
+          description: Session is not authenticated
+
+  /auth/admin-recovery:
+    post:
+      operationId: recoverAdminAccount
+      tags: [auth]
+      summary: Use a one-time installation recovery code to reset an administrator PIN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminRecoveryInput"
+      responses:
+        "200":
+          description: Administrator recovered and signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthenticatedSession"
+        "401":
+          description: Recovery code is invalid or already used
+
   /auth/session:
     get:
       operationId: getAuthSession
@@ -523,6 +586,60 @@ paths:
       responses:
         "204":
           description: Removed
+
+  /employees/pin-reset-requests:
+    get:
+      operationId: getPinResetRequests
+      tags: [employees]
+      summary: List employee PIN reset requests (admin only)
+      responses:
+        "200":
+          description: PIN reset requests without credential data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PinResetRequest"
+
+  /employees/pin-reset-requests/{id}/approve:
+    post:
+      operationId: approvePinResetRequest
+      tags: [employees]
+      summary: Issue a short-lived temporary PIN for a reset request (admin only)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: Temporary PIN, shown only in this response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PinResetApproval"
+
+  /employees/pin-reset-requests/{id}/deny:
+    post:
+      operationId: denyPinResetRequest
+      tags: [employees]
+      summary: Deny a pending employee PIN reset request (admin only)
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        "200":
+          description: Request denied
+
+  /employees/recovery-code:
+    post:
+      operationId: rotateAdminRecoveryCode
+      tags: [employees]
+      summary: Create a new one-time administrator recovery code (admin only)
+      responses:
+        "200":
+          description: Recovery code, shown only in this response
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecoveryCodeResponse"
 
   # ─── Products ───────────────────────────────────────────
   /products:
@@ -2033,7 +2150,7 @@ components:
 
     AuthenticatedEmployee:
       type: object
-      required: [id, name, role, maxDiscountPct, active]
+      required: [id, name, role, maxDiscountPct, active, requiresPinChange]
       properties:
         id: { type: integer }
         name: { type: string }
@@ -2041,6 +2158,7 @@ components:
         role: { type: string, enum: [admin, manager, staff] }
         maxDiscountPct: { type: number }
         active: { type: boolean }
+        requiresPinChange: { type: boolean }
 
     BootstrapAdminInput:
       type: object
@@ -2066,6 +2184,7 @@ components:
         authenticated: { type: boolean, enum: [true] }
         employee:
           $ref: "#/components/schemas/AuthenticatedEmployee"
+        recoveryCode: { type: string }
 
     AuthSession:
       oneOf:
@@ -2074,6 +2193,63 @@ components:
           required: [authenticated]
           properties:
             authenticated: { type: boolean, enum: [false] }
+
+    PinResetRequestInput:
+      type: object
+      required: [employeeId]
+      additionalProperties: false
+      properties:
+        employeeId: { type: integer, minimum: 1 }
+        note: { type: string, maxLength: 500 }
+
+    PinResetRequestSubmitted:
+      type: object
+      required: [submitted]
+      properties:
+        submitted: { type: boolean, enum: [true] }
+
+    PinResetRequest:
+      type: object
+      required: [id, employeeId, employeeName, employeeRole, status, requestedAt]
+      properties:
+        id: { type: integer }
+        employeeId: { type: integer }
+        employeeName: { type: string }
+        employeeRole: { type: string, enum: [admin, manager, staff] }
+        status: { type: string, enum: [pending, approved, denied] }
+        note: { type: ["string", "null"] }
+        requestedAt: { type: string }
+        reviewedAt: { type: ["string", "null"] }
+
+    PinResetApproval:
+      type: object
+      required: [requestId, employeeId, temporaryPin, expiresAt]
+      properties:
+        requestId: { type: integer }
+        employeeId: { type: integer }
+        temporaryPin: { type: string, pattern: "^[0-9]{6}$" }
+        expiresAt: { type: string }
+
+    ChangePinInput:
+      type: object
+      required: [newPin]
+      additionalProperties: false
+      properties:
+        newPin: { type: string, pattern: "^[0-9]{4,8}$" }
+
+    AdminRecoveryInput:
+      type: object
+      required: [recoveryCode, newPin]
+      additionalProperties: false
+      properties:
+        recoveryCode: { type: string, minLength: 24, maxLength: 29 }
+        newPin: { type: string, pattern: "^[0-9]{4,8}$" }
+
+    RecoveryCodeResponse:
+      type: object
+      required: [recoveryCode]
+      properties:
+        recoveryCode: { type: string, pattern: "^[A-F0-9]{24}$" }
 
     LogoutResponse:
       type: object

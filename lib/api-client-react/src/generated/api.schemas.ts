@@ -98,6 +98,7 @@ export interface AuthenticatedEmployee {
   role: AuthenticatedEmployeeRole;
   maxDiscountPct: number;
   active: boolean;
+  requiresPinChange: boolean;
 }
 
 export interface BootstrapAdminInput {
@@ -122,11 +123,82 @@ export interface SignInInput {
 export interface AuthenticatedSession {
   authenticated: true;
   employee: AuthenticatedEmployee;
+  recoveryCode?: string;
 }
 
 export type AuthSession = AuthenticatedSession | {
   authenticated: false;
 };
+
+export interface PinResetRequestInput {
+  /** @minimum 1 */
+  employeeId: number;
+  /** @maxLength 500 */
+  note?: string;
+}
+
+export interface PinResetRequestSubmitted {
+  submitted: true;
+}
+
+export type PinResetRequestEmployeeRole = typeof PinResetRequestEmployeeRole[keyof typeof PinResetRequestEmployeeRole];
+
+
+export const PinResetRequestEmployeeRole = {
+  admin: 'admin',
+  manager: 'manager',
+  staff: 'staff',
+} as const;
+
+export type PinResetRequestStatus = typeof PinResetRequestStatus[keyof typeof PinResetRequestStatus];
+
+
+export const PinResetRequestStatus = {
+  pending: 'pending',
+  approved: 'approved',
+  denied: 'denied',
+} as const;
+
+export interface PinResetRequest {
+  id: number;
+  employeeId: number;
+  employeeName: string;
+  employeeRole: PinResetRequestEmployeeRole;
+  status: PinResetRequestStatus;
+  /** @nullable */
+  note?: string | null;
+  requestedAt: string;
+  /** @nullable */
+  reviewedAt?: string | null;
+}
+
+export interface PinResetApproval {
+  requestId: number;
+  employeeId: number;
+  /** @pattern ^[0-9]{6}$ */
+  temporaryPin: string;
+  expiresAt: string;
+}
+
+export interface ChangePinInput {
+  /** @pattern ^[0-9]{4,8}$ */
+  newPin: string;
+}
+
+export interface AdminRecoveryInput {
+  /**
+     * @minLength 24
+     * @maxLength 29
+     */
+  recoveryCode: string;
+  /** @pattern ^[0-9]{4,8}$ */
+  newPin: string;
+}
+
+export interface RecoveryCodeResponse {
+  /** @pattern ^[A-F0-9]{24}$ */
+  recoveryCode: string;
+}
 
 export interface LogoutResponse {
   loggedOut: boolean;

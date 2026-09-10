@@ -671,8 +671,10 @@ export const BootstrapAdminResponse = zod.object({
   "email": zod.string().nullish(),
   "role": zod.enum(['admin', 'manager', 'staff']),
   "maxDiscountPct": zod.number(),
-  "active": zod.boolean()
-})
+  "active": zod.boolean(),
+  "requiresPinChange": zod.boolean()
+}),
+  "recoveryCode": zod.string().optional()
 })
 
 
@@ -696,8 +698,82 @@ export const SignInEmployeeResponse = zod.object({
   "email": zod.string().nullish(),
   "role": zod.enum(['admin', 'manager', 'staff']),
   "maxDiscountPct": zod.number(),
-  "active": zod.boolean()
+  "active": zod.boolean(),
+  "requiresPinChange": zod.boolean()
+}),
+  "recoveryCode": zod.string().optional()
 })
+
+
+/**
+ * @summary Ask an administrator to review a forgotten PIN
+ */
+
+export const createPinResetRequestBodyNoteMax = 500;
+
+
+
+export const CreatePinResetRequestBody = zod.object({
+  "employeeId": zod.number().int().min(1),
+  "note": zod.string().max(createPinResetRequestBodyNoteMax).optional()
+})
+
+export const CreatePinResetRequestResponse = zod.object({
+  "submitted": zod.literal(true)
+})
+
+
+/**
+ * @summary Replace the current PIN after a temporary PIN sign-in
+ */
+export const changeEmployeePinBodyNewPinRegExp = new RegExp('^[0-9]{4,8}$');
+
+
+export const ChangeEmployeePinBody = zod.object({
+  "newPin": zod.string().regex(changeEmployeePinBodyNewPinRegExp)
+})
+
+export const ChangeEmployeePinResponse = zod.object({
+  "authenticated": zod.literal(true),
+  "employee": zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "email": zod.string().nullish(),
+  "role": zod.enum(['admin', 'manager', 'staff']),
+  "maxDiscountPct": zod.number(),
+  "active": zod.boolean(),
+  "requiresPinChange": zod.boolean()
+}),
+  "recoveryCode": zod.string().optional()
+})
+
+
+/**
+ * @summary Use a one-time installation recovery code to reset an administrator PIN
+ */
+export const recoverAdminAccountBodyRecoveryCodeMin = 24;
+export const recoverAdminAccountBodyRecoveryCodeMax = 29;
+
+export const recoverAdminAccountBodyNewPinRegExp = new RegExp('^[0-9]{4,8}$');
+
+
+export const RecoverAdminAccountBody = zod.object({
+  "recoveryCode": zod.string().min(recoverAdminAccountBodyRecoveryCodeMin).max(recoverAdminAccountBodyRecoveryCodeMax),
+  "newPin": zod.string().regex(recoverAdminAccountBodyNewPinRegExp)
+})
+
+export const RecoverAdminAccountResponse = zod.object({
+  "authenticated": zod.literal(true),
+  "employee": zod.object({
+  "id": zod.number().int(),
+  "name": zod.string(),
+  "email": zod.string().nullish(),
+  "role": zod.enum(['admin', 'manager', 'staff']),
+  "maxDiscountPct": zod.number(),
+  "active": zod.boolean(),
+  "requiresPinChange": zod.boolean()
+}),
+  "recoveryCode": zod.string().optional()
 })
 
 
@@ -712,8 +788,10 @@ export const GetAuthSessionResponse = zod.union([zod.object({
   "email": zod.string().nullish(),
   "role": zod.enum(['admin', 'manager', 'staff']),
   "maxDiscountPct": zod.number(),
-  "active": zod.boolean()
-})
+  "active": zod.boolean(),
+  "requiresPinChange": zod.boolean()
+}),
+  "recoveryCode": zod.string().optional()
 }),zod.object({
   "authenticated": zod.literal(false)
 })])
@@ -820,6 +898,61 @@ export const DeleteEmployeeParams = zod.object({
 })
 
 export const DeleteEmployeeResponse = zod.void()
+
+
+/**
+ * @summary List employee PIN reset requests (admin only)
+ */
+export const GetPinResetRequestsResponseItem = zod.object({
+  "id": zod.number().int(),
+  "employeeId": zod.number().int(),
+  "employeeName": zod.string(),
+  "employeeRole": zod.enum(['admin', 'manager', 'staff']),
+  "status": zod.enum(['pending', 'approved', 'denied']),
+  "note": zod.string().nullish(),
+  "requestedAt": zod.string(),
+  "reviewedAt": zod.string().nullish()
+})
+export const GetPinResetRequestsResponse = zod.array(GetPinResetRequestsResponseItem)
+
+
+/**
+ * @summary Issue a short-lived temporary PIN for a reset request (admin only)
+ */
+export const ApprovePinResetRequestParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const approvePinResetRequestResponseTemporaryPinRegExp = new RegExp('^[0-9]{6}$');
+
+
+export const ApprovePinResetRequestResponse = zod.object({
+  "requestId": zod.number().int(),
+  "employeeId": zod.number().int(),
+  "temporaryPin": zod.string().regex(approvePinResetRequestResponseTemporaryPinRegExp),
+  "expiresAt": zod.string()
+})
+
+
+/**
+ * @summary Deny a pending employee PIN reset request (admin only)
+ */
+export const DenyPinResetRequestParams = zod.object({
+  "id": zod.coerce.number().int()
+})
+
+export const DenyPinResetRequestResponse = zod.unknown()
+
+
+/**
+ * @summary Create a new one-time administrator recovery code (admin only)
+ */
+export const rotateAdminRecoveryCodeResponseRecoveryCodeRegExp = new RegExp('^[A-F0-9]{24}$');
+
+
+export const RotateAdminRecoveryCodeResponse = zod.object({
+  "recoveryCode": zod.string().regex(rotateAdminRecoveryCodeResponseRecoveryCodeRegExp)
+})
 
 
 /**

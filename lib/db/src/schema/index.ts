@@ -14,3 +14,4 @@ export * from "./finance";
 export * from "./tax";
 export * from "./guidance";
 export * from "./recyclingReceipts";
+export * from "./pinRecovery";

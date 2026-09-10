@@ -7,6 +7,7 @@
  */
 
 export * from './adjustInventory201';
+export * from './adminRecoveryInput';
 export * from './anonymizeResponse';
 export * from './auditEventInput';
 export * from './auditEventInputAction';
@@ -22,6 +23,7 @@ export * from './authSession';
 export * from './authSetupStatus';
 export * from './bootstrapAdminInput';
 export * from './categoryRevenue';
+export * from './changePinInput';
 export * from './createPurchaseOrder201';
 export * from './createSupplier201';
 export * from './currentStore';
@@ -112,6 +114,12 @@ export * from './pagination';
 export * from './payment';
 export * from './paymentInput';
 export * from './paymentSessionInput';
+export * from './pinResetApproval';
+export * from './pinResetRequest';
+export * from './pinResetRequestEmployeeRole';
+export * from './pinResetRequestInput';
+export * from './pinResetRequestStatus';
+export * from './pinResetRequestSubmitted';
 export * from './privacyExport';
 export * from './product';
 export * from './productInput';
@@ -136,6 +144,7 @@ export * from './receivablesReportItemsItem';
 export * from './receivablesReportTotals';
 export * from './receivePurchaseOrder201';
 export * from './recordAuditEvent201';
+export * from './recoveryCodeResponse';
 export * from './recyclingReceipt';
 export * from './recyclingReceiptDeclaredCondition';
 export * from './recyclingReceiptInput';

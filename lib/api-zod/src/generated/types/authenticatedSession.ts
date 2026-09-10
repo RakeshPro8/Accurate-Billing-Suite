@@ -10,4 +10,5 @@ import type { AuthenticatedEmployee } from './authenticatedEmployee';
 export interface AuthenticatedSession {
   authenticated: true;
   employee: AuthenticatedEmployee;
+  recoveryCode?: string;
 }

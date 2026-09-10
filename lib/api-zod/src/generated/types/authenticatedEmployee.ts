@@ -15,4 +15,5 @@ export interface AuthenticatedEmployee {
   role: AuthenticatedEmployeeRole;
   maxDiscountPct: number;
   active: boolean;
+  requiresPinChange: boolean;
 }

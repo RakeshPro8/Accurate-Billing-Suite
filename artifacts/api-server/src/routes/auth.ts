@@ -1,7 +1,8 @@
 import { Router } from "express";
 import type { Request } from "express";
-import { db, employeesTable } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
+import { randomBytes } from "node:crypto";
+import { db, employeesTable, pinResetRequestsTable } from "@workspace/db";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { hashPin, verifyPin, getEmployeeById } from "../lib/auth";
 import { logAudit } from "../lib/audit";
 
@@ -13,6 +14,9 @@ const LOCKOUT_MS = 60_000;
 const ATTEMPT_WINDOW_MS = 15 * 60_000;
 const MAX_TRACKED_ATTEMPTS = 10_000;
 const failedAttempts = new Map<string, { count: number; firstAttemptAt: number; blockedUntil?: number }>();
+const MAX_RESET_REQUESTS = 3;
+const RESET_REQUEST_WINDOW_MS = 15 * 60_000;
+const resetRequestAttempts = new Map<string, { count: number; firstAttemptAt: number }>();
 
 type PublicEmployee = {
   id: number;
@@ -44,7 +48,42 @@ function signInEmployee(emp: typeof employeesTable.$inferSelect) {
     role: emp.role,
     maxDiscountPct: Number(emp.maxDiscountPct),
     active: emp.active,
+    requiresPinChange: Boolean(emp.pinMustChange),
   };
+}
+
+function generateRecoveryCode() {
+  return randomBytes(12).toString("hex").toUpperCase();
+}
+
+function normalizeRecoveryCode(value: unknown) {
+  if (typeof value !== "string") return "";
+  return value.replace(/[^a-z0-9]/gi, "").toUpperCase();
+}
+
+function validRecoveryCode(value: unknown): value is string {
+  return normalizeRecoveryCode(value).length === 24;
+}
+
+function pinExpired(employee: typeof employeesTable.$inferSelect) {
+  return Boolean(employee.pinExpiresAt && employee.pinExpiresAt.getTime() <= Date.now());
+}
+
+function resetRequestKey(req: Request, employeeId: number) {
+  const ip = req.ip || req.socket.remoteAddress || "unknown";
+  return `${ip}:${employeeId}`;
+}
+
+function resetRequestAllowed(key: string) {
+  const now = Date.now();
+  const existing = resetRequestAttempts.get(key);
+  if (!existing || now - existing.firstAttemptAt > RESET_REQUEST_WINDOW_MS) {
+    resetRequestAttempts.set(key, { count: 1, firstAttemptAt: now });
+    return true;
+  }
+  if (existing.count >= MAX_RESET_REQUESTS) return false;
+  existing.count += 1;
+  return true;
 }
 
 function validateName(value: unknown): value is string {
@@ -152,6 +191,7 @@ router.post("/bootstrap", async (req, res) => {
     if (!validateName(name) || !validateEmail(email) || !validatePin(pin)) {
       return res.status(400).json({ error: "Enter a name, optional valid email, and a 4-8 digit PIN." });
     }
+    const recoveryCode = generateRecoveryCode();
 
     const result = await db.transaction(async (tx) => {
       // Serialize first-user creation across concurrent browser tabs/workers.
@@ -166,6 +206,7 @@ router.post("/bootstrap", async (req, res) => {
         role: "admin",
         maxDiscountPct: "100",
         active: true,
+        recoveryCodeHash: await hashPin(recoveryCode),
       }).returning();
       return employee;
     });
@@ -176,9 +217,53 @@ router.post("/bootstrap", async (req, res) => {
     });
     req.session.employeeId = result.id;
     await logAudit(req, "login", "employee", result.id);
-    return res.status(201).json({ authenticated: true, employee: signInEmployee(result) });
+    return res.status(201).json({
+      authenticated: true,
+      employee: signInEmployee(result),
+      recoveryCode,
+    });
   } catch {
     return res.status(500).json({ error: "Unable to complete setup." });
+  }
+});
+
+router.post("/pin-reset-requests", async (req, res) => {
+  try {
+    const { employeeId, note } = req.body ?? {};
+    if (!Number.isSafeInteger(employeeId) || employeeId <= 0) {
+      return res.status(400).json({ error: "Choose an employee account." });
+    }
+    if (note !== undefined && (typeof note !== "string" || note.trim().length > 500)) {
+      return res.status(400).json({ error: "The note must be 500 characters or fewer." });
+    }
+    if (!resetRequestAllowed(resetRequestKey(req, employeeId))) {
+      return res.status(429).json({ error: "Too many requests. Try again later." });
+    }
+
+    const [employee] = await db
+      .select({ id: employeesTable.id, active: employeesTable.active })
+      .from(employeesTable)
+      .where(eq(employeesTable.id, employeeId));
+    if (!employee?.active) return res.status(202).json({ submitted: true });
+
+    const [pending] = await db
+      .select({ id: pinResetRequestsTable.id })
+      .from(pinResetRequestsTable)
+      .where(and(
+        eq(pinResetRequestsTable.employeeId, employeeId),
+        eq(pinResetRequestsTable.status, "pending"),
+      ))
+      .limit(1);
+    if (!pending) {
+      await db.insert(pinResetRequestsTable).values({
+        employeeId,
+        note: note?.trim() || null,
+        status: "pending",
+      });
+    }
+    return res.status(202).json({ submitted: true });
+  } catch {
+    return res.status(500).json({ error: "Unable to submit the PIN request." });
   }
 });
 
@@ -198,6 +283,11 @@ router.post("/sign-in", async (req, res) => {
 
     const [employee] = await db.select().from(employeesTable).where(eq(employeesTable.id, employeeId));
     if (!employee || !employee.active) {
+      recordFailure(key);
+      return res.status(401).json({ error: "Invalid employee ID or PIN." });
+    }
+
+    if (pinExpired(employee)) {
       recordFailure(key);
       return res.status(401).json({ error: "Invalid employee ID or PIN." });
     }
@@ -222,6 +312,74 @@ router.post("/sign-in", async (req, res) => {
     return res.json({ authenticated: true, employee: signInEmployee(employee) });
   } catch {
     return res.status(500).json({ error: "Unable to sign in." });
+  }
+});
+
+router.post("/change-pin", async (req, res) => {
+  try {
+    const employeeId = req.session.employeeId;
+    const { newPin } = req.body ?? {};
+    if (!employeeId) return res.status(401).json({ error: "Not authenticated. Please sign in." });
+    if (!validatePin(newPin)) return res.status(400).json({ error: "PIN must be 4-8 digits." });
+
+    const [employee] = await db.select().from(employeesTable).where(eq(employeesTable.id, employeeId));
+    if (!employee?.active) return res.status(401).json({ error: "Not authenticated. Please sign in." });
+    const pinHash = await hashPin(newPin);
+    const [updated] = await db.update(employeesTable)
+      .set({ pin: null, pinHash, pinMustChange: false, pinExpiresAt: null })
+      .where(eq(employeesTable.id, employee.id))
+      .returning();
+    if (!updated) return res.status(404).json({ error: "Employee account not found." });
+    await logAudit(req, "update", "employee", employee.id, { changed: "pin" });
+    return res.json({ authenticated: true, employee: signInEmployee(updated) });
+  } catch {
+    return res.status(500).json({ error: "Unable to change the PIN." });
+  }
+});
+
+router.post("/admin-recovery", async (req, res) => {
+  try {
+    const { recoveryCode, newPin } = req.body ?? {};
+    if (!validRecoveryCode(recoveryCode) || !validatePin(newPin)) {
+      return res.status(400).json({ error: "Enter the recovery code and a new 4-8 digit PIN." });
+    }
+
+    const admins = await db.select().from(employeesTable).where(and(
+      eq(employeesTable.role, "admin"),
+      eq(employeesTable.active, true),
+      isNull(employeesTable.recoveryCodeUsedAt),
+    ));
+    let matchedAdmin: typeof admins[number] | undefined;
+    const normalizedCode = normalizeRecoveryCode(recoveryCode);
+    for (const admin of admins) {
+      if (admin.recoveryCodeHash && await verifyPin(normalizedCode, admin.recoveryCodeHash)) {
+        matchedAdmin = admin;
+        break;
+      }
+    }
+    if (!matchedAdmin) return res.status(401).json({ error: "The recovery code is invalid or has already been used." });
+
+    const pinHash = await hashPin(newPin);
+    const [updated] = await db.update(employeesTable)
+      .set({
+        pin: null,
+        pinHash,
+        pinMustChange: false,
+        pinExpiresAt: null,
+        recoveryCodeUsedAt: new Date(),
+      })
+      .where(and(eq(employeesTable.id, matchedAdmin.id), isNull(employeesTable.recoveryCodeUsedAt)))
+      .returning();
+    if (!updated) return res.status(401).json({ error: "The recovery code is invalid or has already been used." });
+
+    await new Promise<void>((resolve, reject) => {
+      req.session.regenerate((error) => error ? reject(error) : resolve());
+    });
+    req.session.employeeId = updated.id;
+    await logAudit(req, "login", "employee", updated.id, { method: "admin_recovery" });
+    return res.json({ authenticated: true, employee: signInEmployee(updated) });
+  } catch {
+    return res.status(500).json({ error: "Unable to complete admin recovery." });
   }
 });
 

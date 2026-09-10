@@ -1,10 +1,12 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import {
   bootstrapAdmin,
+  changeEmployeePin,
   getAuthSession,
   getAuthSetupStatus,
   getSignInEmployees,
   logoutEmployee,
+  recoverAdminAccount,
   signInEmployee,
   setOfflineCacheScope,
   clearOfflineCache,
@@ -28,6 +30,7 @@ export interface ActiveEmployee {
   role: EmployeeRole;
   maxDiscountPct: number;
   active: boolean;
+  requiresPinChange: boolean;
 }
 
 export interface SignInEmployee {
@@ -47,6 +50,10 @@ interface EmployeeContextValue {
   signIn: (employeeId: number, pin: string) => Promise<void>;
   bootstrap: (data: { name: string; email?: string; pin: string }) => Promise<void>;
   clearEmployee: () => Promise<void>;
+  changePin: (newPin: string) => Promise<void>;
+  recoverAdmin: (recoveryCode: string, newPin: string) => Promise<void>;
+  recoveryCode: string | null;
+  dismissRecoveryCode: () => void;
 }
 
 const EmployeeContext = createContext<EmployeeContextValue>({
@@ -59,6 +66,10 @@ const EmployeeContext = createContext<EmployeeContextValue>({
   signIn: async () => {},
   bootstrap: async () => {},
   clearEmployee: async () => {},
+  changePin: async () => {},
+  recoverAdmin: async () => {},
+  recoveryCode: null,
+  dismissRecoveryCode: () => {},
 });
 
 function asActiveEmployee(employee: any): ActiveEmployee {
@@ -69,6 +80,7 @@ function asActiveEmployee(employee: any): ActiveEmployee {
     role: employee.role,
     maxDiscountPct: Number(employee.maxDiscountPct ?? 0),
     active: employee.active !== false,
+    requiresPinChange: Boolean(employee.requiresPinChange),
   };
 }
 
@@ -79,6 +91,7 @@ export function EmployeeProvider({ children }: { children: ReactNode }) {
   const [needsSetup, setNeedsSetup] = useState(false);
   const [publicStateError, setPublicStateError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [recoveryCode, setRecoveryCode] = useState<string | null>(null);
 
   async function loadPublicState() {
     try {
@@ -154,11 +167,28 @@ export function EmployeeProvider({ children }: { children: ReactNode }) {
       setOfflineCacheScope(`${result.employee.id}:all`);
       setNeedsSetup(false);
       setPublicStateError(null);
+      setRecoveryCode(result.recoveryCode ?? null);
       trackEmployeeAuthOutcome("setup", "success");
     } catch (error) {
       trackEmployeeAuthOutcome("setup", classifySetupError(error));
       throw error;
     }
+  }
+
+  async function changePin(newPin: string) {
+    const result = await changeEmployeePin({ newPin });
+    queryClient.clear();
+    setActiveEmployee(asActiveEmployee(result.employee));
+  }
+
+  async function recoverAdmin(recoveryCode: string, newPin: string) {
+    const result = await recoverAdminAccount({ recoveryCode, newPin });
+    queryClient.clear();
+    setActiveEmployee(asActiveEmployee(result.employee));
+    setOfflineScope({ employeeId: result.employee.id, storeId: null });
+    setOfflineCacheScope(`${result.employee.id}:all`);
+    setNeedsSetup(false);
+    setPublicStateError(null);
   }
 
   async function clearEmployee() {
@@ -200,6 +230,10 @@ export function EmployeeProvider({ children }: { children: ReactNode }) {
       signIn,
       bootstrap,
       clearEmployee,
+      changePin,
+      recoverAdmin,
+      recoveryCode,
+      dismissRecoveryCode: () => setRecoveryCode(null),
     }}>
       {children}
     </EmployeeContext.Provider>

@@ -21,6 +21,7 @@ import type {
 
 import type {
   AdjustInventory201,
+  AdminRecoveryInput,
   AnonymizeResponse,
   AuditEventInput,
   AuditLog,
@@ -29,6 +30,7 @@ import type {
   AuthenticatedSession,
   BootstrapAdminInput,
   CategoryRevenue,
+  ChangePinInput,
   CreatePurchaseOrder201,
   CreateSupplier201,
   CurrentStore,
@@ -84,6 +86,10 @@ import type {
   NotificationTemplateUpdate,
   PaymentInput,
   PaymentSessionInput,
+  PinResetApproval,
+  PinResetRequest,
+  PinResetRequestInput,
+  PinResetRequestSubmitted,
   PrivacyExport,
   Product,
   ProductInput,
@@ -98,6 +104,7 @@ import type {
   ReceivablesReport,
   ReceivePurchaseOrder201,
   RecordAuditEvent201,
+  RecoveryCodeResponse,
   RecyclingReceipt,
   RecyclingReceiptInput,
   RecyclingReceiptUpdate,
@@ -1897,6 +1904,240 @@ export const useSignInEmployee = <TError = ErrorType<void>,
       return useMutation(getSignInEmployeeMutationOptions(options));
     }
 
+export const getCreatePinResetRequestUrl = () => {
+
+
+
+
+  return `/api/auth/pin-reset-requests`
+}
+
+/**
+ * @summary Ask an administrator to review a forgotten PIN
+ */
+export const createPinResetRequest = async (pinResetRequestInput: PinResetRequestInput, options?: Parameters<typeof customFetch>[1]): Promise<PinResetRequestSubmitted> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return customFetch<PinResetRequestSubmitted>(getCreatePinResetRequestUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(pinResetRequestInput)
+  }
+);}
+
+
+
+
+
+export const getCreatePinResetRequestMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPinResetRequest>>, TError,CreatePinResetRequestMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createPinResetRequest>>, TError,CreatePinResetRequestMutationVariables, TContext> => {
+
+const mutationKey = ['createPinResetRequest'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPinResetRequest>>, CreatePinResetRequestMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  createPinResetRequest(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreatePinResetRequestMutationResult = NonNullable<Awaited<ReturnType<typeof createPinResetRequest>>>
+    export type CreatePinResetRequestMutationBody = BodyType<PinResetRequestInput>
+    export type CreatePinResetRequestMutationError = ErrorType<void>
+    export type CreatePinResetRequestMutationVariables = {data: BodyType<PinResetRequestInput>}
+
+    /**
+ * @summary Ask an administrator to review a forgotten PIN
+ */
+export const useCreatePinResetRequest = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPinResetRequest>>, TError,CreatePinResetRequestMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createPinResetRequest>>,
+        TError,
+        CreatePinResetRequestMutationVariables,
+        TContext
+      > => {
+      return useMutation(getCreatePinResetRequestMutationOptions(options));
+    }
+
+export const getChangeEmployeePinUrl = () => {
+
+
+
+
+  return `/api/auth/change-pin`
+}
+
+/**
+ * @summary Replace the current PIN after a temporary PIN sign-in
+ */
+export const changeEmployeePin = async (changePinInput: ChangePinInput, options?: Parameters<typeof customFetch>[1]): Promise<AuthenticatedSession> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return customFetch<AuthenticatedSession>(getChangeEmployeePinUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(changePinInput)
+  }
+);}
+
+
+
+
+
+export const getChangeEmployeePinMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeEmployeePin>>, TError,ChangeEmployeePinMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof changeEmployeePin>>, TError,ChangeEmployeePinMutationVariables, TContext> => {
+
+const mutationKey = ['changeEmployeePin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof changeEmployeePin>>, ChangeEmployeePinMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  changeEmployeePin(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ChangeEmployeePinMutationResult = NonNullable<Awaited<ReturnType<typeof changeEmployeePin>>>
+    export type ChangeEmployeePinMutationBody = BodyType<ChangePinInput>
+    export type ChangeEmployeePinMutationError = ErrorType<void>
+    export type ChangeEmployeePinMutationVariables = {data: BodyType<ChangePinInput>}
+
+    /**
+ * @summary Replace the current PIN after a temporary PIN sign-in
+ */
+export const useChangeEmployeePin = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof changeEmployeePin>>, TError,ChangeEmployeePinMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof changeEmployeePin>>,
+        TError,
+        ChangeEmployeePinMutationVariables,
+        TContext
+      > => {
+      return useMutation(getChangeEmployeePinMutationOptions(options));
+    }
+
+export const getRecoverAdminAccountUrl = () => {
+
+
+
+
+  return `/api/auth/admin-recovery`
+}
+
+/**
+ * @summary Use a one-time installation recovery code to reset an administrator PIN
+ */
+export const recoverAdminAccount = async (adminRecoveryInput: AdminRecoveryInput, options?: Parameters<typeof customFetch>[1]): Promise<AuthenticatedSession> => {
+
+    const getHeaders = (h?: NonNullable<RequestInit['headers']>): Record<string, string | readonly string[]> => {
+    if (!h) return {};
+    if (h instanceof Headers) return Object.fromEntries(h.entries());
+    if (Array.isArray(h)) return Object.fromEntries(h);
+    return h;
+  };
+return customFetch<AuthenticatedSession>(getRecoverAdminAccountUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...getHeaders(options?.headers) },
+    body: JSON.stringify(adminRecoveryInput)
+  }
+);}
+
+
+
+
+
+export const getRecoverAdminAccountMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recoverAdminAccount>>, TError,RecoverAdminAccountMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof recoverAdminAccount>>, TError,RecoverAdminAccountMutationVariables, TContext> => {
+
+const mutationKey = ['recoverAdminAccount'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof recoverAdminAccount>>, RecoverAdminAccountMutationVariables> = (props) => {
+          const {data} = props ?? {};
+
+          return  recoverAdminAccount(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RecoverAdminAccountMutationResult = NonNullable<Awaited<ReturnType<typeof recoverAdminAccount>>>
+    export type RecoverAdminAccountMutationBody = BodyType<AdminRecoveryInput>
+    export type RecoverAdminAccountMutationError = ErrorType<void>
+    export type RecoverAdminAccountMutationVariables = {data: BodyType<AdminRecoveryInput>}
+
+    /**
+ * @summary Use a one-time installation recovery code to reset an administrator PIN
+ */
+export const useRecoverAdminAccount = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof recoverAdminAccount>>, TError,RecoverAdminAccountMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof recoverAdminAccount>>,
+        TError,
+        RecoverAdminAccountMutationVariables,
+        TContext
+      > => {
+      return useMutation(getRecoverAdminAccountMutationOptions(options));
+    }
+
 export const getGetAuthSessionUrl = () => {
 
 
@@ -2350,6 +2591,299 @@ export const useDeleteEmployee = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getDeleteEmployeeMutationOptions(options));
+    }
+
+export const getGetPinResetRequestsUrl = () => {
+
+
+
+
+  return `/api/employees/pin-reset-requests`
+}
+
+/**
+ * @summary List employee PIN reset requests (admin only)
+ */
+export const getPinResetRequests = async ( options?: Parameters<typeof customFetch>[1]): Promise<PinResetRequest[]> => {
+
+  return customFetch<PinResetRequest[]>(getGetPinResetRequestsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPinResetRequestsQueryKey = () => {
+    return [
+    `/api/employees/pin-reset-requests`
+    ] as const;
+    }
+
+
+export const getGetPinResetRequestsQueryOptions = <TData = Awaited<ReturnType<typeof getPinResetRequests>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPinResetRequests>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPinResetRequestsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPinResetRequests>>> = ({ signal }) => getPinResetRequests({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPinResetRequests>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPinResetRequestsQueryResult = NonNullable<Awaited<ReturnType<typeof getPinResetRequests>>>
+export type GetPinResetRequestsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List employee PIN reset requests (admin only)
+ */
+
+export function useGetPinResetRequests<TData = Awaited<ReturnType<typeof getPinResetRequests>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPinResetRequests>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPinResetRequestsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getApprovePinResetRequestUrl = (id: number,) => {
+
+
+
+
+  return `/api/employees/pin-reset-requests/${id}/approve`
+}
+
+/**
+ * @summary Issue a short-lived temporary PIN for a reset request (admin only)
+ */
+export const approvePinResetRequest = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<PinResetApproval> => {
+
+  return customFetch<PinResetApproval>(getApprovePinResetRequestUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getApprovePinResetRequestMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approvePinResetRequest>>, TError,ApprovePinResetRequestMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof approvePinResetRequest>>, TError,ApprovePinResetRequestMutationVariables, TContext> => {
+
+const mutationKey = ['approvePinResetRequest'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof approvePinResetRequest>>, ApprovePinResetRequestMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  approvePinResetRequest(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApprovePinResetRequestMutationResult = NonNullable<Awaited<ReturnType<typeof approvePinResetRequest>>>
+
+    export type ApprovePinResetRequestMutationError = ErrorType<unknown>
+    export type ApprovePinResetRequestMutationVariables = {id: number}
+
+    /**
+ * @summary Issue a short-lived temporary PIN for a reset request (admin only)
+ */
+export const useApprovePinResetRequest = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approvePinResetRequest>>, TError,ApprovePinResetRequestMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof approvePinResetRequest>>,
+        TError,
+        ApprovePinResetRequestMutationVariables,
+        TContext
+      > => {
+      return useMutation(getApprovePinResetRequestMutationOptions(options));
+    }
+
+export const getDenyPinResetRequestUrl = (id: number,) => {
+
+
+
+
+  return `/api/employees/pin-reset-requests/${id}/deny`
+}
+
+/**
+ * @summary Deny a pending employee PIN reset request (admin only)
+ */
+export const denyPinResetRequest = async (id: number, options?: Parameters<typeof customFetch>[1]): Promise<void> => {
+
+  return customFetch<void>(getDenyPinResetRequestUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getDenyPinResetRequestMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof denyPinResetRequest>>, TError,DenyPinResetRequestMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof denyPinResetRequest>>, TError,DenyPinResetRequestMutationVariables, TContext> => {
+
+const mutationKey = ['denyPinResetRequest'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof denyPinResetRequest>>, DenyPinResetRequestMutationVariables> = (props) => {
+          const {id} = props ?? {};
+
+          return  denyPinResetRequest(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DenyPinResetRequestMutationResult = NonNullable<Awaited<ReturnType<typeof denyPinResetRequest>>>
+
+    export type DenyPinResetRequestMutationError = ErrorType<unknown>
+    export type DenyPinResetRequestMutationVariables = {id: number}
+
+    /**
+ * @summary Deny a pending employee PIN reset request (admin only)
+ */
+export const useDenyPinResetRequest = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof denyPinResetRequest>>, TError,DenyPinResetRequestMutationVariables, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof denyPinResetRequest>>,
+        TError,
+        DenyPinResetRequestMutationVariables,
+        TContext
+      > => {
+      return useMutation(getDenyPinResetRequestMutationOptions(options));
+    }
+
+export const getRotateAdminRecoveryCodeUrl = () => {
+
+
+
+
+  return `/api/employees/recovery-code`
+}
+
+/**
+ * @summary Create a new one-time administrator recovery code (admin only)
+ */
+export const rotateAdminRecoveryCode = async ( options?: Parameters<typeof customFetch>[1]): Promise<RecoveryCodeResponse> => {
+
+  return customFetch<RecoveryCodeResponse>(getRotateAdminRecoveryCodeUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRotateAdminRecoveryCodeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rotateAdminRecoveryCode>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof rotateAdminRecoveryCode>>, TError,void, TContext> => {
+
+const mutationKey = ['rotateAdminRecoveryCode'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rotateAdminRecoveryCode>>, void> = () => {
+
+
+          return  rotateAdminRecoveryCode(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RotateAdminRecoveryCodeMutationResult = NonNullable<Awaited<ReturnType<typeof rotateAdminRecoveryCode>>>
+
+    export type RotateAdminRecoveryCodeMutationError = ErrorType<unknown>
+
+
+    /**
+ * @summary Create a new one-time administrator recovery code (admin only)
+ */
+export const useRotateAdminRecoveryCode = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rotateAdminRecoveryCode>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof rotateAdminRecoveryCode>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getRotateAdminRecoveryCodeMutationOptions(options));
     }
 
 export const getGetProductsUrl = (params?: GetProductsParams,) => {

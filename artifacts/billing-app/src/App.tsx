@@ -5,6 +5,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { EmployeeProvider, useEmployee } from "@/context/EmployeeContext";
 import { EmployeeSignIn } from "@/components/EmployeeSignIn";
+import { EmployeePinChange } from "@/components/EmployeePinChange";
+import { RecoveryCodeNotice } from "@/components/RecoveryCodeNotice";
 import { LocaleProvider } from "@/context/LocaleContext";
 import NotFound from "@/pages/not-found";
 
@@ -115,11 +117,18 @@ function AccessDenied() {
 }
 
 function AuthBoundary() {
-  const { activeEmployee, isLoading } = useEmployee();
+  const { activeEmployee, isLoading, recoveryCode } = useEmployee();
   if (isLoading) {
     return <div className="min-h-screen bg-background flex items-center justify-center text-sm text-muted-foreground">Loading secure session…</div>;
   }
-  return activeEmployee ? <Router /> : <EmployeeSignIn />;
+  if (!activeEmployee) return <EmployeeSignIn />;
+  if (activeEmployee.requiresPinChange) return <EmployeePinChange />;
+  return (
+    <>
+      <Router />
+      {recoveryCode && <RecoveryCodeNotice />}
+    </>
+  );
 }
 
 function App() {

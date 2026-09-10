@@ -12,6 +12,10 @@ export const employeesTable = pgTable("employees", {
   role: text("role").notNull().default("staff"),
   maxDiscountPct: numeric("max_discount_pct", { precision: 5, scale: 2 }).notNull().default("0"),
   active: boolean("active").notNull().default(true),
+  pinMustChange: boolean("pin_must_change").notNull().default(false),
+  pinExpiresAt: timestamp("pin_expires_at"),
+  recoveryCodeHash: text("recovery_code_hash"),
+  recoveryCodeUsedAt: timestamp("recovery_code_used_at"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
