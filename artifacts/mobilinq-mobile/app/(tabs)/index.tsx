@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { getGetInventorySummaryQueryKey, getGetRepairsQueryKey, getGetSalesQueryKey, getGetSignInEmployeesQueryKey, useGetAuthSession, useGetInventorySummary, useGetRepairs, useGetSales, useGetSignInEmployees, useSignInEmployee } from '@workspace/api-client-react';
 import { Feather } from '@expo/vector-icons';
 import { InventoryHealth, getInventoryItems } from '@/components/InventoryHealth';
 import { getTopInset, ScreenSkeleton } from '@/components/BusinessUI';
+import { LocalizedText as Text } from '@/components/BusinessUI';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { OfflineBanner } from '@/components/OfflineBanner';

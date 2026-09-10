@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { OutboxPanel } from '@/components/OutboxPanel';
 import { ScreenHeader, SignedOutState, getTopInset } from '@/components/BusinessUI';
+import { LocalizedText as Text } from '@/components/BusinessUI';
 import { useGetAuthSession } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';
 

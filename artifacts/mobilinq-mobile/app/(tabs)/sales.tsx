@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import {
   getGetSalesQueryKey,
   getGetSettingsQueryKey,
@@ -26,6 +26,7 @@ import {
   SignedOutState,
   getTopInset,
 } from '@/components/BusinessUI';
+import { LocalizedText as Text } from '@/components/BusinessUI';
 
 export default function SalesScreen() {
   const colors = useColors();

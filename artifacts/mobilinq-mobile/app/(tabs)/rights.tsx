@@ -1,8 +1,9 @@
 import React, { useMemo, useState } from 'react';
-import { Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Linking, Pressable, RefreshControl, ScrollView, StyleSheet, TextInput, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useGetCustomerRights, type CustomerRightsEntry } from '@workspace/api-client-react';
 import { getTopInset, ScreenHeader } from '@/components/BusinessUI';
+import { LocalizedText as Text } from '@/components/BusinessUI';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { useMobileOffline } from '@/context/MobileOfflineContext';
 import { useColors } from '@/hooks/useColors';

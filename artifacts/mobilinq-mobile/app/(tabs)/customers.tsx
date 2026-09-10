@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, RefreshControl, StyleSheet, TextInput, View } from 'react-native';
 import {
   getGetCustomersQueryKey,
   useCreateCustomer,
@@ -13,6 +13,7 @@ import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollV
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { OutboxPanel } from '@/components/OutboxPanel';
 import { ErrorState, ScreenHeader, ScreenSkeleton, SignedOutState, getTopInset } from '@/components/BusinessUI';
+import { LocalizedText as Text } from '@/components/BusinessUI';
 import { useColors } from '@/hooks/useColors';
 import { enqueueMobileOperation, isOfflineFailure } from '@/lib/mobile-offline';
 

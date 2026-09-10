@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,7 +8,7 @@ import type { RepairStatusChangeStatus } from '@workspace/api-client-react';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { OutboxPanel } from '@/components/OutboxPanel';
 import { PhotoCapture } from '@/components/PhotoCapture';
-import { ErrorState, ScreenHeader, ScreenSkeleton, SignedOutState, formatDate, formatStatus, getTopInset } from '@/components/BusinessUI';
+import { ErrorState, ScreenHeader, ScreenSkeleton, SignedOutState, LocalizedText as Text, formatDate, formatStatus, getTopInset } from '@/components/BusinessUI';
 import { useColors } from '@/hooks/useColors';
 import { enqueueMobileOperation, isOfflineFailure } from '@/lib/mobile-offline';
 

@@ -15,6 +15,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { setBaseUrl, setAuthTokenGetter } from '@workspace/api-client-react';
 import { MobileOfflineProvider } from '@/context/MobileOfflineContext';
+import { LocaleProvider, useLocale } from '@/context/LocaleContext';
 
 setBaseUrl(`https://${process.env.EXPO_PUBLIC_DOMAIN}`);
 setAuthTokenGetter(() => null);
@@ -25,12 +26,13 @@ SplashScreen.preventAutoHideAsync();
 const queryClient = new QueryClient();
 
 function RootLayoutNav() {
+  const { t } = useLocale();
   return (
-    <Stack screenOptions={{ headerBackTitle: 'Back' }}>
+    <Stack screenOptions={{ headerBackTitle: t('Back') }}>
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen name="repair-new" options={{ title: 'New repair' }} />
-      <Stack.Screen name="sale-new" options={{ title: 'New invoice' }} />
-      <Stack.Screen name="repair/[id]" options={{ title: 'Repair detail' }} />
+      <Stack.Screen name="repair-new" options={{ title: t('New repair') }} />
+      <Stack.Screen name="sale-new" options={{ title: t('New invoice') }} />
+      <Stack.Screen name="repair/[id]" options={{ title: t('Repair detail') }} />
     </Stack>
   );
 }
@@ -56,11 +58,13 @@ export default function RootLayout() {
       <ErrorBoundary>
         <QueryClientProvider client={queryClient}>
           <MobileOfflineProvider>
-            <GestureHandlerRootView>
-              <KeyboardProvider>
-                <RootLayoutNav />
-              </KeyboardProvider>
-            </GestureHandlerRootView>
+            <LocaleProvider>
+              <GestureHandlerRootView>
+                <KeyboardProvider>
+                  <RootLayoutNav />
+                </KeyboardProvider>
+              </GestureHandlerRootView>
+            </LocaleProvider>
           </MobileOfflineProvider>
         </QueryClientProvider>
       </ErrorBoundary>

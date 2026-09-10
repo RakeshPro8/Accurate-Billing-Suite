@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import {
   getGetQuotationsQueryKey,
   getGetSettingsQueryKey,
@@ -23,6 +23,7 @@ import {
   SignedOutState,
   getTopInset,
 } from '@/components/BusinessUI';
+import { LocalizedText as Text } from '@/components/BusinessUI';
 
 function isExpired(value: string | null | undefined) {
   if (!value) return false;

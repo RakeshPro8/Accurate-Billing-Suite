@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { EmployeeProvider, useEmployee } from "@/context/EmployeeContext";
 import { EmployeeSignIn } from "@/components/EmployeeSignIn";
+import { LocaleProvider } from "@/context/LocaleContext";
 import NotFound from "@/pages/not-found";
 
 import Dashboard from "@/pages/Dashboard";
@@ -100,16 +101,18 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <EmployeeProvider>
-          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-            <Switch>
-              <Route path="/customer-access/:token" component={CustomerAccess} />
-              <Route path="/welcome" component={Welcome} />
-              <Route component={AuthBoundary} />
-            </Switch>
-          </WouterRouter>
-        </EmployeeProvider>
-        <Toaster />
+        <LocaleProvider>
+          <EmployeeProvider>
+            <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+              <Switch>
+                <Route path="/customer-access/:token" component={CustomerAccess} />
+                <Route path="/welcome" component={Welcome} />
+                <Route component={AuthBoundary} />
+              </Switch>
+            </WouterRouter>
+          </EmployeeProvider>
+          <Toaster />
+        </LocaleProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

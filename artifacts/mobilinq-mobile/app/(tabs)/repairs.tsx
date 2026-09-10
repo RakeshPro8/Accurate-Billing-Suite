@@ -4,7 +4,6 @@ import {
   RefreshControl,
   ScrollView,
   StyleSheet,
-  Text,
   TextInput,
   View,
 } from 'react-native';
@@ -26,7 +25,7 @@ import type {
 } from '@workspace/api-client-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { InventoryHealth, getInventoryItems } from '@/components/InventoryHealth';
-import { getTopInset } from '@/components/BusinessUI';
+import { getTopInset, LocalizedText as Text } from '@/components/BusinessUI';
 import { useColors } from '@/hooks/useColors';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { router } from 'expo-router';

@@ -1,0 +1,235 @@
+export type Locale = "en" | "fr";
+
+export const DEFAULT_LOCALE: Locale = "en";
+export const LOCALE_STORAGE_KEY = "mobilinq.locale";
+
+export const LOCALE_LABELS: Record<Locale, string> = {
+  en: "English",
+  fr: "Français",
+};
+
+let activeLocale: Locale = DEFAULT_LOCALE;
+
+export function setActiveLocale(locale: Locale) {
+  activeLocale = locale;
+}
+
+export function getActiveLocale(): Locale {
+  return activeLocale;
+}
+
+const FRENCH: Record<string, string> = {
+  "Dashboard": "Tableau de bord",
+  "Sales": "Ventes",
+  "Quotations": "Soumissions",
+  "Customers": "Clients",
+  "Products & Services": "Produits et services",
+  "Repairs": "Réparations",
+  "Customer Rights Guide": "Guide des droits des clients",
+  "Operations": "Opérations",
+  "Device Diagram": "Schéma de l’appareil",
+  "Employees": "Employés",
+  "Reports": "Rapports",
+  "Audit Trail": "Journal d’audit",
+  "Settings": "Paramètres",
+  "UI Lab": "Laboratoire d’interface",
+  "Sign In": "Connexion",
+  "Sign out": "Déconnexion",
+  "Toggle menu": "Ouvrir le menu",
+  "Select your account to start a session": "Sélectionnez votre compte pour commencer une session",
+  "Create the first administrator account": "Créez le premier compte administrateur",
+  "Employee account": "Compte employé",
+  "Choose your employee account.": "Choisissez votre compte employé.",
+  "Enter a 4-8 digit PIN.": "Entrez un NIP de 4 à 8 chiffres.",
+  "Enter your full name.": "Entrez votre nom complet.",
+  "Choose a 4-8 digit PIN.": "Choisissez un NIP de 4 à 8 chiffres.",
+  "PINs do not match.": "Les NIP ne correspondent pas.",
+  "Unable to sign in. Try again.": "Connexion impossible. Réessayez.",
+  "Setup could not be completed. Try again.": "La configuration a échoué. Réessayez.",
+  "This is a new installation. The first account receives administrator access.": "Cette installation est nouvelle. Le premier compte reçoit les accès administrateur.",
+  "Full name": "Nom complet",
+  "Email": "Courriel",
+  "(optional)": "(facultatif)",
+  "Confirm PIN": "Confirmer le NIP",
+  "Repeat PIN": "Répétez le NIP",
+  "Creating account...": "Création du compte…",
+  "Create admin account": "Créer le compte administrateur",
+  "Retry connection": "Réessayer la connexion",
+  "No active employee accounts are available.": "Aucun compte employé actif n’est disponible.",
+  "Retry": "Réessayer",
+  "PIN": "NIP",
+  "Enter your 4-8 digit PIN": "Entrez votre NIP de 4 à 8 chiffres",
+  "Select an account first": "Sélectionnez d’abord un compte",
+  "Signing in...": "Connexion…",
+  "Your session is secured on this device and expires automatically.": "Votre session est sécurisée sur cet appareil et expire automatiquement.",
+  "Loading secure session…": "Chargement de la session sécurisée…",
+  "You do not have permission to view this page.": "Vous n’avez pas la permission de consulter cette page.",
+  "All locations": "Tous les emplacements",
+  "Online": "En ligne",
+  "Offline": "Hors ligne",
+  "Language": "Langue",
+  "English": "English",
+  "Français": "Français",
+  "Switch to English": "Passer à l’anglais",
+  "Passer au français": "Passer au français",
+  "New repair": "Nouvelle réparation",
+  "New invoice": "Nouvelle facture",
+  "Repair detail": "Détail de la réparation",
+  "Home": "Accueil",
+  "Quotes": "Soumissions",
+  "Billing": "Facturation",
+  "Alerts": "Alertes",
+  "Rights Guide": "Guide des droits",
+  "Invoice": "Facture",
+  "Quotation": "Soumission",
+  "INVOICE": "FACTURE",
+  "QUOTATION": "SOUMISSION",
+  "Date": "Date",
+  "Customer": "Client",
+  "Walk-in Customer": "Client sans rendez-vous",
+  "Payment": "Paiement",
+  "Subtotal": "Sous-total",
+  "Discount": "Rabais",
+  "Tax": "Taxe",
+  "Tax profile": "Profil fiscal",
+  "TOTAL": "TOTAL",
+  "Your Store": "Votre commerce",
+  "Print": "Imprimer",
+  "PDF": "PDF",
+  "Save": "Enregistrer",
+  "Cancel": "Annuler",
+  "Edit": "Modifier",
+  "Delete": "Supprimer",
+  "Create": "Créer",
+  "Search": "Rechercher",
+  "Loading...": "Chargement…",
+  "Loading…": "Chargement…",
+  "No results found.": "Aucun résultat trouvé.",
+  "No data available.": "Aucune donnée disponible.",
+  "View all": "Voir tout",
+  "View details": "Voir les détails",
+  "Back": "Retour",
+  "Next": "Suivant",
+  "Previous": "Précédent",
+  "Close": "Fermer",
+  "Apply": "Appliquer",
+  "Update": "Mettre à jour",
+  "Status": "Statut",
+  "Created": "Créé",
+  "Not sent": "Non envoyé",
+  "Withheld": "Retenu",
+  "Attempts": "Tentatives",
+  "Destination": "Destination",
+  "Next retry": "Prochaine tentative",
+  "Failure context": "Contexte de l’échec",
+  "Recycling handoff": "Remise pour recyclage",
+  "Add recycling receipt": "Ajouter un reçu de recyclage",
+  "Separate zero-value record. It never changes invoice totals, inventory, taxes, payments, or balance.": "Dossier distinct sans valeur. Il ne modifie jamais les totaux de facture, l’inventaire, les taxes, les paiements ou le solde.",
+  "Loading recycling details…": "Chargement des détails du recyclage…",
+  "Service responsible. Avenir durable.": "Service responsable. Avenir durable.",
+  "Responsible recycling. A sustainable future.": "Recyclage responsable. Avenir durable.",
+  "Customer information": "Informations du client",
+  "Device handoff details": "Détails de l’appareil remis",
+  "Value / Transaction": "Valeur / Transaction",
+  "Declaration": "Déclaration",
+  "Signature and acceptance": "Signature et acceptation",
+  "Unknown condition": "État inconnu",
+  "No date": "Aucune date",
+  "TRY AGAIN": "RÉESSAYER",
+  "TAKE PHOTO": "PRENDRE UNE PHOTO",
+  "CHOOSE": "CHOISIR",
+  "NEW REPAIR": "NOUVELLE RÉPARATION",
+  "VIEW DETAILS": "VOIR LES DÉTAILS",
+  "Search ticket, customer, or device": "Rechercher un billet, un client ou un appareil",
+  "Active repair queue": "File des réparations actives",
+  "No active repairs right now.": "Aucune réparation active pour le moment.",
+  "Camera capture uses the browser permission when available.": "La caméra utilise l’autorisation du navigateur lorsqu’elle est disponible.",
+  "Sign in to continue": "Connectez-vous pour continuer",
+  "Choose Home to sign in with your employee PIN.": "Choisissez Accueil pour vous connecter avec votre NIP d’employé.",
+  "Current store": "Commerce actuel",
+  "Store context controls your lists and permissions.": "Le commerce actif contrôle vos listes et vos permissions.",
+  "selected. Local data was refreshed for this store.": "sélectionné. Les données locales ont été actualisées pour ce commerce.",
+  "Store could not be selected. Try again when connected.": "Le commerce n’a pas pu être sélectionné. Réessayez lorsque la connexion sera rétablie.",
+  "Signed out. Local operational data was cleared.": "Session fermée. Les données opérationnelles locales ont été supprimées.",
+  "configured at": "configurée à",
+  "Tax disabled for new transactions": "Taxes désactivées pour les nouvelles transactions",
+  "Sessions use OS-backed storage where available. PINs, device unlock codes, and payment data are never persisted.": "Les sessions utilisent le stockage sécurisé du système lorsque disponible. Les NIP, codes de déverrouillage et données de paiement ne sont jamais conservés.",
+  "SIGN OUT": "FERMER LA SESSION",
+  "Device recycling receipt": "Reçu de recyclage d’appareil",
+  "Customer name": "Nom du client",
+  "Phone": "Téléphone",
+  "Device type": "Type d’appareil",
+  "Brand / Model": "Marque / Modèle",
+  "Colour": "Couleur",
+  "Declared condition": "État déclaré",
+  "Included accessories": "Accessoires inclus",
+  "Serial number / IMEI": "N° de série / IMEI",
+  "Handed over by customer on": "Remis par le client le",
+  "Value / compensation": "Valeur / compensation",
+  "This handoff has no impact on the invoice, taxes, payments, or customer balance.": "Cette remise n’a aucune incidence sur la facture, les taxes, les paiements ou le solde du client.",
+  "The customer confirms that they voluntarily handed the device identified above to Mobilinq for recycling.": "Le client confirme avoir remis volontairement à Mobilinq l’appareil identifié ci-dessus aux fins de recyclage.",
+  "No payment, credit, discount, or other monetary compensation was provided to the customer, and no amount is owed for this handoff.": "Aucun paiement, crédit, rabais ou autre compensation monétaire n’a été versé au client et aucun montant n’est dû relativement à cette remise.",
+  "The customer authorizes Mobilinq to take possession of the device and process it according to its electronic-device management procedures and applicable environmental requirements.": "Le client autorise Mobilinq à prendre possession de l’appareil et à le traiter conformément à ses procédures de gestion des appareils électroniques et aux exigences environnementales applicables.",
+  "The device will be sent to an appropriate processing stream based on its condition and available options.": "L’appareil sera acheminé vers une filière de traitement appropriée selon son état et les options disponibles.",
+  "Thank you for choosing Mobilinq for responsible recycling of your device.": "Merci d’avoir choisi Mobilinq pour le recyclage responsable de votre appareil.",
+  "Your action helps reduce environmental impact and supports material recovery.": "Votre geste contribue à réduire l’impact environnemental et à favoriser la valorisation des matières.",
+  "Received by (Mobilinq)": "Reçu par (Mobilinq)",
+  "Printed name": "Nom en lettres moulées",
+  "Customer signature (optional)": "Signature du client (facultative)",
+  "Employee who received the device": "Employé ayant reçu l’appareil",
+  "To be confirmed": "À confirmer",
+  "Terms and conditions": "Conditions et modalités",
+  "This document is proof that the device was handed over for recycling; it is not proof of purchase.": "Le présent document constitue une preuve de remise de l’appareil à des fins de recyclage; il ne constitue pas une preuve d’achat.",
+  "No payment or credit was made. The transaction value is $0.00.": "Aucun paiement ou crédit n’a été effectué. La valeur de la transaction est de 0,00 $.",
+  "After handoff, the device may be dismantled and its components and materials may be recovered or processed through an appropriate stream.": "Après sa remise, l’appareil peut être démantelé et ses composantes et matières peuvent être récupérées ou traitées dans une filière appropriée.",
+  "Mobilinq processes or arranges processing according to applicable environmental requirements and the procedures of the stream used.": "Mobilinq effectue ou fait effectuer le traitement conformément aux exigences environnementales applicables et aux procédures de la filière utilisée.",
+  "Working": "Fonctionnel",
+  "Damaged": "Endommagé",
+  "Bricked / unusable": "Appareil briqué / hors d’usage",
+  "Unknown": "État inconnu",
+};
+
+export function translateText(locale: Locale, text: string): string {
+  if (locale === "en") return text;
+  const leading = text.match(/^\s*/)?.[0] ?? "";
+  const trailing = text.match(/\s*$/)?.[0] ?? "";
+  const trimmed = text.trim();
+  const translated = FRENCH[trimmed];
+  return translated ? `${leading}${translated}${trailing}` : text;
+}
+
+export function t(locale: Locale, key: string, values: Record<string, string | number> = {}): string {
+  let result = locale === "fr" ? FRENCH[key] ?? key : key;
+  for (const [name, value] of Object.entries(values)) {
+    result = result.replaceAll(`{{${name}}}`, String(value));
+  }
+  return result;
+}
+
+export function formatLocalizedDate(value: string | Date | null | undefined, locale: Locale): string {
+  if (!value) return t(locale, "No date");
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return t(locale, "No date");
+  return new Intl.DateTimeFormat(locale === "fr" ? "fr-CA" : "en-CA", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  }).format(date);
+}
+
+export function formatLocalizedCurrency(value: number | null | undefined, currency: string | undefined, locale: Locale): string {
+  const amount = Number(value ?? 0);
+  try {
+    return new Intl.NumberFormat(locale === "fr" ? "fr-CA" : "en-CA", {
+      style: "currency",
+      currency: currency || "CAD",
+      maximumFractionDigits: 2,
+    }).format(amount);
+  } catch {
+    return `${currency || "CAD"} ${amount.toFixed(2)}`;
+  }
+}
+
+export function isLocale(value: unknown): value is Locale {
+  return value === "en" || value === "fr";
+}

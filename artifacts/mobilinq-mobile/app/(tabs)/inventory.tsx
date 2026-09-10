@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, RefreshControl, StyleSheet, TextInput, View } from 'react-native';
 import { getGetProductsQueryKey, useAdjustInventory, useGetAuthSession, useGetProducts } from '@workspace/api-client-react';
 import type { Product } from '@workspace/api-client-react';
 import { Feather } from '@expo/vector-icons';
@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { OutboxPanel } from '@/components/OutboxPanel';
 import { ErrorState, ScreenHeader, ScreenSkeleton, SignedOutState, getTopInset, formatMoney } from '@/components/BusinessUI';
+import { LocalizedText as Text } from '@/components/BusinessUI';
 import { useColors } from '@/hooks/useColors';
 
 export default function InventoryScreen() {

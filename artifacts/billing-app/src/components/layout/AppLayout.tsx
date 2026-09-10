@@ -12,6 +12,8 @@ import { useGetSettings } from "@workspace/api-client-react";
 import { ConnectivityStatus } from "@/components/ConnectivityStatus";
 import { StoreSwitcher } from "@/components/StoreSwitcher";
 import { applyUiPreferencesToDocument, readUiPreferences, UI_PREFERENCES_EVENT, type UiPreferences } from "@/lib/ui-preferences";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useLocale } from "@/context/LocaleContext";
 
 const navItems: Array<{ href: string; label: string; icon: typeof LayoutDashboard; roles?: string[] }> = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -96,6 +98,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
   const [pinDialogOpen, setPinDialogOpen] = useState(false);
   const [uiPreferences, setUiPreferences] = useState<UiPreferences>(() => readUiPreferences());
   const { data: settings } = useGetSettings();
+  const { t } = useLocale();
   const appName = settings?.appName || "Mobilinq";
   const logoUrl = settings?.logoUrl || "/logo.jpg";
 
@@ -139,7 +142,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="-ml-2">
                   <Menu className="h-5 w-5" />
-                  <span className="sr-only">Toggle menu</span>
+                   <span className="sr-only">{t("Toggle menu")}</span>
                 </Button>
               </SheetTrigger>
               <SheetContent side="left" className="w-60 p-0 bg-card no-print">
@@ -158,6 +161,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           </div>
 
           <div className="flex items-center gap-3 ml-auto">
+            <LanguageSwitcher />
             <StoreSwitcher />
             <ConnectivityStatus />
             <EmployeeBadge onOpen={() => setPinDialogOpen(true)} />

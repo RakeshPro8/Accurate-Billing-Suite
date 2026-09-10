@@ -7,57 +7,59 @@ import { isLiquidGlassAvailable } from 'expo-glass-effect';
 import { Tabs } from 'expo-router';
 import { Icon, Label, NativeTabs } from 'expo-router/unstable-native-tabs';
 import { SymbolView } from 'expo-symbols';
+import { useLocale } from '@/context/LocaleContext';
 
 // IMPORTANT: iOS 26 uses NativeTabs for native tabs with liquid glass support.
 // NativeTabs intentionally does NOT use custom design tokens — liquid glass
 // is a system-level appearance provided by iOS and cannot be overridden.
 // Custom brand colors are applied only on the ClassicTabLayout path (older iOS / Android / web).
 function NativeTabLayout() {
+  const { t } = useLocale();
   return (
     <NativeTabs>
       <NativeTabs.Trigger name="index">
         <Icon sf={{ default: 'house', selected: 'house.fill' }} />
-        <Label>Home</Label>
+        <Label>{t('Home')}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="repairs">
         <Icon sf={{ default: 'wrench.and.screwdriver', selected: 'wrench.and.screwdriver.fill' }} />
-        <Label>Repairs</Label>
+        <Label>{t('Repairs')}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="customers">
         <Icon sf={{ default: 'person.2', selected: 'person.2.fill' }} />
-        <Label>Customers</Label>
+        <Label>{t('Customers')}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="inventory">
         <Icon sf={{ default: 'shippingbox', selected: 'shippingbox.fill' }} />
-        <Label>Inventory</Label>
+        <Label>{t('Inventory')}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="dashboard">
         <Icon sf={{ default: 'chart.bar', selected: 'chart.bar.fill' }} />
-        <Label>Dashboard</Label>
+        <Label>{t('Dashboard')}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="sales">
         <Icon sf={{ default: 'creditcard', selected: 'creditcard.fill' }} />
-        <Label>Sales</Label>
+        <Label>{t('Sales')}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="quotes">
         <Icon sf={{ default: 'text.bubble', selected: 'text.bubble.fill' }} />
-        <Label>Quotes</Label>
+        <Label>{t('Quotes')}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="billing">
         <Icon sf={{ default: 'dollarsign.circle', selected: 'dollarsign.circle.fill' }} />
-        <Label>Billing</Label>
+        <Label>{t('Billing')}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="notifications">
         <Icon sf={{ default: 'bell', selected: 'bell.fill' }} />
-        <Label>Alerts</Label>
+        <Label>{t('Alerts')}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="settings">
         <Icon sf={{ default: 'gearshape', selected: 'gearshape.fill' }} />
-        <Label>Settings</Label>
+        <Label>{t('Settings')}</Label>
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="rights">
         <Icon sf={{ default: 'book.closed', selected: 'book.closed.fill' }} />
-        <Label>Rights Guide</Label>
+        <Label>{t('Rights Guide')}</Label>
       </NativeTabs.Trigger>
     </NativeTabs>
   );
@@ -65,6 +67,7 @@ function NativeTabLayout() {
 
 function ClassicTabLayout() {
   const colors = useColors();
+  const { t } = useLocale();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const isIOS = Platform.OS === 'ios';
@@ -104,7 +107,7 @@ function ClassicTabLayout() {
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
+          title: t('Home'),
           tabBarIcon: ({ color }) =>
             isIOS ? (
               <SymbolView name="house" tintColor={color} size={24} />
@@ -113,16 +116,16 @@ function ClassicTabLayout() {
             ),
         }}
       />
-      <Tabs.Screen name="repairs" options={{ title: 'Repairs', tabBarIcon: ({ color }) => <Feather name="tool" size={22} color={color} /> }} />
-      <Tabs.Screen name="customers" options={{ title: 'Customers', tabBarIcon: ({ color }) => <Feather name="users" size={22} color={color} /> }} />
-      <Tabs.Screen name="inventory" options={{ title: 'Inventory', tabBarIcon: ({ color }) => <Feather name="package" size={22} color={color} /> }} />
-      <Tabs.Screen name="dashboard" options={{ title: 'Dashboard', tabBarIcon: ({ color }) => <Feather name="bar-chart-2" size={22} color={color} /> }} />
-      <Tabs.Screen name="sales" options={{ title: 'Sales', tabBarIcon: ({ color }) => <Feather name="credit-card" size={22} color={color} /> }} />
-      <Tabs.Screen name="quotes" options={{ title: 'Quotes', tabBarIcon: ({ color }) => <Feather name="message-square" size={22} color={color} /> }} />
-      <Tabs.Screen name="billing" options={{ title: 'Billing', tabBarIcon: ({ color }) => <Feather name="dollar-sign" size={22} color={color} /> }} />
-      <Tabs.Screen name="notifications" options={{ title: 'Alerts', tabBarIcon: ({ color }) => <Feather name="bell" size={22} color={color} /> }} />
-      <Tabs.Screen name="settings" options={{ title: 'Settings', tabBarIcon: ({ color }) => <Feather name="settings" size={22} color={color} /> }} />
-      <Tabs.Screen name="rights" options={{ title: 'Rights Guide', tabBarIcon: ({ color }) => <Feather name="book-open" size={22} color={color} /> }} />
+      <Tabs.Screen name="repairs" options={{ title: t('Repairs'), tabBarIcon: ({ color }) => <Feather name="tool" size={22} color={color} /> }} />
+      <Tabs.Screen name="customers" options={{ title: t('Customers'), tabBarIcon: ({ color }) => <Feather name="users" size={22} color={color} /> }} />
+      <Tabs.Screen name="inventory" options={{ title: t('Inventory'), tabBarIcon: ({ color }) => <Feather name="package" size={22} color={color} /> }} />
+      <Tabs.Screen name="dashboard" options={{ title: t('Dashboard'), tabBarIcon: ({ color }) => <Feather name="bar-chart-2" size={22} color={color} /> }} />
+      <Tabs.Screen name="sales" options={{ title: t('Sales'), tabBarIcon: ({ color }) => <Feather name="credit-card" size={22} color={color} /> }} />
+      <Tabs.Screen name="quotes" options={{ title: t('Quotes'), tabBarIcon: ({ color }) => <Feather name="message-square" size={22} color={color} /> }} />
+      <Tabs.Screen name="billing" options={{ title: t('Billing'), tabBarIcon: ({ color }) => <Feather name="dollar-sign" size={22} color={color} /> }} />
+      <Tabs.Screen name="notifications" options={{ title: t('Alerts'), tabBarIcon: ({ color }) => <Feather name="bell" size={22} color={color} /> }} />
+      <Tabs.Screen name="settings" options={{ title: t('Settings'), tabBarIcon: ({ color }) => <Feather name="settings" size={22} color={color} /> }} />
+      <Tabs.Screen name="rights" options={{ title: t('Rights Guide'), tabBarIcon: ({ color }) => <Feather name="book-open" size={22} color={color} /> }} />
     </Tabs>
   );
 }

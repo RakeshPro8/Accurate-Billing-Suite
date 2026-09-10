@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { router } from 'expo-router';
 import { useCreateRepair, useGetCustomers, useGetAuthSession, getGetCustomersQueryKey } from '@workspace/api-client-react';
 import type { RepairInput } from '@workspace/api-client-react';
@@ -9,6 +9,7 @@ import { KeyboardAwareScrollViewCompat } from '@/components/KeyboardAwareScrollV
 import { PhotoCapture } from '@/components/PhotoCapture';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { ScreenHeader, SignedOutState, getTopInset } from '@/components/BusinessUI';
+import { LocalizedText as Text } from '@/components/BusinessUI';
 import { useColors } from '@/hooks/useColors';
 import { enqueueMobileOperation, isOfflineFailure } from '@/lib/mobile-offline';
 

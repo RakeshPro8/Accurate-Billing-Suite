@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import {
   getGetDashboardSummaryQueryKey,
   getGetInventorySummaryQueryKey,
@@ -26,6 +26,7 @@ import {
   SignedOutState,
   getTopInset,
 } from '@/components/BusinessUI';
+import { LocalizedText as Text } from '@/components/BusinessUI';
 import { getInventoryItems } from '@/components/InventoryHealth';
 
 export default function DashboardScreen() {

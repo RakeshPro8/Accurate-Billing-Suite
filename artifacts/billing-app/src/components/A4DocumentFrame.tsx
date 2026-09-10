@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { useOptionalLocale } from "@/context/LocaleContext";
 
 export interface A4BusinessInfo {
   businessName?: string | null;
@@ -31,6 +32,7 @@ export function A4DocumentFrame({
   footer?: ReactNode;
   className?: string;
 }) {
+  const { translateText, t } = useOptionalLocale();
   return (
     <article className={`a4-document bg-white text-slate-900 rounded-lg border border-slate-200 shadow-sm overflow-hidden ${className}`}>
       <header className="a4-document-header bg-[#103f3c] text-white px-6 sm:px-8 py-6">
@@ -51,16 +53,16 @@ export function A4DocumentFrame({
             </div>
           </div>
           <div className="text-right shrink-0">
-            <div className="text-xl sm:text-3xl font-bold text-teal-200 uppercase tracking-tight">{title}</div>
+             <div className="text-xl sm:text-3xl font-bold text-teal-200 uppercase tracking-tight">{translateText(title)}</div>
             <div className="text-sm sm:text-lg font-mono mt-1">{documentNumber}</div>
-            <div className="text-xs sm:text-sm text-teal-100 mt-1">{dateLabel} : {dateValue}</div>
-            {secondaryDate && <div className="text-xs sm:text-sm text-teal-100">{secondaryDate.label} : {secondaryDate.value}</div>}
+             <div className="text-xs sm:text-sm text-teal-100 mt-1">{translateText(dateLabel)} : {dateValue}</div>
+             {secondaryDate && <div className="text-xs sm:text-sm text-teal-100">{translateText(secondaryDate.label)} : {secondaryDate.value}</div>}
           </div>
         </div>
       </header>
       <div className="a4-document-body p-6 sm:p-8">{children}</div>
       <footer className="a4-document-footer px-6 sm:px-8 py-4 border-t border-slate-200 text-xs text-slate-600">
-        {footer ?? business.invoiceFooter ?? "Mobilinq — Service responsable. Avenir durable."}
+         {footer ?? business.invoiceFooter ?? t("Service responsible. Avenir durable.")}
       </footer>
     </article>
   );

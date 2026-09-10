@@ -4,7 +4,7 @@
 
 import React from "react";
 import { QRCodeSVG } from "qrcode.react";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { useOptionalLocale } from "@/context/LocaleContext";
 
 export interface ReceiptItem {
   name: string;
@@ -77,11 +77,12 @@ interface ReceiptPrintProps {
 }
 
 export function ReceiptPrint({ data, business, qrValue }: ReceiptPrintProps) {
+  const { t, formatCurrency: formatLocalizedCurrency, formatDate: formatLocalizedDate } = useOptionalLocale();
   const docNum = data.invoiceNumber ?? data.quoteNumber ?? "";
   const qrContent = qrValue ?? docNum;
   const content = { ...DEFAULT_RECEIPT_CONTENT, ...(business.receiptContent ?? {}) };
   const showTax = content.showTaxBreakdown && (data.taxRate > 0 || data.tax !== 0);
-  const taxLabel = data.taxName ?? business.taxName ?? "Tax";
+  const taxLabel = data.taxName ?? business.taxName ?? t("Tax");
   const hasSavedContent = business.receiptContent !== undefined && business.receiptContent !== null;
   const thankYouMessage = hasSavedContent ? content.thankYouMessage : business.thankYouMessage;
   const footerText = hasSavedContent ? content.footerText : business.invoiceFooter;
@@ -133,10 +134,10 @@ export function ReceiptPrint({ data, business, qrValue }: ReceiptPrintProps) {
 
       {/* DOCUMENT INFO */}
       <div style={{ marginBottom: "2mm" }}>
-        <Row label={data.invoiceNumber ? "INVOICE" : "QUOTATION"} value={docNum} bold />
-        <Row label="Date" value={formatDate(data.createdAt)} />
-        {content.showCustomerDetails && <Row label="Customer" value={data.customerName || "Walk-in Customer"} />}
-        {content.showPaymentMethod && data.paymentMethod && <Row label="Payment" value={data.paymentMethod} />}
+         <Row label={data.invoiceNumber ? t("INVOICE") : t("QUOTATION")} value={docNum} bold />
+         <Row label={t("Date")} value={formatLocalizedDate(data.createdAt)} />
+         {content.showCustomerDetails && <Row label={t("Customer")} value={data.customerName || t("Walk-in Customer")} />}
+         {content.showPaymentMethod && data.paymentMethod && <Row label={t("Payment")} value={data.paymentMethod} />}
       </div>
 
       <Divider />
@@ -157,12 +158,12 @@ export function ReceiptPrint({ data, business, qrValue }: ReceiptPrintProps) {
             )}
             <div style={{ display: "flex", justifyContent: "space-between" }}>
               <span style={{ minWidth: 0, fontSize: "10px", overflowWrap: "anywhere" }}>
-                {item.quantity} × {formatCurrency(item.unitPrice)}
+                 {item.quantity} × {formatLocalizedCurrency(item.unitPrice, business.currency)}
                 {(item.discount ?? 0) > 0 && (
-                  <span style={{ color: "#555" }}> − {formatCurrency(item.discount ?? 0)}</span>
+                   <span style={{ color: "#555" }}> − {formatLocalizedCurrency(item.discount ?? 0, business.currency)}</span>
                 )}
               </span>
-              <span style={{ fontWeight: "bold" }}>{formatCurrency(item.total)}</span>
+               <span style={{ fontWeight: "bold" }}>{formatLocalizedCurrency(item.total, business.currency)}</span>
             </div>
           </div>
         ))}
@@ -172,23 +173,23 @@ export function ReceiptPrint({ data, business, qrValue }: ReceiptPrintProps) {
 
       {/* TOTALS */}
       <div style={{ marginBottom: "2mm" }}>
-        <Row label="Subtotal" value={formatCurrency(data.subtotal)} />
+         <Row label={t("Subtotal")} value={formatLocalizedCurrency(data.subtotal, business.currency)} />
         {data.discount > 0 && (
-          <Row label="Discount" value={`−${formatCurrency(data.discount)}`} />
+           <Row label={t("Discount")} value={`−${formatLocalizedCurrency(data.discount, business.currency)}`} />
         )}
 
         {/* Tax values are captured on the document; never recalculate from current settings. */}
         {showTax && (
-          <Row label={`${taxLabel} (${data.taxRate}%)`} value={formatCurrency(data.tax)} />
+           <Row label={`${taxLabel} (${data.taxRate}%)`} value={formatLocalizedCurrency(data.tax, business.currency)} />
         )}
         {content.showTaxBreakdown && data.taxProvinceCode && (
-          <Row label="Tax profile" value={data.taxProvinceCode} />
+           <Row label={t("Tax profile")} value={data.taxProvinceCode} />
         )}
       </div>
 
       <Divider thick />
 
-      <Row label="TOTAL" value={formatCurrency(data.total)} bold large />
+       <Row label={t("TOTAL")} value={formatLocalizedCurrency(data.total, business.currency)} bold large />
 
       <Divider />
 
@@ -218,7 +219,7 @@ export function ReceiptPrint({ data, business, qrValue }: ReceiptPrintProps) {
           <div style={{ fontSize: "9px", color: "#555" }}>{footerText}</div>
         )}
         <div style={{ marginTop: "2mm", fontSize: "8px", color: "#999" }}>
-          {formatDate(data.createdAt)}
+           {formatLocalizedDate(data.createdAt)}
         </div>
       </div>
     </div>

@@ -6,9 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useEmployee, ROLE_COLORS, ROLE_LABELS } from "@/context/EmployeeContext";
 import { trackEmployeeAuthOutcome } from "@/lib/analytics";
+import { useLocale } from "@/context/LocaleContext";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 
 export function EmployeeSignIn() {
   const { needsSetup, signInEmployees, publicStateError, signIn, bootstrap, refresh } = useEmployee();
+  const { t } = useLocale();
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [pin, setPin] = useState("");
   const [name, setName] = useState("");
@@ -20,12 +23,12 @@ export function EmployeeSignIn() {
   async function handleSignIn() {
     if (!selectedId) {
       trackEmployeeAuthOutcome("sign_in", "invalid_input");
-      setError("Choose your employee account.");
+      setError(t("Choose your employee account."));
       return;
     }
     if (!/^\d{4,8}$/.test(pin)) {
       trackEmployeeAuthOutcome("sign_in", "invalid_pin");
-      setError("Enter a 4-8 digit PIN.");
+      setError(t("Enter a 4-8 digit PIN."));
       return;
     }
     setError("");
@@ -33,7 +36,7 @@ export function EmployeeSignIn() {
     try {
       await signIn(selectedId, pin);
     } catch (err: any) {
-      setError(err?.message ?? "Unable to sign in. Try again.");
+      setError(err?.message ?? t("Unable to sign in. Try again."));
       setPin("");
     } finally {
       setPending(false);
@@ -43,17 +46,17 @@ export function EmployeeSignIn() {
   async function handleBootstrap() {
     if (!name.trim()) {
       trackEmployeeAuthOutcome("setup", "invalid_input");
-      setError("Enter your full name.");
+      setError(t("Enter your full name."));
       return;
     }
     if (!/^\d{4,8}$/.test(pin)) {
       trackEmployeeAuthOutcome("setup", "invalid_pin");
-      setError("Choose a 4-8 digit PIN.");
+      setError(t("Choose a 4-8 digit PIN."));
       return;
     }
     if (pin !== confirmPin) {
       trackEmployeeAuthOutcome("setup", "invalid_input");
-      setError("PINs do not match.");
+      setError(t("PINs do not match."));
       return;
     }
     setError("");
@@ -61,7 +64,7 @@ export function EmployeeSignIn() {
     try {
       await bootstrap({ name: name.trim(), email: email.trim() || undefined, pin });
     } catch (err: any) {
-      setError(err?.message ?? "Setup could not be completed. Try again.");
+      setError(err?.message ?? t("Setup could not be completed. Try again."));
     } finally {
       setPending(false);
     }
@@ -75,13 +78,16 @@ export function EmployeeSignIn() {
     <main className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="w-full max-w-md border-primary/20 shadow-lg">
         <CardHeader className="space-y-4 text-center">
+          <div className="flex justify-end">
+            <LanguageSwitcher />
+          </div>
           <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
             {needsSetup ? <UserPlus className="h-7 w-7" /> : <ShieldCheck className="h-7 w-7" />}
           </div>
           <div>
             <CardTitle className="text-2xl font-mono text-primary">Mobilinq</CardTitle>
             <CardDescription className="mt-2">
-              {needsSetup ? "Create the first administrator account" : "Select your account to start a session"}
+              {needsSetup ? t("Create the first administrator account") : t("Select your account to start a session")}
             </CardDescription>
           </div>
         </CardHeader>
@@ -102,40 +108,40 @@ export function EmployeeSignIn() {
           {needsSetup ? (
             <>
               <div className="rounded-md border border-primary/20 bg-primary/5 p-3 text-sm text-muted-foreground">
-                This is a new installation. The first account receives administrator access.
+                {t("This is a new installation. The first account receives administrator access.")}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="setup-name">Full name</Label>
+                <Label htmlFor="setup-name">{t("Full name")}</Label>
                 <Input id="setup-name" value={name} onChange={(e) => setName(e.target.value)} placeholder="Alex Morgan" autoFocus />
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="setup-email">Email <span className="text-muted-foreground">(optional)</span></Label>
+                <Label htmlFor="setup-email">{t("Email")} <span className="text-muted-foreground">{t("(optional)")}</span></Label>
                 <Input id="setup-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="alex@store.com" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="setup-pin">PIN</Label>
+                  <Label htmlFor="setup-pin">{t("PIN")}</Label>
                   <Input id="setup-pin" type="password" inputMode="numeric" autoComplete="new-password" value={pin} onChange={(e) => handlePin(e.target.value, setPin)} placeholder="4-8 digits" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="setup-confirm">Confirm PIN</Label>
-                  <Input id="setup-confirm" type="password" inputMode="numeric" autoComplete="new-password" value={confirmPin} onChange={(e) => handlePin(e.target.value, setConfirmPin)} placeholder="Repeat PIN" onKeyDown={(e) => e.key === "Enter" && void handleBootstrap()} />
+                  <Label htmlFor="setup-confirm">{t("Confirm PIN")}</Label>
+                  <Input id="setup-confirm" type="password" inputMode="numeric" autoComplete="new-password" value={confirmPin} onChange={(e) => handlePin(e.target.value, setConfirmPin)} placeholder={t("Repeat PIN")} onKeyDown={(e) => e.key === "Enter" && void handleBootstrap()} />
                 </div>
               </div>
               <Button type="submit" className="w-full" disabled={pending}>
                 {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {pending ? "Creating account..." : "Create admin account"}
+                {pending ? t("Creating account...") : t("Create admin account")}
               </Button>
             </>
           ) : (
             <>
               <div className="space-y-2">
-                <Label>Employee account</Label>
+                 <Label>{t("Employee account")}</Label>
                 {publicStateError ? (
                   <div className="rounded-md border border-destructive/40 bg-destructive/5 p-4 text-sm">
                     <p className="text-destructive">{publicStateError}</p>
                     <Button type="button" variant="link" className="h-auto px-0 pt-2" onClick={() => void refresh()}>
-                      Retry connection
+                       {t("Retry connection")}
                     </Button>
                   </div>
                 ) : signInEmployees.length > 0 ? (
@@ -159,8 +165,8 @@ export function EmployeeSignIn() {
                   </div>
                 ) : (
                   <div className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">
-                    No active employee accounts are available.
-                    <Button type="button" variant="link" className="h-auto px-1" onClick={() => void refresh()}>Retry</Button>
+                     {t("No active employee accounts are available.")}
+                     <Button type="button" variant="link" className="h-auto px-1" onClick={() => void refresh()}>{t("Retry")}</Button>
                   </div>
                 )}
               </div>
@@ -174,19 +180,19 @@ export function EmployeeSignIn() {
                   value={pin}
                   onChange={(e) => handlePin(e.target.value, setPin)}
                   onKeyDown={(e) => e.key === "Enter" && void handleSignIn()}
-                  placeholder={selectedId ? "Enter your 4-8 digit PIN" : "Select an account first"}
+                   placeholder={selectedId ? t("Enter your 4-8 digit PIN") : t("Select an account first")}
                   disabled={!selectedId}
                   className="text-center tracking-[0.35em]"
                 />
               </div>
               <Button type="submit" className="w-full" disabled={pending || !selectedId}>
                 {pending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                {pending ? "Signing in..." : "Sign in"}
+                 {pending ? t("Signing in...") : t("Sign In")}
               </Button>
             </>
           )}
           {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-          <p className="text-center text-xs text-muted-foreground">Your session is secured on this device and expires automatically.</p>
+           <p className="text-center text-xs text-muted-foreground">{t("Your session is secured on this device and expires automatically.")}</p>
           </form>
         </CardContent>
       </Card>

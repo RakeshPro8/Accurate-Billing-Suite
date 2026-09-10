@@ -1,5 +1,6 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { LocalizedText as Text } from '@/components/BusinessUI';
 import { Feather } from '@expo/vector-icons';
 import type { Product } from '@workspace/api-client-react';
 import { useColors } from '@/hooks/useColors';

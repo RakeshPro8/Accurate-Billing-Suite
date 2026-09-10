@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { router } from 'expo-router';
 import { useCreateSale, useGetAuthSession, useGetProducts, useGetCustomers, getGetProductsQueryKey, getGetCustomersQueryKey } from '@workspace/api-client-react';
 import type { LineItemInput, SaleInput } from '@workspace/api-client-react';
@@ -7,6 +7,7 @@ import { Feather } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { OfflineBanner } from '@/components/OfflineBanner';
 import { ScreenHeader, SignedOutState, formatMoney, getTopInset } from '@/components/BusinessUI';
+import { LocalizedText as Text } from '@/components/BusinessUI';
 import { useColors } from '@/hooks/useColors';
 import { enqueueMobileOperation, isOfflineFailure } from '@/lib/mobile-offline';
 

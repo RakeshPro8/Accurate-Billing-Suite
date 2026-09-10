@@ -2,8 +2,23 @@ import React from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Feather } from '@expo/vector-icons';
 import { useColors } from '@/hooks/useColors';
+import { useLocale } from '@/context/LocaleContext';
+import {
+  formatLocalizedCurrency,
+  formatLocalizedDate,
+  getActiveLocale,
+  translateText,
+} from '@workspace/localization';
 
 export type BusinessColors = ReturnType<typeof useColors>;
+
+export function LocalizedText(props: React.ComponentProps<typeof Text>) {
+  const { translateText } = useLocale();
+  const children = React.Children.map(props.children, (child) =>
+    typeof child === 'string' ? translateText(child) : child,
+  );
+  return <Text {...props}>{children}</Text>;
+}
 
 export function getTopInset(value: number) {
   return Platform.OS === 'web' ? Math.max(value, 67) : value;
@@ -14,23 +29,11 @@ export function formatStatus(value: string) {
 }
 
 export function formatMoney(value: number | null | undefined, currency = 'USD') {
-  const amount = Number(value ?? 0);
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: 'currency',
-      currency: currency || 'USD',
-      maximumFractionDigits: 2,
-    }).format(amount);
-  } catch {
-    return `${currency || 'USD'} ${amount.toFixed(2)}`;
-  }
+  return formatLocalizedCurrency(value, currency, getActiveLocale());
 }
 
 export function formatDate(value: string | null | undefined) {
-  if (!value) return 'No date';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return 'No date';
-  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return formatLocalizedDate(value, getActiveLocale());
 }
 
 export function ScreenHeader({
@@ -46,13 +49,14 @@ export function ScreenHeader({
   icon: keyof typeof Feather.glyphMap;
   colors: BusinessColors;
 }) {
+  const { translateText: localize } = useLocale();
   return (
     <View style={styles.header}>
       <View style={styles.headerCopy}>
-        <Text style={[styles.eyebrow, { color: colors.primary }]}>{eyebrow}</Text>
-        <Text style={[styles.title, { color: colors.foreground }]}>{title}</Text>
+        <Text style={[styles.eyebrow, { color: colors.primary }]}>{localize(eyebrow)}</Text>
+        <Text style={[styles.title, { color: colors.foreground }]}>{localize(title)}</Text>
         <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>
-          {subtitle}
+          {localize(subtitle)}
         </Text>
       </View>
       <View style={[styles.headerIcon, { backgroundColor: colors.primary }]}>
@@ -75,18 +79,19 @@ export function MetricCard({
   icon: keyof typeof Feather.glyphMap;
   colors: BusinessColors;
 }) {
+  const { translateText: localize } = useLocale();
   return (
     <View style={[styles.metric, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={styles.metricTop}>
         <Feather name={icon} size={15} color={colors.primary} />
         {detail ? (
           <Text style={[styles.metricDetail, { color: colors.mutedForeground }]}>
-            {detail}
+            {localize(detail)}
           </Text>
         ) : null}
       </View>
       <Text style={[styles.metricValue, { color: colors.foreground }]}>{value}</Text>
-      <Text style={[styles.metricLabel, { color: colors.mutedForeground }]}>{label}</Text>
+      <Text style={[styles.metricLabel, { color: colors.mutedForeground }]}>{localize(label)}</Text>
     </View>
   );
 }
@@ -100,13 +105,14 @@ export function SectionHeading({
   caption?: string;
   colors: BusinessColors;
 }) {
+  const { translateText: localize } = useLocale();
   return (
     <View style={styles.sectionHeading}>
       <View>
-        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>{title}</Text>
+        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>{localize(title)}</Text>
         {caption ? (
           <Text style={[styles.sectionCaption, { color: colors.mutedForeground }]}>
-            {caption}
+            {localize(caption)}
           </Text>
         ) : null}
       </View>
@@ -127,15 +133,16 @@ export function SignalRow({
   value: string;
   colors: BusinessColors;
 }) {
+  const { translateText: localize } = useLocale();
   return (
     <View style={[styles.signalRow, { borderTopColor: colors.border }]}>
       <View style={[styles.signalIcon, { backgroundColor: colors.accent }]}>
         <Feather name={icon} size={15} color={colors.primary} />
       </View>
       <View style={styles.signalCopy}>
-        <Text style={[styles.signalTitle, { color: colors.foreground }]}>{title}</Text>
+        <Text style={[styles.signalTitle, { color: colors.foreground }]}>{localize(title)}</Text>
         <Text style={[styles.signalDetail, { color: colors.mutedForeground }]} numberOfLines={1}>
-          {detail}
+          {localize(detail)}
         </Text>
       </View>
       <Text style={[styles.signalValue, { color: colors.primary }]}>{value}</Text>
@@ -150,6 +157,7 @@ export function ScreenSkeleton({
   colors: BusinessColors;
   topInset: number;
 }) {
+  const { t } = useLocale();
   return (
     <View style={[styles.skeletonScreen, { backgroundColor: colors.background, paddingTop: topInset + 20 }]}>
       <View style={[styles.skeletonKicker, { backgroundColor: colors.muted }]} />
@@ -177,6 +185,7 @@ export function ErrorState({
   colors: BusinessColors;
   topInset: number;
 }) {
+  const { t } = useLocale();
   return (
     <View style={[styles.center, { backgroundColor: colors.background, paddingTop: topInset }]}>
       <View style={[styles.stateIcon, { backgroundColor: colors.accent }]}>
@@ -190,7 +199,7 @@ export function ErrorState({
         onPress={onRetry}
         style={[styles.retry, { borderColor: colors.primary }]}
       >
-        <Text style={[styles.retryText, { color: colors.primary }]}>TRY AGAIN</Text>
+        <Text style={[styles.retryText, { color: colors.primary }]}>{t('TRY AGAIN')}</Text>
       </Pressable>
     </View>
   );
@@ -203,14 +212,15 @@ export function SignedOutState({
   colors: BusinessColors;
   topInset: number;
 }) {
+  const { t } = useLocale();
   return (
     <View style={[styles.center, { backgroundColor: colors.background, paddingTop: topInset }]}>
       <View style={[styles.stateIcon, { backgroundColor: colors.accent }]}>
         <Feather name="lock" size={20} color={colors.primary} />
       </View>
-      <Text style={[styles.stateTitle, { color: colors.foreground }]}>Sign in to continue</Text>
+      <Text style={[styles.stateTitle, { color: colors.foreground }]}>{t('Sign in to continue')}</Text>
       <Text style={[styles.stateMessage, { color: colors.mutedForeground }]}>
-        Choose Home to sign in with your employee PIN.
+        {t('Choose Home to sign in with your employee PIN.')}
       </Text>
     </View>
   );
@@ -227,13 +237,14 @@ export function EmptyState({
   message: string;
   colors: BusinessColors;
 }) {
+  const { translateText: localize } = useLocale();
   return (
     <View style={[styles.empty, { backgroundColor: colors.card, borderColor: colors.border }]}>
       <View style={[styles.stateIcon, { backgroundColor: colors.accent }]}>
         <Feather name={icon} size={19} color={colors.primary} />
       </View>
-      <Text style={[styles.emptyTitle, { color: colors.foreground }]}>{title}</Text>
-      <Text style={[styles.emptyMessage, { color: colors.mutedForeground }]}>{message}</Text>
+      <Text style={[styles.emptyTitle, { color: colors.foreground }]}>{localize(title)}</Text>
+      <Text style={[styles.emptyMessage, { color: colors.mutedForeground }]}>{localize(message)}</Text>
     </View>
   );
 }
