@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { ExternalLink, Megaphone, Search, ShieldAlert, Save, Volume2 } from "lucide-react";
+import { Clock3, ExternalLink, ListChecks, Megaphone, Search, ShieldAlert, Save, Volume2 } from "lucide-react";
 import {
   getGetCustomerRightsQueryKey,
   type CustomerRightsEntry,
@@ -96,12 +96,32 @@ export default function CustomerRights() {
     language: locale,
     status: isAdmin ? status as "draft" | "published" | "retired" : undefined,
   });
+  const publishedReviewQuery = useGetCustomerRights(
+    { language: locale, status: "published" },
+    { query: { queryKey: getGetCustomerRightsQueryKey({ language: locale, status: "published" }), enabled: isAdmin } },
+  );
+  const draftReviewQuery = useGetCustomerRights(
+    { language: locale, status: "draft" },
+    { query: { queryKey: getGetCustomerRightsQueryKey({ language: locale, status: "draft" }), enabled: isAdmin } },
+  );
   const update = useUpdateCustomerRightsEntry();
   const retire = useRetireCustomerRightsEntry();
   const entries = useMemo(() => (query.data?.entries ?? []).filter((entry) => {
     const needle = search.trim().toLowerCase();
     return !needle || `${entry.title} ${entry.summary} ${entry.provinceCode} ${topicLabels[entry.topic] ?? entry.topic}`.toLowerCase().includes(needle);
   }), [query.data?.entries, search]);
+  const reviewQueue = useMemo(() => {
+    const byId = new Map<number, CustomerRightsEntry>();
+    for (const entry of [...(publishedReviewQuery.data?.entries ?? []), ...(draftReviewQuery.data?.entries ?? [])]) {
+      byId.set(entry.id, entry);
+    }
+    return [...byId.values()]
+      .filter((entry) => entry.reviewStatus === "draft" || entry.reviewReminder !== "current")
+      .sort((a, b) => {
+        const priority = (entry: CustomerRightsEntry) => entry.reviewStatus === "draft" ? -2 : entry.reviewReminder === "overdue" ? -1 : 0;
+        return priority(a) - priority(b) || (a.reviewDaysRemaining ?? Number.MIN_SAFE_INTEGER) - (b.reviewDaysRemaining ?? Number.MIN_SAFE_INTEGER);
+      });
+  }, [draftReviewQuery.data?.entries, publishedReviewQuery.data?.entries]);
 
   useEffect(() => {
     const onOnline = () => setIsOnline(true);
@@ -194,6 +214,34 @@ export default function CustomerRights() {
         <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
           <div><p className="font-medium">{t("Content governance")}</p><p className="text-xs text-muted-foreground">{t("Admins can review, edit, publish, or retire entries. Employees only see published entries.")}</p></div>
           <Select value={status} onValueChange={setStatus}><SelectTrigger className="w-full sm:w-44"><SelectValue /></SelectTrigger><SelectContent><SelectItem value="published">{t("Published")}</SelectItem><SelectItem value="draft">{t("Needs review")}</SelectItem><SelectItem value="retired">{t("Retired")}</SelectItem></SelectContent></Select>
+        </CardContent>
+      </Card>}
+
+      {isAdmin && <Card className="border-primary/30 bg-primary/5">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base"><ListChecks className="h-4 w-4 text-primary" /> {t("Review ownership queue")}</CardTitle>
+          <p className="text-xs text-muted-foreground">{t("Managers own this review queue. It is a reminder only: entries are never published or changed automatically.")}</p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {publishedReviewQuery.isLoading || draftReviewQuery.isLoading ? <p className="text-sm text-muted-foreground">{t("Checking review dates…")}</p> : reviewQueue.length === 0 ? <div className="rounded-md border border-emerald-500/30 bg-emerald-500/5 p-3 text-sm text-emerald-700 dark:text-emerald-300">{t("No entries need attention for this language.")}</div> :
+            <div className="space-y-2">{reviewQueue.slice(0, 8).map((entry) => {
+              const reason = entry.reviewStatus === "draft"
+                ? t("Draft needs manager review before it can be published.")
+                : entry.reviewReminder === "overdue"
+                  ? t("The annual review window has passed. Recheck the official source.")
+                  : `${t("Review due")} ${formatDate(entry.reviewDueAt)}.`;
+              return <div key={entry.id} className="flex flex-col gap-3 rounded-md border bg-background/70 p-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="min-w-0 space-y-1.5">
+                  <div className="flex flex-wrap items-center gap-1.5"><Badge variant={entry.reviewReminder === "overdue" ? "destructive" : "outline"}>{entry.provinceCode} · {provinceLabels[entry.provinceCode]}</Badge><Badge variant="outline">{t(topicLabels[entry.topic] ?? entry.topic)}</Badge><Badge variant="outline">{entry.language === "fr" ? "Français" : "English"}</Badge></div>
+                  <p className="font-medium">{entry.title}</p>
+                  <p className="text-xs text-muted-foreground">{reason} {t("Last reviewed")} {formatDate(entry.lastReviewedAt)}.</p>
+                  <a href={entry.sourceUrl} target="_blank" rel="noreferrer" className="inline-flex max-w-full items-center gap-1 truncate text-xs text-primary hover:underline"><ExternalLink className="h-3 w-3 shrink-0" /> {entry.sourceUrl}</a>
+                </div>
+                <Button size="sm" variant="outline" className="shrink-0" onClick={() => { setStatus(entry.reviewStatus); setProvince(entry.provinceCode); setTopic(entry.topic); setSearch(""); }}>{t("Open entry")}</Button>
+              </div>;
+            })}</div>}
+          {reviewQueue.length > 8 && <p className="text-xs text-muted-foreground">{t("Showing the first 8 items. Use the filters below for the complete queue.")}</p>}
+          <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground"><Clock3 className="h-3 w-3" /> {t("Reminder window: 30 days before the annual review date.")}</p>
         </CardContent>
       </Card>}
 
