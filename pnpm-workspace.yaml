@@ -43,6 +43,7 @@ onlyBuiltDependencies:
   - unrs-resolver
 
 overrides:
+  '@babel/core': 7.29.7
   '@esbuild-kit/esm-loader': npm:tsx@^4.21.0
   '@expo/ngrok-bin>@expo/ngrok-bin-darwin-arm64': '-'
   '@expo/ngrok-bin>@expo/ngrok-bin-darwin-x64': '-'
@@ -64,12 +65,12 @@ overrides:
   '@tailwindcss/oxide>@tailwindcss/oxide-linux-x64-musl': '-'
   '@tailwindcss/oxide>@tailwindcss/oxide-win32-arm64-msvc': '-'
   '@tailwindcss/oxide>@tailwindcss/oxide-win32-x64-msvc': '-'
+  baseline-browser-mapping: 2.11.0
+  body-parser: 2.3.0
+  browserslist: 4.28.7
+  decode-uri-component: 0.5.0
+  dompurify: 3.4.13
   esbuild: 0.28.2
-  '@babel/core': 7.29.7
-  js-yaml: 4.3.1
-  linkify-it: 5.0.2
-  markdown-it: 14.3.1
-  qs: 6.15.3
   esbuild>@esbuild/aix-ppc64: '-'
   esbuild>@esbuild/android-arm: '-'
   esbuild>@esbuild/android-arm64: '-'
@@ -95,6 +96,8 @@ overrides:
   esbuild>@esbuild/win32-arm64: '-'
   esbuild>@esbuild/win32-ia32: '-'
   esbuild>@esbuild/win32-x64: '-'
+  fast-uri: 3.1.6
+  js-yaml: 4.3.2
   lightningcss>lightningcss-android-arm64: '-'
   lightningcss>lightningcss-darwin-arm64: '-'
   lightningcss>lightningcss-darwin-x64: '-'
@@ -105,6 +108,13 @@ overrides:
   lightningcss>lightningcss-linux-x64-musl: '-'
   lightningcss>lightningcss-win32-arm64-msvc: '-'
   lightningcss>lightningcss-win32-x64-msvc: '-'
+  linkify-it: 5.0.2
+  markdown-it: 14.3.1
+  metro@0.83.3>image-size: '-'
+  minimatch@>=10.0.0>brace-expansion: 5.0.9
+  nanoid: 3.3.18
+  postcss: 8.5.23
+  qs: 6.16.0
   rollup>@rollup/rollup-android-arm-eabi: '-'
   rollup>@rollup/rollup-android-arm64: '-'
   rollup>@rollup/rollup-darwin-arm64: '-'
@@ -129,3 +139,7 @@ overrides:
   rollup>@rollup/rollup-win32-ia32-msvc: '-'
   rollup>@rollup/rollup-win32-x64-gnu: '-'
   rollup>@rollup/rollup-win32-x64-msvc: '-'
+  xcode>uuid: 11.1.1
+
+patchedDependencies:
+  metro@0.83.3: patches/metro@0.83.3.patch
