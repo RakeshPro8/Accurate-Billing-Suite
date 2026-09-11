@@ -9,6 +9,10 @@ import { requireCurrentStoreId } from "../lib/stores";
 import {
   languages,
   provinceCodes,
+  getReviewReminder,
+  reviewIntervalDays,
+  reviewDueAt,
+  reviewDaysRemaining,
   sourceByProvince,
   topicCopy,
   topics,
@@ -41,13 +45,16 @@ const entryInput = z.object({
 
 function stale(lastReviewedAt: string) {
   const review = new Date(`${lastReviewedAt}T00:00:00Z`).getTime();
-  return !Number.isFinite(review) || Date.now() - review > 365 * 24 * 60 * 60 * 1000;
+  return !Number.isFinite(review) || Date.now() - review > reviewIntervalDays * 24 * 60 * 60 * 1000;
 }
 
 function parseEntry(entry: typeof guidanceEntriesTable.$inferSelect) {
   return {
     ...entry,
     stale: stale(entry.lastReviewedAt),
+    reviewDueAt: reviewDueAt(entry.lastReviewedAt),
+    reviewReminder: getReviewReminder(entry.lastReviewedAt),
+    reviewDaysRemaining: reviewDaysRemaining(entry.lastReviewedAt),
     disclaimer: "Internal compliance aid only — not legal advice. Do not promise an outcome. Confirm questions with a manager and the official source.",
     createdAt: entry.createdAt.toISOString(),
     updatedAt: entry.updatedAt.toISOString(),

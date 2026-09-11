@@ -3032,7 +3032,7 @@ components:
 
     CustomerRightsEntry:
       type: object
-      required: [id, provinceCode, topic, language, title, summary, infographic, sourceUrl, effectiveFrom, lastReviewedAt, reviewStatus, stale, disclaimer]
+      required: [id, provinceCode, topic, language, title, summary, infographic, sourceUrl, effectiveFrom, lastReviewedAt, reviewStatus, stale, reviewDueAt, reviewReminder, reviewDaysRemaining, disclaimer]
       properties:
         id: { type: integer }
         provinceCode: { type: string, enum: [AB, BC, MB, NB, NL, NS, NT, NU, ON, PE, QC, SK, YT] }
@@ -3047,6 +3047,9 @@ components:
         lastReviewedAt: { type: string, format: date }
         reviewStatus: { type: string, enum: [draft, published, retired] }
         stale: { type: boolean }
+        reviewDueAt: { type: string, format: date }
+        reviewReminder: { type: string, enum: [current, due_soon, overdue] }
+        reviewDaysRemaining: { type: ["integer", "null"] }
         disclaimer: { type: string }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }

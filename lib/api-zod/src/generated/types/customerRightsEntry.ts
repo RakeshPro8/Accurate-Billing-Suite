@@ -7,6 +7,7 @@
  */
 import type { CustomerRightsEntryLanguage } from './customerRightsEntryLanguage';
 import type { CustomerRightsEntryProvinceCode } from './customerRightsEntryProvinceCode';
+import type { CustomerRightsEntryReviewReminder } from './customerRightsEntryReviewReminder';
 import type { CustomerRightsEntryReviewStatus } from './customerRightsEntryReviewStatus';
 import type { CustomerRightsInfographic } from './customerRightsInfographic';
 
@@ -25,6 +26,10 @@ export interface CustomerRightsEntry {
   lastReviewedAt: Date;
   reviewStatus: CustomerRightsEntryReviewStatus;
   stale: boolean;
+  reviewDueAt: Date;
+  reviewReminder: CustomerRightsEntryReviewReminder;
+  /** @nullable */
+  reviewDaysRemaining: number | null;
   disclaimer: string;
   createdAt?: Date;
   updatedAt?: Date;

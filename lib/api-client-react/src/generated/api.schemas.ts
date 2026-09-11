@@ -1341,6 +1341,15 @@ export const CustomerRightsEntryReviewStatus = {
   retired: 'retired',
 } as const;
 
+export type CustomerRightsEntryReviewReminder = typeof CustomerRightsEntryReviewReminder[keyof typeof CustomerRightsEntryReviewReminder];
+
+
+export const CustomerRightsEntryReviewReminder = {
+  current: 'current',
+  due_soon: 'due_soon',
+  overdue: 'overdue',
+} as const;
+
 export interface CustomerRightsInfographic {
   /**
      * @minItems 3
@@ -1385,6 +1394,10 @@ export interface CustomerRightsEntry {
   lastReviewedAt: string;
   reviewStatus: CustomerRightsEntryReviewStatus;
   stale: boolean;
+  reviewDueAt: string;
+  reviewReminder: CustomerRightsEntryReviewReminder;
+  /** @nullable */
+  reviewDaysRemaining: number | null;
   disclaimer: string;
   createdAt?: string;
   updatedAt?: string;

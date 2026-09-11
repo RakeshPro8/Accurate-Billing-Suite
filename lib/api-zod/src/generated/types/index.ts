@@ -40,6 +40,7 @@ export * from './customerPreferencesUpdate';
 export * from './customerRightsEntry';
 export * from './customerRightsEntryLanguage';
 export * from './customerRightsEntryProvinceCode';
+export * from './customerRightsEntryReviewReminder';
 export * from './customerRightsEntryReviewStatus';
 export * from './customerRightsInfographic';
 export * from './customerRightsInput';

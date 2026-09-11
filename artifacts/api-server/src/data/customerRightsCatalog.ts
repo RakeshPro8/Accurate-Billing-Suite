@@ -17,6 +17,35 @@ export const topics = [
 ] as const;
 export type GuideTopic = typeof topics[number];
 
+export const reviewIntervalDays = 365;
+export const reviewReminderLeadDays = 30;
+export type ReviewReminder = "current" | "due_soon" | "overdue";
+
+function dateOnlyToUtcMs(value: string) {
+  return new Date(`${value}T00:00:00Z`).getTime();
+}
+
+export function reviewDueAt(lastReviewedAt: string) {
+  const reviewedAt = dateOnlyToUtcMs(lastReviewedAt);
+  if (!Number.isFinite(reviewedAt)) return lastReviewedAt;
+  return new Date(reviewedAt + reviewIntervalDays * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+}
+
+export function getReviewReminder(lastReviewedAt: string, now = new Date()): ReviewReminder {
+  const dueAt = dateOnlyToUtcMs(reviewDueAt(lastReviewedAt));
+  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  if (!Number.isFinite(dueAt) || today > dueAt) return "overdue";
+  if (dueAt - today <= reviewReminderLeadDays * 24 * 60 * 60 * 1000) return "due_soon";
+  return "current";
+}
+
+export function reviewDaysRemaining(lastReviewedAt: string, now = new Date()) {
+  const dueAt = dateOnlyToUtcMs(reviewDueAt(lastReviewedAt));
+  const today = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  if (!Number.isFinite(dueAt)) return null;
+  return Math.floor((dueAt - today) / (24 * 60 * 60 * 1000));
+}
+
 export type Infographic = {
   steps: string[];
   do: string[];

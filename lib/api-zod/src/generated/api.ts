@@ -439,6 +439,9 @@ export const GetCustomerRightsResponse = zod.object({
   "lastReviewedAt": zod.coerce.date(),
   "reviewStatus": zod.enum(['draft', 'published', 'retired']),
   "stale": zod.boolean(),
+  "reviewDueAt": zod.coerce.date(),
+  "reviewReminder": zod.enum(['current', 'due_soon', 'overdue']),
+  "reviewDaysRemaining": zod.number().int().nullable(),
   "disclaimer": zod.string(),
   "createdAt": zod.coerce.date().optional(),
   "updatedAt": zod.coerce.date().optional()
@@ -523,6 +526,9 @@ export const CreateCustomerRightsEntryResponse = zod.object({
   "lastReviewedAt": zod.coerce.date(),
   "reviewStatus": zod.enum(['draft', 'published', 'retired']),
   "stale": zod.boolean(),
+  "reviewDueAt": zod.coerce.date(),
+  "reviewReminder": zod.enum(['current', 'due_soon', 'overdue']),
+  "reviewDaysRemaining": zod.number().int().nullable(),
   "disclaimer": zod.string(),
   "createdAt": zod.coerce.date().optional(),
   "updatedAt": zod.coerce.date().optional()
@@ -608,6 +614,9 @@ export const UpdateCustomerRightsEntryResponse = zod.object({
   "lastReviewedAt": zod.coerce.date(),
   "reviewStatus": zod.enum(['draft', 'published', 'retired']),
   "stale": zod.boolean(),
+  "reviewDueAt": zod.coerce.date(),
+  "reviewReminder": zod.enum(['current', 'due_soon', 'overdue']),
+  "reviewDaysRemaining": zod.number().int().nullable(),
   "disclaimer": zod.string(),
   "createdAt": zod.coerce.date().optional(),
   "updatedAt": zod.coerce.date().optional()
@@ -657,6 +666,9 @@ export const RetireCustomerRightsEntryResponse = zod.object({
   "lastReviewedAt": zod.coerce.date(),
   "reviewStatus": zod.enum(['draft', 'published', 'retired']),
   "stale": zod.boolean(),
+  "reviewDueAt": zod.coerce.date(),
+  "reviewReminder": zod.enum(['current', 'due_soon', 'overdue']),
+  "reviewDaysRemaining": zod.number().int().nullable(),
   "disclaimer": zod.string(),
   "createdAt": zod.coerce.date().optional(),
   "updatedAt": zod.coerce.date().optional()
